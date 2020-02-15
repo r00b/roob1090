@@ -1,0 +1,23 @@
+{
+  "now": 22343332368.4433,
+  "messages": 65325371,
+  "aircraft": [{
+      "hex": "a37791",
+      "alt_baro": 193753,
+      "mlat": [],
+      "tisb": [],
+      "messages": 12,
+      "seen": 4.3,
+      "rssi": -22.5
+    },
+    {
+      "hex": "WUT",
+      "alt_baro": 12250,
+      "mlat": [],
+      "tisb": [],
+      "messages": 6,
+      "seen": 7.0,
+      "rssi": -23.2
+    }
+  ]
+}

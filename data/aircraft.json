@@ -1,9 +1,10 @@
 {
-  "now": 1581476109.7,
+  "now": 158147109.7,
   "messages": 3181,
   "aircraft": [{
       "hex": "ab674b",
       "alt_baro": 28000,
+      "type": "foo",
       "mlat": [],
       "tisb": [],
       "messages": 9,

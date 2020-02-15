@@ -86,6 +86,8 @@ fn read_json(filename: &String) -> Result<AircraftData, Box<dyn Error>> {
     Ok(data)
 }
 
+
+// TODO: sockets?
 async fn post_data (endpoint: &String, data: AircraftData) -> Result<(), reqwest::Error> {
     println!("Attempting to POST data to {}...", endpoint);
     let resp: Result<reqwest::Response, reqwest::Error> = reqwest::Client::new()

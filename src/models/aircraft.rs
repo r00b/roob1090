@@ -53,7 +53,7 @@ pub struct Aircraft {
     #[serde(skip_serializing_if = "Option::is_none")]
     lat: Option<f64>, // latitude
     #[serde(skip_serializing_if = "Option::is_none")]
-    long: Option<f64>, // longitude
+    lon: Option<f64>, // longitude
     #[serde(skip_serializing_if = "Option::is_none")]
     nic: Option<isize>, // navigation integrity category
     #[serde(skip_serializing_if = "Option::is_none")]

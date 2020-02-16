@@ -10,6 +10,7 @@ use std::error::Error;
 use std::fs::File;
 use std::io::Read;
 use std::sync::mpsc::channel;
+use std::collections::HashMap;
 
 mod models;
 use models::{AircraftData, PumpResponse};
@@ -51,22 +52,30 @@ async fn init_dump_watcher (endpoint: String, filename: String) -> Result<(), re
         .unwrap(); // will terminate program if file not found
     println!("Successfully initialized file watch on {}.", &filename);
     println!("----------------------------------------------------------");
+    let mut run_count: isize = 1;
+    // track cookies, since RENAME events trigger 2 callbacks
+    let mut cookies: HashMap<u32, u32> = HashMap::new();
     loop {
-        println!("----------------------------------------------------------");
         match rx.recv() {
             Ok(RawEvent {
-                path: Some(_),
+                path: Some(path),
                 op: Ok(op),
-                cookie: _,
+                cookie: Some(cookie),
             }) => {
-                println!("{:?} detected on {}, reading dump file...", op, &filename);
-                let data = read_json(&filename);
-                match data {
-                    Err(err) => println!("ERROR: unable to read dump file {}; {}.", &filename, err),
-                    Ok(data) => {
-                        println!("Successfully read dump file.");
-                        post_data(&endpoint, data).await?
-                    },
+                if !cookies.contains_key(&cookie) {
+                    cookies.insert(cookie, 1);
+                    println!("Run: {}; cookie: {:?}", run_count, cookie);
+                    println!("{:?} detected on {:?}, reading dump file...", op, path);
+                    let data = read_json(&filename);
+                    match data {
+                        Err(err) => println!("ERROR: unable to read dump file {:?}; {}.", path, err),
+                        Ok(data) => {
+                            println!("Successfully read dump file.");
+                            post_data(&endpoint, data).await?
+                        },
+                    }
+                    run_count = run_count + 1;
+                    println!("----------------------------------------------------------");
                 }
             }
             Ok(event) => println!("ERROR: broken event on {}: {:?}", &filename, event),

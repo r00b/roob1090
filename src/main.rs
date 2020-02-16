@@ -1,57 +1,75 @@
 #[macro_use]
 extern crate serde;
+extern crate clap;
 extern crate notify;
 extern crate reqwest;
 extern crate serde_json;
 
-use std::env;
+use clap::{App, Arg};
 use notify::{raw_watcher, RawEvent, RecursiveMode, Watcher};
+use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
 use std::io::Read;
 use std::sync::mpsc::channel;
-use std::collections::HashMap;
 
 mod models;
 use models::{AircraftData, PumpResponse};
 
-fn main () -> Result<(), reqwest::Error> {
-    let args: Vec<String> = env::args().collect();
-
-    let arg_endpoint = &args.get(1);
-    let endpoint: String;
-    match arg_endpoint {
-        Some(url) => endpoint = url.to_string(),
-        None      => endpoint = String::from("http://localhost:3000/dca"),
+fn main() -> Result<(), reqwest::Error> {
+    // gather args
+    let matches = App::new("pump1090")
+        .version("0.1.1")
+        .author("Robert Steilberg <rsteilberg@gmail.com>")
+        .about("Reads dump1090 output and POSTs it to an endpoint.")
+        .arg(
+            Arg::with_name("file")
+                .short("f")
+                .long("file")
+                .takes_value(true)
+                .help("The dump file to watch"),
+        )
+        .arg(
+            Arg::with_name("endpoint")
+                .short("e")
+                .long("endpoint")
+                .takes_value(true)
+                .help("The endpoint to POST to"),
+        )
+        .arg(
+            Arg::with_name("verbose")
+                .short("v")
+                .long("verbose")
+                .help("Print verbose debug info"),
+        )
+        .get_matches();
+    let endpoint = matches.value_of("endpoint").unwrap_or("http://localhost:3000/dca");
+    let filename = matches.value_of("file").unwrap_or("data/aircraft.json");
+    let debug = matches.is_present("verbose");
+    if debug {
+        println!("Verbose debug logging enabled.");
+        println!("POST endpoint: {}.", &endpoint);
+        println!("Dump file: {}.", &filename);
     }
-    println!("POST endpoint: {}.", &endpoint);
-
-    // determine if the user specified a filename to watch
-    let arg_filename = &args.get(2);
-    let filename: String;
-    match arg_filename {
-        Some(file) => filename = file.to_string(),
-        None       => filename = String::from("data/aircraft.json"),
-    }
-    println!("Computed dump file to watch: {}.", &filename);
-
     // init the loop that watches the file
-    init_dump_watcher(endpoint, filename)
+    init_dump_watcher(String::from(endpoint), String::from(filename), debug)
 }
 
 #[tokio::main]
-async fn init_dump_watcher (endpoint: String, filename: String) -> Result<(), reqwest::Error> {
-    println!("Initializing file watch on {}...", &filename);
+async fn init_dump_watcher(endpoint: String, filename: String, debug: bool) -> Result<(), reqwest::Error> {
+    if debug {
+        println!("Initializing file watch on {}...", &filename);
+    }
     // create channel to receive the events
     let (tx, rx) = channel();
     // create watched object to deliver raw events; notification selected based on platform
     let mut watcher = raw_watcher(tx).unwrap();
     // set watcher on file
-    watcher
-        .watch(&filename, RecursiveMode::Recursive)
-        .unwrap(); // will terminate program if file not found
-    println!("Successfully initialized file watch on {}.", &filename);
-    println!("----------------------------------------------------------");
+    watcher.watch(&filename, RecursiveMode::Recursive).unwrap(); // will terminate program if file not found
+    if debug {
+        println!("Successfully initialized file watch on {}.", &filename);
+        println!("----------------------------------------------------------");
+    }
     let mut run_count: isize = 1;
     // track cookies, since RENAME events trigger 2 callbacks
     let mut cookies: HashMap<u32, u32> = HashMap::new();
@@ -64,18 +82,26 @@ async fn init_dump_watcher (endpoint: String, filename: String) -> Result<(), re
             }) => {
                 if !cookies.contains_key(&cookie) {
                     cookies.insert(cookie, 1);
-                    println!("Run: {}; cookie: {:?}", run_count, cookie);
-                    println!("{:?} detected on {:?}, reading dump file...", op, path);
+                    if debug {
+                        println!("Run: {}; cookie: {:?}", run_count, cookie);
+                        println!("{:?} detected on {:?}, reading dump file...", op, path);
+                    }
                     let data = read_json(&filename);
                     match data {
-                        Err(err) => println!("ERROR: unable to read dump file {:?}; {}.", path, err),
+                        Err(err) => {
+                            println!("ERROR: unable to read dump file {:?}; {}.", path, err)
+                        }
                         Ok(data) => {
-                            println!("Successfully read dump file.");
-                            post_data(&endpoint, data).await?
-                        },
+                            if debug {
+                                println!("Successfully read dump file.");
+                            }
+                            post_data(&endpoint, data, debug).await?
+                        }
                     }
                     run_count = run_count + 1;
-                    println!("----------------------------------------------------------");
+                    if debug {
+                        println!("----------------------------------------------------------");
+                    }
                 }
             }
             Ok(event) => println!("ERROR: broken event on {}: {:?}", &filename, event),
@@ -95,33 +121,36 @@ fn read_json(filename: &String) -> Result<AircraftData, Box<dyn Error>> {
     Ok(data)
 }
 
-
 // TODO: sockets?
-async fn post_data (endpoint: &String, data: AircraftData) -> Result<(), reqwest::Error> {
-    println!("Attempting to POST data to {}...", endpoint);
+async fn post_data(endpoint: &String, data: AircraftData, debug: bool) -> Result<(), reqwest::Error> {
+    if debug {
+        println!("Attempting to POST data to {}...", endpoint);
+    }
     let resp: Result<reqwest::Response, reqwest::Error> = reqwest::Client::new()
         .post(endpoint)
         .json(&data)
         .send()
         .await;
     match resp {
+        Ok(resp) => handle_post_success(resp, debug).await?,
         Err(e) => handle_post_error(e),
-        Ok(resp)  => handle_post_success(resp).await?,
     }
     Ok(())
 }
 
-async fn handle_post_success (resp: reqwest::Response) -> Result<(), reqwest::Error> {
-    let json = resp
-        .json::<PumpResponse>()
-        .await;
+async fn handle_post_success(resp: reqwest::Response, debug: bool) -> Result<(), reqwest::Error> {
+    let json = resp.json::<PumpResponse>().await;
     match json {
+        Ok(json) => {
+            if debug {
+                println!("POST successful; response: {}.", json.status);
+            }
+        },
         Err(e) => println!("POST successful, but unable to parse response: {}.", e),
-        Ok(json)  => println!("POST successful; response: {}.", json.status),
     }
     Ok(())
 }
 
-fn handle_post_error (err: reqwest::Error) {
+fn handle_post_error(err: reqwest::Error) {
     println!("ERROR: POST failed; {}.", err)
 }

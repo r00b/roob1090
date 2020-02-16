@@ -1,6 +1,6 @@
 [package]
 name = "pump1090"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Robert Steilberg <rsteilberg@gmail.com>"]
 edition = "2018"
 
@@ -13,3 +13,4 @@ serde_derive = "1.0.104"
 reqwest = { version = "0.10.1", features = ["json"] }
 tokio = { version = "0.2", features = ["macros"] }
 notify = "4.0.12"
+clap = "2.33.0"

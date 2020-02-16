@@ -7,7 +7,6 @@ extern crate serde_json;
 
 use clap::{App, Arg};
 use notify::{raw_watcher, RawEvent, RecursiveMode, Watcher};
-use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
 use std::io::Read;
@@ -71,8 +70,8 @@ async fn init_dump_watcher(endpoint: String, filename: String, debug: bool) -> R
         println!("----------------------------------------------------------");
     }
     let mut run_count: isize = 1;
-    // track cookies, since RENAME events trigger 2 callbacks
-    let mut cookies: HashMap<u32, u32> = HashMap::new();
+    // track last cookie, since RENAME events trigger 2 callbacks
+    let mut last_cookie: u32 = 0;
     loop {
         match rx.recv() {
             Ok(RawEvent {
@@ -80,8 +79,8 @@ async fn init_dump_watcher(endpoint: String, filename: String, debug: bool) -> R
                 op: Ok(op),
                 cookie: Some(cookie),
             }) => {
-                if !cookies.contains_key(&cookie) {
-                    cookies.insert(cookie, 1);
+                if last_cookie != cookie {
+                    last_cookie = cookie;
                     if debug {
                         println!("Run: {}; cookie: {:?}", run_count, cookie);
                         println!("{:?} detected on {:?}, reading dump file...", op, path);

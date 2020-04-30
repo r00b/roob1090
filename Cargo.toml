@@ -6,6 +6,10 @@ edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = ["tls"]
+tls = ["native-tls"]
+
 [dependencies]
 serde = { version = "1.0.104", features = ["derive"] }
 serde_json = "1.0.48"
@@ -14,3 +18,9 @@ reqwest = { version = "0.10.1", features = ["json"] }
 tokio = { version = "0.2", features = ["macros"] }
 notify = "4.0.12"
 clap = "2.33.0"
+url = "2.1.1"
+tungstenite = "0.10.1"
+
+[dependencies.native-tls]
+optional = true
+version = "0.2.3"

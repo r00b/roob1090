@@ -4,7 +4,7 @@ const flightData = require('./../services/flight-data');
 
 router.get('/', function(req, res, next) {
   console.log('GET');
-  res.json(flightData.rawData);
+    res.json(flightData.rawData || "no data");
 });
 
 router.post('/', function (req, res, next) {
@@ -19,7 +19,7 @@ router.ws('/test', function(ws, req) {
   ws.on('message', function(msg) {
     console.log('received data');
     console.log(msg);
-    // flightData.rawData = JSON.parse(msg);
+    //flightData.rawData = JSON.parse(msg);
     ws.send(msg);
   });
 });

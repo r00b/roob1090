@@ -1,12 +1,10 @@
 #[macro_use]
 extern crate serde;
 extern crate clap;
-extern crate notify;
 extern crate reqwest;
 extern crate serde_json;
 
 use clap::{App, Arg};
-use notify::{raw_watcher, RawEvent, RecursiveMode, Watcher};
 use std::error::Error;
 use std::fs::File;
 use std::io::Read;
@@ -64,14 +62,7 @@ fn main() -> () {
 fn init_master_worker(endpoint: String, filename: String) -> () {
   let mut socket = init_pipe(&endpoint);
   // init the loop that watches the file
-  // match init_dump_watcher(socket, String::from(&filename), debug) {
-  //   Err(e) => {
-  //     println!("ERROR =================================");
-  //     panic!("{}", e);
-  //   }
-  //   Ok(_) => {}
-  // }
-  init_dump_watcher(socket, String::from(&filename)).unwrap_or_else(handle_error);
+  init_dump_timer(socket, String::from(&filename)).unwrap_or_else(handle_error);
   init_master_worker(String::from(&endpoint), String::from(&filename)); // go forever!
   ()
 }
@@ -100,64 +91,25 @@ fn init_pipe(endpoint: &String) -> WebSocket<AutoStream> {
   }
 }
 
-fn init_dump_watcher(
+fn init_dump_timer(
   mut socket: WebSocket<AutoStream>,
   filename: String,
 ) -> Result<(), Box<dyn Error>> {
-  // init file watch
-  println!("Initializing file watch on {}", &filename);
-  // create channel to receive the events
-  let (tx, rx) = channel();
-  // create watched object to deliver raw events; notification selected based on platform
-  let mut watcher = raw_watcher(tx)?;
-  // set watcher on file
-  watcher.watch(&filename, RecursiveMode::Recursive)?;
-  println!("Successfully initialized file watch on {}", &filename);
-  println!("----------------------------------------------------------");
   let mut run_count: isize = 0;
   loop {
-    match rx.recv() {
-      Ok(RawEvent {
-        path: Some(path),
-        op: Ok(op),
-        cookie: _,
-      }) => {
-        let data = read_json(&filename)?;
-        match pump_data(socket, data) {
-          Ok(s) => socket = s,
-          Err(_) => {
-            println!("Unable to write to pipe; attempting to re-establish");
-            break Ok(());
-          }
-        }
+    let data = read_json(&filename)?;
+    match pump_data(socket, data) {
+      Ok(s) => socket = s,
+      Err(_) => {
+        println!("Unable to write to pipe; attempting to re-establish");
+        break Ok(());
       }
-      Ok(event) => println!("ERROR: broken event on {}: {:?}", &filename, event),
-      Err(e) => println!("ERROR: watch error on {}: {:?}", &filename, e),
     }
     run_count = run_count + 1;
     println!("Run count: {}", run_count);
+    thread::sleep(time::Duration::from_millis(1000));
   }
 }
-
-// fn handle_file_update(filename: String, debug: bool) -> () {
-//   let data = read_json(&filename);
-//   match data {
-//     Err(err) => println!("ERROR: unable to read dump file {:?}; {}.", path, err),
-//     Ok(data) => {
-//       if debug {
-//         println!("Successfully read dump file.\nWriting data to pipe...");
-//       }
-//       let res = pump_data(socket, data);
-//       match res {
-//         Ok(s) => socket = s,
-//         Err(_) => {
-//           println!("Unable to write to pipe; attempting to re-establish");
-//           break Ok(());
-//         }
-//       }
-//     }
-//   }
-// }
 
 // read the input file and serialize it
 fn read_json(filename: &String) -> Result<String, Box<dyn Error>> {

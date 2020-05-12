@@ -1,31 +1,28 @@
-#[macro_use]
 extern crate serde;
-extern crate clap;
-extern crate reqwest;
 extern crate serde_json;
+extern crate clap;
+
+use std::{thread, time};
+use std::io::{self, Read, Write};
+use std::fs::File;
+use std::error::Error;
+use std::net::TcpStream;
+
+use url::Url;
 
 use clap::{App, Arg};
-use std::error::Error;
-use std::fs::File;
-use std::io::Read;
-use tungstenite::{connect, Message};
-use std::{thread, time};
 
-use std::net::TcpStream;
+use tungstenite::{connect, Message};
 use tungstenite::protocol::WebSocket;
+use tungstenite::stream::Stream as StreamSwitcher;
+type AutoStream = StreamSwitcher<TcpStream, TlsStream<TcpStream>>;
 
 #[cfg(feature = "tls")]
 use native_tls::TlsStream;
 
-use url::Url;
+// mod models;
+// use models::{AircraftData, PumpResponse};
 
-pub use tungstenite::stream::Stream as StreamSwitcher;
-pub type AutoStream = StreamSwitcher<TcpStream, TlsStream<TcpStream>>;
-
-mod models;
-use models::{AircraftData, PumpResponse};
-
-// fn main() -> Result<(), reqwest::Error> {
 fn main() -> () {
   // gather args
   let matches = App::new("pump1090")
@@ -53,7 +50,7 @@ fn main() -> () {
   let filename = matches.value_of("file").unwrap_or("data/aircraft.json");
   println!("Initializing pump1090...");
   println!("Websocket endpoint: {}", &endpoint);
-  println!("Dump file path: {}", &filename);
+  println!("Dumpfile path: {}", &filename);
   init_pump(String::from(endpoint), String::from(filename));
   println!("pump1090 terminated")
 }
@@ -71,15 +68,15 @@ fn init_pump(endpoint: String, filename: String) -> () {
 
 /// actually establish the websocket connections
 fn init_pipe(endpoint: &String, attempt: isize) -> WebSocket<AutoStream> {
-  println!("Attempting to establish pipe with {} (attempt {})", endpoint, attempt);
+  print!("\rAttempting to establish pipe with {} (attempt {})", endpoint, attempt);
+  io::stdout().flush().unwrap();
   let resp = connect(Url::parse(&endpoint).unwrap());
   match resp {
     Ok((socket, _)) => {
-      println!("Pipe successfully established with {} (attempt {})", endpoint, attempt);
+      println!("\nPipe successfully established with {} on attempt {}", endpoint, attempt);
       socket
     }
     Err(_) => {
-      println!("Unable to establish pipe; trying again in 5 seconds...");
       thread::sleep(time::Duration::from_millis(5000));
       init_pipe(endpoint, attempt + 1)
     }
@@ -92,19 +89,23 @@ fn init_dump_timer(
   filename: String,
 ) -> Result<(), Box<dyn Error>> {
   let mut run_count: isize = 1;
+  print!("Run count: {}", run_count);
+  io::stdout().flush().unwrap();
   loop {
     let data = read_json(&filename)?;
     match pump_data(socket, data) {
       Ok(s) => socket = s, // successfully sent data
       Err(_) => {
-        println!("Unable to write to pipe; attempting to re-establish connection...");
+        println!("\nUnable to write to pipe; attempting to re-establish connection...");
         break Ok(());
       }
     }
     run_count = run_count + 1;
-    println!("Run count: {}", run_count);
+    print!("\rPump count: {}", run_count);
+    io::stdout().flush().unwrap();
     thread::sleep(time::Duration::from_millis(1000));
   }
+
 }
 
 /// read the input file, serialize it and attach metadata, and then
@@ -129,7 +130,7 @@ fn pump_data(
   socket.write_message(Message::Ping(Vec::new()))?;
   // attempt the actual write
   socket.write_message(Message::Text(data))?;
-  println!("Successfully wrote dump file to pipe");
+  // println!("Successfully wrote dump file to pipe");
   Ok(socket)
 }
 

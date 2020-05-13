@@ -1,26 +1,22 @@
 const express = require('express');
 const router = express.Router();
 const flightData = require('./../services/flight-data');
+const _ = require('lodash');
 
-router.get('/', function(req, res, next) {
+router.get('/', function (req, res, next) {
   console.log('GET');
-    res.json(flightData.rawData || "no data");
+  res.json(flightData.getRawData());
 });
 
-router.post('/', function (req, res, next) {
-  const crap = req.body;
-  res.json({
-    status: 'success'
-  });
-  res.sendStatus(200);
-});
-
-router.ws('/test', function(ws, req) {
-  ws.on('message', function(msg) {
-    console.log('received data');
-    console.log(msg);
-    //flightData.rawData = JSON.parse(msg);
-    ws.send(msg);
+router.ws('/pump', function (ws, req) {
+  ws.on('message', function (data) {
+    try {
+      const json = JSON.parse(data);
+      const result = flightData.setNewData(json);
+      console.log(`success: ${result}`);
+    } catch (e) {
+      console.log('fail');
+    }
   });
 });
 

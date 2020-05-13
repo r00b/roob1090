@@ -7,7 +7,7 @@
   "license": "MIT",
   "author": "Robert Steilberg <rsteilberg@gmail.com>",
   "scripts": {
-    "start:dev": "nodemon -r esm ./bin/www",
+    "start:dev": "nodemon --inspect ./bin/www",
     "start:pm2": "pm2 start ./bin/www"
   },
   "dependencies": {

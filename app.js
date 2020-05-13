@@ -7,7 +7,7 @@ const logger = require('morgan');
 // app instantiations
 const app = express();
 const expressWs = require('express-ws')(app);
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5857;
 
 // routers
 const indexRouter = require('./routes/index');
@@ -34,6 +34,6 @@ app.use(function(err, req, res, next) {
   res.status(err.status || 500);
 });
 
-app.listen(3001);
+app.listen(port + 1);
 
 module.exports = app;

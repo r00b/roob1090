@@ -19,7 +19,7 @@ function setNewData (data) {
   const newTimestamp = data.now;
   if (newTimestamp > currTimestamp) {
     this.rawData = data;
-    const partition = _filterAndSetAircraft(data);
+    const partition = _filterAircraft(data.aircraft);
     this.includedAircraft = partition.included;
     this.excludedAircraft = partition.excluded;
     return true;
@@ -27,13 +27,13 @@ function setNewData (data) {
   return false;
 }
 
-function _filterAndSetAircraft (data) {
-  const aircraft = data.aircraft || [];
+function _filterAircraft (aircraft = []) {
   let includedAircraft = [];
   let excludedAircraft = [];
   if (aircraft.length) {
     includedAircraft = _.filter(aircraft, _isValidFlight);
-    excludedAircraft = _.reject(aircraft, _isValidFlight)
+    // use anti intersection
+    excludedAircraft = _.difference(aircraft, includedAircraft);
   }
   return {
     included: includedAircraft,
@@ -42,10 +42,10 @@ function _filterAndSetAircraft (data) {
 }
 
 function _isValidFlight (flight) {
-  const hasPosition = flight.lat && flight.long;
-  const hasIdent = flight.flight;
+  const requiredProps = ['lat', 'long', 'seen', 'flight'];
+  const hasRequiredProps = _.every(requiredProps, Object.hasOwnProperty.bind(flight));
   const isRecent = flight.seen < FLIGHT_TIMEOUT;
-  return hasPosition && hasIdent && isRecent;
+  return hasRequiredProps && isRecent;
 }
 
 // RETRIEVE

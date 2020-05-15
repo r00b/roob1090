@@ -23,7 +23,7 @@ router
         const result = store.setNewData(json);
         console.log(`success: ${result}`);
       } catch (e) {
-        console.log('fail');
+        console.log('fail ' + e);
       }
     });
   });

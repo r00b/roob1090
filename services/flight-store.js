@@ -19,7 +19,7 @@ function setNewData (data) {
   const newTimestamp = data.now;
   if (newTimestamp > currTimestamp) {
     this.rawData = data;
-    const partition = this._filterAndSetAircraft(data);
+    const partition = _filterAndSetAircraft(data);
     this.includedAircraft = partition.included;
     this.excludedAircraft = partition.excluded;
     return true;

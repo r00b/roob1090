@@ -13,9 +13,9 @@ router
   .get('/fake', function (req, res, next) {
     res.json(store.getFakeAircraft());
   })
-  .get('/taxi', function (req, res, next) {
-    res.json(store.getTaxiingAircraft());
-  })
+  // .get('/taxi', function (req, res, next) {
+  //   res.json(store.getTaxiingAircraft());
+  // })
   .ws('/pump', function (ws, req) {
     ws.on('message', function (data) {
       try {

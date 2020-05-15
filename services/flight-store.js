@@ -45,6 +45,13 @@ function _isValidFlight (flight) {
   const requiredProps = ['lat', 'long', 'seen', 'flight'];
   const hasRequiredProps = _.every(requiredProps, Object.hasOwnProperty.bind(flight));
   const isRecent = flight.seen < FLIGHT_TIMEOUT;
+  if (!(hasRequiredProps && isRecent)) {
+    if (!isRecent) {
+      console.log('not recent')
+    } else {
+      console.log('missing props')
+    }
+  }
   return hasRequiredProps && isRecent;
 }
 

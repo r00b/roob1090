@@ -67,3 +67,7 @@ function getRealAircraft () {
 function getFakeAircraft () {
   return this.excludedAircraft || [];
 }
+
+function getTaxiingAircraft () {
+  return [];
+}

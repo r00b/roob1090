@@ -42,7 +42,7 @@ function _filterAircraft (aircraft = []) {
 }
 
 function _isValidFlight (flight) {
-  const requiredProps = ['lat', 'long', 'seen', 'flight'];
+  const requiredProps = ['lat', 'lon', 'seen', 'flight'];
   const hasRequiredProps = _.every(requiredProps, Object.hasOwnProperty.bind(flight));
   const isRecent = flight.seen < FLIGHT_TIMEOUT;
   if (!(hasRequiredProps && isRecent)) {

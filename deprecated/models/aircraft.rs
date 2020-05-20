@@ -1,6 +1,8 @@
 // derived from https://github.com/flightaware/dump1090/blob/master/README-json.md
 // TODO are these all optional
 // TODO isizes
+use serde::{Deserialize, Serialize};
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Aircraft {
     hex: String, // 24-bit ICAO identifier
@@ -9,7 +11,7 @@ pub struct Aircraft {
     #[serde(skip_serializing_if = "Option::is_none")]
     flight: Option<String>, // callsign
     #[serde(skip_serializing_if = "Option::is_none")]
-    alt_baro: Option<isize>, // aircraft barometric altitude (feet)
+    alt_baro: Option<isize>, // aircraft barometric altitude (feet) TODO this will blow up if alt_baro = "grnd"
     #[serde(skip_serializing_if = "Option::is_none")]
     alt_geom: Option<isize>, // geometric altitude (feet)
     #[serde(skip_serializing_if = "Option::is_none")]

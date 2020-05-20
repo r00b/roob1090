@@ -1,4 +1,5 @@
 pub use super::Aircraft;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AircraftData {

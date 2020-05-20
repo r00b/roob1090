@@ -1,5 +1,5 @@
 {
-  "now": 12233332368.4433,
+  "now": 4332323232323333.4435,
   "messages": 65325371,
   "aircraft": [{
       "hex": "a37791",
@@ -17,6 +17,18 @@
       "tisb": [],
       "messages": 6,
       "seen": 7.0,
+      "rssi": -23.2
+    },
+    {
+      "hex": "WUT",
+      "flight": "AAL58",
+      "alt_baro": 12250,
+      "mlat": [],
+      "tisb": [],
+      "messages": 6,
+      "seen": 7.0,
+      "lat": 12,
+      "long": -234234,
       "rssi": -23.2
     }
   ]

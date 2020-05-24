@@ -1,6 +1,6 @@
 [package]
 name = "pump1090"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Robert Steilberg <rsteilberg@gmail.com>"]
 license = "MIT"
 description = "Simple tool for sending dump1090 data to a websocket endpoint."
@@ -16,7 +16,7 @@ tls = ["native-tls"]
 
 [dependencies]
 dotenv = "0.15.0" # env vars parse
-clap = "2.33.0" # cli arg parse
+clap = {version = "^2.33.0", features = ["yaml"]} # cli arg parse
 serde_json = "1.0.48" # dumpfile parse
 url = "2.1.1" # endpoint URL
 tungstenite = "0.10.1" # websockets

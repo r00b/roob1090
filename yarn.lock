@@ -2,6 +2,14 @@
 # yarn lockfile v1
 
 
+"@godaddy/terminus@^4.4.1":
+  version "4.4.1"
+  resolved "https://registry.yarnpkg.com/@godaddy/terminus/-/terminus-4.4.1.tgz#0a54ba1363452a8199f46aed3f7931d55287c6b0"
+  integrity sha512-ZPwsG7xN+B2bvnEu6+o0rBPAFbXmm6Bk/RAR4b/nhjNOSJtbVFYTd+JSaJYL/jyESqcTcAyzlWO0dmbT4YsckQ==
+  dependencies:
+    es6-promisify "^6.0.2"
+    stoppable "^1.1.0"
+
 "@opencensus/core@0.0.9":
   version "0.0.9"
   resolved "https://registry.yarnpkg.com/@opencensus/core/-/core-0.0.9.tgz#b16f775435ee309433e4126af194d37313fc93b3"
@@ -727,6 +735,11 @@ es6-promisify@^5.0.0:
   integrity sha1-UQnWLz5W6pZ8S2NQWu8IKRyKUgM=
   dependencies:
     es6-promise "^4.0.3"
+
+es6-promisify@^6.0.2:
+  version "6.1.1"
+  resolved "https://registry.yarnpkg.com/es6-promisify/-/es6-promisify-6.1.1.tgz#46837651b7b06bf6fff893d03f29393668d01621"
+  integrity sha512-HBL8I3mIki5C1Cc9QjKUenHtnG0A5/xA8Q/AllRcfiwl2CZFXGK7ddBiCoRwAix4i2KxcQfjtIVcrVbB3vbmwg==
 
 escape-html@~1.0.3:
   version "1.0.3"
@@ -2193,6 +2206,11 @@ sprintf-js@~1.0.2:
   version "1.5.0"
   resolved "https://registry.yarnpkg.com/statuses/-/statuses-1.5.0.tgz#161c7dac177659fd9811f43771fa99381478628c"
   integrity sha1-Fhx9rBd2Wf2YEfQ3cfqZOBR4Yow=
+
+stoppable@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/stoppable/-/stoppable-1.1.0.tgz#32da568e83ea488b08e4d7ea2c3bcc9d75015d5b"
+  integrity sha512-KXDYZ9dszj6bzvnEMRYvxgeTHU74QBFL54XKtP3nyMuJ81CFYtABZ3bAzL2EdFUaEwJOBOgENyFj3R7oTzDyyw==
 
 "string-width@^1.0.2 || 2", string-width@^2.0.0, string-width@^2.1.1:
   version "2.1.1"

@@ -8,12 +8,14 @@ var app = require('../app');
 var debug = require('debug')('serve1090:server');
 var http = require('http');
 
+
 /**
  * Get port from environment and store in Express.
  */
 
 var port = normalizePort(process.env.PORT || '5857');
 app.set('port', port);
+console.log(port);
 
 /**
  * Create HTTP server.

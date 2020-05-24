@@ -7,8 +7,9 @@
   "license": "MIT",
   "author": "Robert Steilberg <rsteilberg@gmail.com>",
   "scripts": {
-    "start:dev": "nodemon --inspect ./bin/www",
-    "start:pm2": "pm2 start ./bin/www"
+    "start": "yarn && node index.js",
+    "start:pm2": "pm2 start index.js",
+    "debug": "yarn && nodemon --inspect index.js"
   },
   "dependencies": {
     "cookie-parser": "~1.4.4",
@@ -20,7 +21,8 @@
     "http-errors": "~1.6.3",
     "lodash": "^4.17.15",
     "morgan": "~1.9.1",
-    "pm2": "^4.4.0"
+    "pm2": "^4.4.0",
+    "@godaddy/terminus": "^4.4.1"
   },
   "devDependencies": {
     "nodemon": "^2.0.2"

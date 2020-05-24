@@ -32,7 +32,6 @@ function _filterAircraft (aircraft = []) {
   let excludedAircraft = [];
   if (aircraft.length) {
     includedAircraft = _.filter(aircraft, _isValidFlight);
-    // use anti intersection
     excludedAircraft = _.difference(aircraft, includedAircraft);
   }
   return {
@@ -45,13 +44,6 @@ function _isValidFlight (flight) {
   const requiredProps = ['lat', 'lon', 'seen', 'flight'];
   const hasRequiredProps = _.every(requiredProps, Object.hasOwnProperty.bind(flight));
   const isRecent = flight.seen < FLIGHT_TIMEOUT;
-  if (!(hasRequiredProps && isRecent)) {
-    if (!isRecent) {
-      console.log('not recent')
-    } else {
-      console.log('missing props')
-    }
-  }
   return hasRequiredProps && isRecent;
 }
 

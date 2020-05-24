@@ -73,13 +73,12 @@ fn main() -> () {
   println!("pump1090 terminated.")
 }
 
-/// compute the value of an arg; do this by checking .env first for env_var_name,
-/// then checking if the arg was specified on the command line, and finally using
-/// default_val
+/// compute the value of an arg; do this by checking if the arg was specified on the command
+/// line, then checking .env for the value of env_var-name, and finally using default_val
 fn unwrap_arg(default_val: &str, env_var_name: &str, cli_arg: Option<&str>) -> String {
-  let cli_arg = cli_arg.unwrap_or_else(|| default_val).to_string();
-  let unwrapped_arg: String = env::var(env_var_name).unwrap_or_else(|_| cli_arg).to_string();
-  unwrapped_arg
+  let env_arg = env::var(env_var_name).unwrap_or_else(|_| default_val.to_string());
+  let unwrapped_arg = cli_arg.unwrap_or_else(|| &env_arg);
+  unwrapped_arg.to_string()
 }
 
 /// start the infinite recursive loop that will establish the WebSocket and begin

@@ -77,8 +77,8 @@ fn main() -> () {
 /// then checking if the arg was specified on the command line, and finally using
 /// default_val
 fn unwrap_arg(default_val: &str, env_var_name: &str, cli_arg: Option<&str>) -> String {
-  let env_arg: String = env::var(env_var_name).unwrap_or_else(|_| default_val.to_string());
-  let unwrapped_arg: String = cli_arg.unwrap_or_else(|| &env_arg).to_string();
+  let cli_arg = cli_arg.unwrap_or_else(|| default_val).to_string();
+  let unwrapped_arg: String = env::var(env_var_name).unwrap_or_else(|_| cli_arg).to_string();
   unwrapped_arg
 }
 

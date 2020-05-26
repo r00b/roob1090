@@ -17,21 +17,21 @@ router
     res.json(store.getTaxiingAircraft());
   })
   .ws('/pump', function (ws, req) {
-    const date = new Date(0);
     const loader = ['\\', '|', '/', '-'];
     let loaderIdx = 0;
     let statusString = '';
     ws.on('message', function (data) {
       try {
         const json = JSON.parse(data);
-        if (pumpId === json.pumpId) {
+        if (pumpId === json.secret) {
           const dataAccepted = store.setNewData(json);
-          if (dataAccepted) {
-            // const millis = new Date(json.now * 1000);
-            date.setUTCSeconds(json.now);
-            statusString = `last set: ${date.toString()}; messages: ${json.messages}`;
+        		if (dataAccepted) {
+												const date = new Date(json.now * 1000);
+						      statusString = `last set: ${date.toString()} (${json.now}); messages: ${json.messages}`;
           }
-        }
+        } else {
+	    console.log(`bad secret!: |${json.secret}|ours:|${pumpId}|`); // TODO better handling of this
+	}
         process.stdout.write(`\r${loader[loaderIdx++]} ${statusString}`);
         loaderIdx &= 3; // todo finally?
       } catch (e) {

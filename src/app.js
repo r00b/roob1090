@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const app = express();
 require('express-ws')(app);
+const aircraftRouter = require('./routes/index.js');
+const dca = require('./airspaces/airports/dca');
 
 // const createError = require('http-errors');
 // const path = require('path');
@@ -26,7 +28,7 @@ require('express-ws')(app);
 //   res.status(err.status || 500);
 // });
 
-function normalizePort(val) {
+function normalizePort (val) {
   const port = parseInt(val, 10);
   if (isNaN(port)) {
     // named pipe
@@ -39,23 +41,24 @@ function normalizePort(val) {
   return false;
 }
 
-async function startServer () {
-
-
+async function startServer (store, logger) {
+  store.init(dca);
   // routers
-  const indexRouter = require('./routes/index');
-  app.use('/', indexRouter);
+  app.use('/aircraft', aircraftRouter(store));
+
+  app.locals = {
+    logger
+  };
 
   const port = normalizePort(process.env.PORT) || 5432;
 
-  const server = app.listen(port, err => {
+  return app.listen(port, err => {
     if (err) {
       console.error(`Could not start serve1090: ${err}.`);
       process.exit(1);
     }
     console.log(`Started serve1090 on port ${port}.`);
   });
-  return server;
 }
 
 module.exports = startServer;

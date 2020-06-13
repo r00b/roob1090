@@ -1,10 +1,13 @@
 const app = require('./src/app');
 const { createTerminus } = require('@godaddy/terminus');
 const _ = require('lodash');
+const logger = require('./lib/logger');
 
 let connections = [];
 
-app().then(server => {
+const store = require('./src/stores/aircraft-store');
+
+app(store, logger).then(server => {
   server.on('connection', connection => {
     connections.push(connection);
     connection.on('close', () => connections = _.without(connections, connection));
@@ -19,6 +22,8 @@ app().then(server => {
 
 function onSignal () {
   console.log('\nReceived kill signal, shutting down gracefully...');
+  // kill store jobs
+  store.shutdown();
   // kill all connections
   connections.forEach(curr => curr.end());
   setTimeout(() => connections.forEach(curr => curr.destroy()), 2000);

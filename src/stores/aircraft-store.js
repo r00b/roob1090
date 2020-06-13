@@ -54,6 +54,7 @@ function _purgeAircraft (store, maxAge) {
       logger.store({
         message: _fmtMsg('purge aircraft'),
         store: store.name,
+        numAircraft: store.aircraft.length,
         hex: aircraft.hex,
         age,
         max: maxAge,

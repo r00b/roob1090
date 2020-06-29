@@ -15,7 +15,6 @@ function createTransport (dir, level) {
     createSymlink: true,
     level,
     format: combine(
-      colorize(),
       simple()
     ),
   });

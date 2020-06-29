@@ -1,6 +1,6 @@
 const express = require('express');
 const pumpId = process.env.SERVE1090_SECRET; // TODO this shouldn't be here
-const logger = require('./../../lib/logger');
+const logger = require('./../lib/logger');
 
 // TODO mount this at aircraft/
 

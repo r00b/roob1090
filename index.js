@@ -1,7 +1,7 @@
 const app = require('./src/app');
 const { createTerminus } = require('@godaddy/terminus');
 const _ = require('lodash');
-const logger = require('./lib/logger');
+const logger = require('./src/lib/logger');
 
 let connections = [];
 

@@ -1,7 +1,8 @@
 const _ = require('lodash');
-const logger = require('./../../lib/logger');
+const logger = require('./../lib/logger');
 const AIRCRAFT_SCHEMA = require('./../schemas/aircraft');
 const { rightPad } = require('./../utils');
+
 const MAX_DATA_AGE = 60000;
 
 module.exports = {
@@ -115,7 +116,7 @@ function setNewData (data) {
   // first, update and filter the data
   const newAircraftMap = _mapifyAircraftArray(data.aircraft.map(_setUpdated));
   const { validatedMap, errors } = _validateAircraftMap(newAircraftMap);
-  // set errors onto newAircraftMap so they can be returned with excluded
+  // set errors onto newAircraftMap so they can be returned with raw/excluded
   Object.entries(errors).forEach(([hex, error]) => {
     newAircraftMap[hex].error = error;
   });
@@ -156,18 +157,17 @@ function _mergeIntoStore (store, newMap) {
     acc.aircraft[hex] = aircraft;
     return acc;
   }, _.cloneDeep(store));
-  // log results
   const size = Object.keys(mergedStore.aircraft).length;
   logger.store({
     message: _fmtMsg('add new aircraft'),
     store: store.name,
-    num: added.length,
-    size
+    numAdded: added.length,
+    newSize: size
   });
   logger.store({
     message: _fmtMsg('update existing aircraft'),
     store: store.name,
-    num: updated.length,
+    numUpdated: updated.length,
     size
   });
   return mergedStore;
@@ -186,6 +186,7 @@ function _validateAircraftMap (map) {
   const validatedMap = Object.entries(map).reduce((acc, [hex, aircraft]) => {
     const { value: validatedBody, error } = AIRCRAFT_SCHEMA.validate(aircraft);
     if (!error) {
+      validatedBody.error = false;
       acc[hex] = validatedBody;
     } else {
       errors[hex] = error.message.replace(/"/g, '\'');
@@ -195,7 +196,7 @@ function _validateAircraftMap (map) {
   return {
     validatedMap,
     errors
-  }
+  };
 }
 
 // RETRIEVE
@@ -233,8 +234,15 @@ function _exportStore (store) {
   }
 }
 
-// HELPERS
+// UTILS
 
+function _checkIfInitialized (initialized) {
+  if (!initialized) throw new Error('store not initialized');
+}
+
+/**
+ * Init a new aircraft store
+ */
 function _createStore (name) {
   return {
     name,
@@ -252,6 +260,11 @@ function _setUpdated (aircraft) {
   return aircraft;
 }
 
+/**
+ *
+ * @param aircraftArray array of aircraft from dump1090
+ * @returns { hex: aircraft } hex mapped to aircraft object
+ */
 function _mapifyAircraftArray (aircraftArray = []) {
   return aircraftArray.reduce((acc, aircraft) => {
     acc[aircraft.hex] = aircraft;
@@ -262,72 +275,3 @@ function _mapifyAircraftArray (aircraftArray = []) {
 function _fmtMsg (msg) {
   return rightPad(msg, 25);
 }
-
-function _checkIfInitialized (initialized) {
-  if (!initialized) throw new Error('store not initialized');
-}
-
-function _printAircraft (aircraft) {
-  const {
-    flight,
-    hex,
-    seen,
-    updated,
-    alt_baro,
-    true_heading,
-    track,
-    lat,
-    lon
-  } = aircraft;
-  console.log('-------------------------------');
-  console.log(`Flight: ${flight}`);
-  console.log(`Hex: ${hex}`);
-  console.log(`Seen: ${seen}`);
-  console.log(`Updated: ${updated}`);
-  console.log(`Altitude: ${alt_baro}`);
-  console.log(`True heading: ${true_heading}`);
-  console.log(`Track: ${track}`);
-  console.log(`Lat: ${lat}`);
-  console.log(`Long: ${lon}`);
-  console.log('-------------------------------');
-}
-
-// function _compute (aircraft, airspace, excludedAircraft) {
-//
-//   aircraft.forEach(a => {
-//     if (a.flight.trim() === 'AAL1310') _logAircraft(a);
-//   });
-//
-//   const aircraftInAirspace = _computeAircraftInAirspace(aircraft, airspace);
-//   const validAircraft = aircraftInAirspace.filter(aircraft => {
-//
-//     // const heading = aircraft.track ? aircraft.track : aircraft.true_heading;
-//     // const goodHeading = heading >= airspace.minHeading && heading <= airspace.maxHeading; // TODO heading violates as soon as leaves runway
-//     const altitude = aircraft.alt_baro;
-//     const goodAltitude = altitude <= airspace.maxAltitude;
-//
-//     // const excludeAircraft = turf.booleanPointInPolygon(turf.point([aircraft.lon, aircraft.lat]), turf.polygon(excludedAircraft.coordinates));
-//
-//     return goodAltitude;
-//   });
-//   console.log('\n--------------------');
-//   console.log(airspace.name);
-//   validAircraft.map(a => console.log(a.flight));
-//   return validAircraft.map(a => a.flight);
-// }
-//
-// function _computeAircraftInAirspace (aircraft, airspace) {
-//   return aircraft.filter(aircraft => {
-//     const aircraftCoordinates = [aircraft.lon, aircraft.lat];
-//     return turf.booleanPointInPolygon(turf.point(aircraftCoordinates), turf.polygon(airspace.coordinates));
-//   });
-// }
-//
-// function getCompute () {
-//   const landing = _compute(Object.values(this.currentValidAircraft), dca.approach());
-//   const takeoff = _compute(Object.values(this.currentValidAircraft), dca.departure());
-//   return {
-//     landing,
-//     takeoff
-//   }
-// }

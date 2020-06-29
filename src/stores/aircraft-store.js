@@ -3,7 +3,8 @@ const logger = require('./../lib/logger');
 const AIRCRAFT_SCHEMA = require('./../schemas/aircraft');
 const { rightPad } = require('./../utils');
 
-const MAX_DATA_AGE = 60000;
+// maximum age of new data that will be accepted into the store
+const MAX_DATA_AGE = 10000;
 
 module.exports = {
   init,
@@ -47,19 +48,21 @@ function init () {
  */
 function _purgeAircraft (store, maxAge) {
   const result = _.cloneDeep(store);
+  let newSize = Object.keys(store.aircraft).length;
   result.aircraft = _.pickBy(store.aircraft, function (aircraft) {
     const age = Date.now() - aircraft.updated;
     const tooOld = age > maxAge;
     if (tooOld) {
       result.purged.add(aircraft.hex);
+      newSize--;
       logger.store({
         message: _fmtMsg('purge aircraft'),
         store: store.name,
-        numAircraft: store.aircraft.length,
         hex: aircraft.hex,
         age,
         max: maxAge,
-        numPurged: result.purged.size
+        numPurged: result.purged.size,
+        newSize
       });
     }
     return !tooOld;
@@ -103,15 +106,21 @@ function shutdown () {
  */
 function setNewData (data) {
   _checkIfInitialized(this.initialized);
-  const nowMillis = _convertSecondsToMillis(data.now);
-  const age = Date.now() - nowMillis;
+  const clientNowMillis = _convertSecondsToMillis(data.now);
+  const now = Date.now();
+  const age = now - clientNowMillis;
   if (age > MAX_DATA_AGE) {
+    logger.store({
+      message: _fmtMsg('reject new data'),
+      clientTimestamp: new Date(clientNowMillis).toISOString(),
+      age: _convertMillisToSeconds(age).toFixed(2),
+    });
     return false;
   }
   logger.store({
     message: _fmtMsg('receive dump1090 data'),
     messages: data.messages,
-    clientTimestamp: new Date(nowMillis).toISOString()
+    clientTimestamp: new Date(clientNowMillis).toISOString()
   });
   // first, update and filter the data
   const newAircraftMap = _mapifyAircraftArray(data.aircraft.map(_setUpdated));
@@ -253,6 +262,10 @@ function _createStore (name) {
 
 function _convertSecondsToMillis (seconds) {
   return seconds * 1000;
+}
+
+function _convertMillisToSeconds (millis) {
+  return millis / 1000;
 }
 
 function _setUpdated (aircraft) {

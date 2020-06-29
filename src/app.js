@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const app = express();
 require('express-ws')(app);
-const aircraftRouter = require('./routes/index.js');
+const aircraftRouter = require('./routes/aircraft/index.js');
 const dca = require('./airspaces/airports/dca');
 
 // const createError = require('http-errors');

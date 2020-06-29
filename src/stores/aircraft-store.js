@@ -1,5 +1,5 @@
 const _ = require('lodash');
-const logger = require('./../lib/logger');
+const { store: logger } = require('./../lib/logger');
 const AIRCRAFT_SCHEMA = require('./../schemas/aircraft');
 const { rightPad } = require('./../utils');
 
@@ -10,7 +10,7 @@ module.exports = {
   init,
   setNewData,
   getRawAircraft,
-  getCurrentAircraft,
+  getValidAircraft,
   getExcludedAircraft,
   shutdown
 };
@@ -215,7 +215,7 @@ function getRawAircraft () {
   return _exportStore(this.currentRawAircraft);
 }
 
-function getCurrentAircraft () {
+function getValidAircraft () {
   _checkIfInitialized(this.initialized);
   return _exportStore(this.currentValidAircraft);
 }

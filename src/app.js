@@ -1,64 +1,47 @@
-require('dotenv').config();
 const express = require('express');
 const app = express();
+const { app: logger } = require('./lib/logger');
 require('express-ws')(app);
 const aircraftRouter = require('./routes/aircraft/index.js');
-const dca = require('./airspaces/airports/dca');
 
-// const createError = require('http-errors');
-// const path = require('path');
-// const cookieParser = require('cookie-parser');
-// const logger = require('morgan');
-
-// app.use(logger('dev'));
-// app.use(cookieParser());
-// app.use(express.static(path.join(__dirname, 'public')));
-
-// // catch 404 and forward to error handler
-// app.use(function(req, res, next) {
-//   next(createError(404));
-// });
-//
-// // error handler
-// app.use(function(err, req, res, next) {
-//   // set locals, only providing error in development
-//   res.locals.message = err.message;
-//   res.locals.error = req.app.get('env') === 'development' ? err : {};
-//
-//   res.status(err.status || 500);
-// });
-
-function normalizePort (val) {
-  const port = parseInt(val, 10);
-  if (isNaN(port)) {
-    // named pipe
-    return val;
-  }
-  if (port >= 0) {
-    // port number
-    return port;
-  }
-  return false;
-}
-
-async function startServer (store, logger) {
-  store.init(dca);
-  // routers
-  app.use('/aircraft', aircraftRouter(store));
+async function startServer (port, store, loggers) {
+  const normalizedPort = normalizePort(port);
+  logger.info('starting serve1090', { port: normalizedPort });
 
   app.locals = {
-    logger
+    loggers: {
+      ...loggers
+    }
   };
 
-  const port = normalizePort(process.env.PORT) || 5432;
+  store.init();
 
-  return app.listen(port, err => {
-    if (err) {
-      console.error(`Could not start serve1090: ${err}.`);
-      process.exit(1);
+  // setup request logger
+  app.use(require('./middleware/request-logger'));
+  // init routers
+  app.use('/aircraft', aircraftRouter(store));
+
+  try {
+    const server = await app.listen(normalizedPort);
+    logger.info('started serve1090', { port: normalizedPort });
+    return server;
+  } catch (err) {
+    logger.error('failed to start serve1090', { port: normalizedPort, error: err });
+    process.exit(1);
+  }
+}
+
+function normalizePort (port) {
+  const fallback = 5432;
+  try {
+    const normalizedPort = parseInt(port);
+    if (isNaN(normalizedPort)) {
+      return fallback;
     }
-    console.log(`Started serve1090 on port ${port}.`);
-  });
+    return normalizedPort;
+  } catch (_) {
+    return fallback;
+  }
 }
 
 module.exports = startServer;

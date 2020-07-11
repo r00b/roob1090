@@ -4,7 +4,7 @@ const AIRCRAFT_SCHEMA = require('./../schemas/aircraft');
 const {
   secondsToMillis,
   millisToSeconds
-} = require('./../utils');
+} = require('../lib/utils');
 
 // maximum age of new data that will be accepted into the store
 const MAX_DATA_AGE = 10000;

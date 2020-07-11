@@ -1,8 +1,8 @@
 const winston = require('winston');
-const { LoggerError } = require('../errors');
+const { LoggerError } = require('../lib/errors');
 require('winston-daily-rotate-file');
 const { combine, timestamp, json, printf, colorize } = winston.format;
-const { rightPad } = require('./../utils');
+const { rightPad } = require('../lib/utils');
 
 /**
  * Build a console transport with colorized formatting

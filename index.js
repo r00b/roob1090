@@ -1,30 +1,35 @@
+require('dotenv').config();
 const app = require('./src/app');
-const { createTerminus } = require('@godaddy/terminus');
+const store = require('./src/stores/aircraft-store');
+const loggers = require('./src/lib/logger');
+const { app: logger } = loggers;
 const _ = require('lodash');
-const logger = require('./src/lib/logger');
 
 let connections = [];
 
-const store = require('./src/stores/aircraft-store');
-
-app(store, logger).then(server => {
+app(process.env.PORT, store, loggers).then(server => {
+  // maintain array of current ws connections and purge them when they are closed
+  // so that server shutdown can proceed normally
   server.on('connection', connection => {
+    logger.info('connection established');
     connections.push(connection);
-    connection.on('close', () => connections = _.without(connections, connection));
+    connection.on('close', () => {
+      logger.info('connection closed');
+      connections = _.without(connections, connection);
+    });
   });
-  createTerminus(server, {
-    signals: ['SIGTERM', 'SIGINT'],
-    onSignal,
-    onShutdown: () => console.log('Exited serve1090.'),
-    timeout: 2500
-  });
+  process.on('SIGTERM', shutdown(server));
+  process.on('SIGINT', shutdown(server));
 });
 
-function onSignal () {
-  console.log('\nReceived kill signal, shutting down gracefully...');
-  // kill store jobs
-  store.shutdown();
-  // kill all connections
-  connections.forEach(curr => curr.end());
-  setTimeout(() => connections.forEach(curr => curr.destroy()), 2000);
+function shutdown () {
+  return () => {
+    logger.info('shutting down serve1090 gracefully...');
+    // kill store jobs
+    store.shutdown();
+    // kill all connections
+    connections.forEach(curr => curr.destroy());
+    logger.info('serve1090 shutdown complete');
+    process.exit(0);
+  };
 }

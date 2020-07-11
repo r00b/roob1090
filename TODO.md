@@ -26,3 +26,5 @@ function _printAircraft (aircraft) {
   console.log('-------------------------------');
 }
 ```
+
+* look into redis!

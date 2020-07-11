@@ -1,19 +1,36 @@
 const winston = require('winston');
+const { LoggerError } = require('../errors');
 require('winston-daily-rotate-file');
-const { combine, timestamp, json, colorize, simple } = winston.format;
+const { combine, timestamp, json, printf, colorize } = winston.format;
+const { rightPad } = require('./../utils');
 
-function consoleTransport (level) {
+/**
+ * Build a console transport with colorized formatting
+ *
+ * @param colors object defining colors for each level
+ * @returns console transport
+ */
+function consoleTransport (colors) {
   return new winston.transports.Console({
-    format: combine(
-      colorize(),
-      simple()
-    ),
-    level
+    format: printf(log => {
+      winston.addColors(colors);
+      const { level, message, service, ...props } = log;
+      const msg = `${colorize().colorize(level, `${service} (${level})`)}: ${message} ↴\n`;
+      return `${msg}${JSON.stringify(props)}`;
+    })
   });
 }
 
-function rotateFileTransport (dir, level) {
-  return new winston.transports.DailyRotateFile({
+/**
+ * Build two DailyRotateFile loggers - one for all logs, and another in a subdirectory
+ * for errors only
+ *
+ * @param dir the subdirectory where the logs are to be stored
+ * @param pad length of message to right-pad to (for readability)
+ * @returns array of file transports
+ */
+function rotateFileTransport (dir, pad = 35) {
+  const opts = {
     auditFile: `logs/${dir}/config.json`,
     dirname: `logs/${dir}`,
     filename: 'v%DATE%.log',
@@ -22,44 +39,58 @@ function rotateFileTransport (dir, level) {
     maxSize: '20m',
     maxFiles: '3d',
     createSymlink: true,
-    level,
-    format: combine(
-      simple()
-    )
-  });
+    format: printf(log => {
+      const { level, message, ...props } = log;
+      const prefix = rightPad(`${level}: ${message}`, pad);
+      return `${prefix}${JSON.stringify(props)}`;
+    })
+  };
+
+  const logs = new winston.transports.DailyRotateFile(opts);
+  const errors = new winston.transports.DailyRotateFile(Object.assign(opts, {
+    auditFile: `logs/${dir}/errors/config.json`,
+    dirname: `logs/${dir}/errors`,
+    level: 'error'
+  }));
+
+  return [logs, errors];
 }
 
+/**
+ * Build a logger object for a given service, which must be defined in opts
+ */
 function initializeLogger (opts) {
   // get args
   const {
-    service = 'serve1090',
+    service,
     console = true,
-    rotateFile = false,
-    dir,
-    level = 'info',
-    color = 'reset'
+    file = false,
+    color = 'reset',
+    pad
   } = opts;
+  if (!service) throw new LoggerError('no service defined for logger');
   // configure levels and colors
   const config = {
     levels: {
       error: 0,
       warn: 1,
-      [level]: 2
+      info: 2,
+      debug: 2
     },
     colors: {
       error: 'red',
       warn: 'yellow',
-      [level]: color
+      info: color,
+      debug: 'cyan'
     }
   };
-  winston.addColors(config.colors);
   // build transports
   const transports = [];
   if (console) {
-    transports.push(consoleTransport(level));
+    transports.push(consoleTransport(config.colors));
   }
-  if (rotateFile) {
-    transports.push(rotateFileTransport(dir, level));
+  if (file) {
+    transports.push(...rotateFileTransport(service, pad));
   }
   return winston.createLogger({
     levels: config.levels,
@@ -70,18 +101,23 @@ function initializeLogger (opts) {
 }
 
 module.exports = {
-  store: initializeLogger({
-    console: false,
-    rotateFile: true,
-    dir: 'aircraft-store',
-    level: 'store',
-    color: 'blue'
-  }),
-  router: initializeLogger({
+  app: initializeLogger({
+    service: 'app',
     console: true,
-    rotateFile: true,
-    dir: 'aircraft-router',
-    level: 'router',
-    color: 'green'
+    file: true,
+    color: 'magenta'
+  }),
+  request: initializeLogger({
+    service: 'request',
+    console: true,
+    file: true,
+    color: 'green',
+    pad: 30
+  }),
+  store: initializeLogger({
+    service: 'store',
+    console: true,
+    file: true,
+    color: 'blue'
   })
 };

@@ -1,7 +1,10 @@
 const _ = require('lodash');
 const { store: logger } = require('./../lib/logger');
 const AIRCRAFT_SCHEMA = require('./../schemas/aircraft');
-const { rightPad } = require('./../utils');
+const {
+  secondsToMillis,
+  millisToSeconds
+} = require('./../utils');
 
 // maximum age of new data that will be accepted into the store
 const MAX_DATA_AGE = 10000;
@@ -30,9 +33,7 @@ function init () {
     ];
   } else throw new Error('store already initialized');
   this.initialized = true;
-  logger.store({
-    message: _fmtMsg('initialize store')
-  });
+  logger.info('initialize store');
 }
 
 // JOBS
@@ -55,8 +56,8 @@ function _purgeAircraft (store, maxAge) {
     if (tooOld) {
       result.purged.add(aircraft.hex);
       newSize--;
-      logger.store({
-        message: _fmtMsg('purge aircraft'),
+      logger.info({
+        message: 'purge aircraft',
         store: store.name,
         hex: aircraft.hex,
         age,
@@ -79,8 +80,8 @@ function _emptyPurgeList (...store) {
   store.forEach(s => {
     if (s.purged.size) {
       s.purged.clear();
-      logger.store({
-        message: _fmtMsg('empty purge list'),
+      logger.info({
+        message: 'empty purge list',
         store: s.name
       });
     }
@@ -91,9 +92,7 @@ function _emptyPurgeList (...store) {
 
 function shutdown () {
   this.jobs.map(clearInterval);
-  logger.store({
-    message: _fmtMsg('shutdown store')
-  });
+  logger.info('shutdown store');
 }
 
 // CREATE
@@ -106,19 +105,19 @@ function shutdown () {
  */
 function setNewData (data) {
   _checkIfInitialized(this.initialized);
-  const clientNowMillis = _convertSecondsToMillis(data.now);
+  const clientNowMillis = secondsToMillis(data.now);
   const now = Date.now();
   const age = now - clientNowMillis;
   if (age > MAX_DATA_AGE) {
-    logger.store({
-      message: _fmtMsg('reject new data'),
+    logger.info({
+      message: 'reject new data',
       clientTimestamp: new Date(clientNowMillis).toISOString(),
-      age: _convertMillisToSeconds(age).toFixed(2),
+      age: millisToSeconds(age).toFixed(2)
     });
     return false;
   }
-  logger.store({
-    message: _fmtMsg('receive dump1090 data'),
+  logger.info({
+    message: 'receive dump1090 data',
     messages: data.messages,
     clientTimestamp: new Date(clientNowMillis).toISOString()
   });
@@ -155,8 +154,8 @@ function _mergeIntoStore (store, newMap) {
       logArray = added;
       if (store.purged.has(hex)) {
         store.purged.delete(hex);
-        logger.store({
-          message: _fmtMsg('add purged aircraft'),
+        logger.info({
+          message: 'add purged aircraft',
           hex,
           seen: aircraft.seen
         });
@@ -167,14 +166,14 @@ function _mergeIntoStore (store, newMap) {
     return acc;
   }, _.cloneDeep(store));
   const size = Object.keys(mergedStore.aircraft).length;
-  logger.store({
-    message: _fmtMsg('add new aircraft'),
+  logger.info({
+    message: 'add new aircraft',
     store: store.name,
     numAdded: added.length,
     newSize: size
   });
-  logger.store({
-    message: _fmtMsg('update existing aircraft'),
+  logger.info({
+    message: 'update existing aircraft',
     store: store.name,
     numUpdated: updated.length,
     size
@@ -260,14 +259,6 @@ function _createStore (name) {
   };
 }
 
-function _convertSecondsToMillis (seconds) {
-  return seconds * 1000;
-}
-
-function _convertMillisToSeconds (millis) {
-  return millis / 1000;
-}
-
 function _setUpdated (aircraft) {
   aircraft.updated = Date.now();
   return aircraft;
@@ -283,8 +274,4 @@ function _mapifyAircraftArray (aircraftArray = []) {
     acc[aircraft.hex] = aircraft;
     return acc;
   }, {});
-}
-
-function _fmtMsg (msg) {
-  return rightPad(msg, 25);
 }

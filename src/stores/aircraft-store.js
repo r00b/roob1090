@@ -5,6 +5,10 @@ const {
   secondsToMillis,
   millisToSeconds
 } = require('../lib/utils');
+const {
+  StoreError,
+  StaleDataError
+} = require('../lib/errors');
 
 // maximum age of new data that will be accepted into the store
 const MAX_DATA_AGE = 10000;
@@ -31,7 +35,11 @@ function init () {
       setInterval(() => this.currentRawAircraft = _purgeAircraft(this.currentRawAircraft, 60000), 10000),
       setInterval(() => _emptyPurgeList(this.currentRawAircraft, this.currentValidAircraft), 1800000)
     ];
-  } else throw new Error('store already initialized');
+  } else {
+    shutdown();
+    init();
+    logger.info('store re-initialized');
+  }
   this.initialized = true;
   logger.info('initialize store');
 }
@@ -92,6 +100,7 @@ function _emptyPurgeList (...store) {
 
 function shutdown () {
   this.jobs.map(clearInterval);
+  this.initialized = false;
   logger.info('shutdown store');
 }
 
@@ -114,10 +123,10 @@ function setNewData (data) {
       clientTimestamp: new Date(clientNowMillis).toISOString(),
       age: millisToSeconds(age).toFixed(2)
     });
-    return false;
+    throw new StaleDataError(millisToSeconds(age))
   }
   logger.info({
-    message: 'receive dump1090 data',
+    message: 'accept dump1090 data',
     messages: data.messages,
     clientTimestamp: new Date(clientNowMillis).toISOString()
   });
@@ -245,7 +254,7 @@ function _exportStore (store) {
 // UTILS
 
 function _checkIfInitialized (initialized) {
-  if (!initialized) throw new Error('store not initialized');
+  if (!initialized) throw new StoreError('store not initialized');
 }
 
 /**

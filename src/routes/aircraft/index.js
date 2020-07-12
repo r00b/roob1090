@@ -1,102 +1,137 @@
 const express = require('express');
-const pumpId = process.env.SERVE1090_SECRET; // TODO this shouldn't be here
 const { request: logger } = require('./../../lib/logger');
-const {
-  secondsToMillis,
-  tryCatch
-} = require('../../lib/utils');
+const { tryCatch } = require('../../lib/utils');
+const { v4: uuid } = require('uuid');
 const {
   InvalidClientError,
-  StaleDataError
+  StaleDataError,
+  StoreError
 } = require('../../lib/errors');
 
-module.exports = (store) => {
+module.exports = (store, secret) => {
   return new express.Router()
-    .ws('/pump', pump(store))
+    .ws('/pump', pump(store, secret))
     .get('/raw', getRaw(store))
     .get('/valid', getValid(store))
     .get('/excluded', getExcluded(store))
     .use(errorHandler);
 };
 
-function pump (store) {
-  return (ws, req, next) =>
-    ws.on('message', data => tryCatch(() => parseAndSetData(store, data), next));
+/**
+ * WS handler for parsing web socket message events into data
+ * and passing them to the aircraft store
+ */
+function pump (store, secret) {
+  return (ws, req, next) => {
+    ws.on('message', data =>
+      tryCatch(
+        () => {
+          // web sockets don't exactly "work" the way that express middleware
+          // expects them to, so we request log in the listener itself
+          ws.locals = {
+            requestLogger: logger.child({ requestId: uuid() }),
+            start: Date.now()
+          };
+          ws.locals.requestLogger.info('ws message started');
+
+          parseAndSetData(store, secret, data);
+        },
+        next,
+        () => {
+          ws.locals.requestLogger.info('ws message completed', {
+            elapsedTime: Date.now() - ws.locals.start
+          });
+        }));
+  };
 }
 
-
-// TODO handle errors on these
+/**
+ * GET raw parsed data store of aircraft
+ */
 function getRaw (store) {
   return (req, res, next) => {
-    // logger.router({
-    //   message: 'get raw aircraft',
-    //   verb: 'GET',
-    //   status: 200
-    // });
     return res.status(200).json(store.getRawAircraft());
   };
 }
 
+/**
+ * GET valid/filtered aircraft
+ */
 function getValid (store) {
   return (req, res, next) => {
-    // logger.router({
-    //   message: 'get valid aircraft',
-    //   verb: 'GET',
-    //   status: 200
-    // });
     return res.status(200).json(store.getValidAircraft());
   };
 }
 
+/**
+ * GET excluded/rejected aircraft
+ */
 function getExcluded (store) {
   return (req, res, next) => {
-    // logger.router({ // TODO requestlogger
-    //   message: 'get excluded aircraft',
-    //   verb: 'GET',
-    //   status: 200
-    // });
     return res.status(200).json(store.getExcludedAircraft());
   };
 }
 
-
-
-
-
-function parseAndSetData (store, data) {
+/**
+ * Convert the ws data to JSON, validate it against the secret, and pass
+ * it to the store
+ *
+ * @param store aircraft store
+ * @param secret serve1090's configured secret
+ * @param data raw ws message
+ */
+function parseAndSetData (store, secret, data) {
   const json = JSON.parse(data);
-  if (pumpId !== json.secret) {
-    throw new InvalidClientError(pumpId);
+  if (!json.secret || secret !== json.secret) {
+    throw new InvalidClientError(json.secret);
   }
-  const clientTime = new Date(secondsToMillis(json.now)).toISOString();
-  if (store.setNewData(json)) {
-    // logger.router({
-    //   message: 'accept new data',
-    //   clientTime
-    // });
-  } else {
-    throw new StaleDataError(clientTime); // log age in sec
-  }
+  store.setNewData(json);
 }
 
 /**
  * Handle errors thrown at any point in the request
  */
 function errorHandler (err, req, res, next) {
+  const { message, detail, status } = parseError(err);
+  logger.error(message, { detail });
+  if (status) {
+    res.status(status).json({
+      status,
+      message,
+      detail
+    });
+  }
+}
+
+/**
+ * Generate an error hash for each thrown error object
+ * @param err thrown error object
+ * @returns error hash with a message, detail, and optionally a status if it
+ * should be returned as an HTTP response
+ */
+function parseError (err) {
   switch (err.constructor) {
     case StaleDataError:
-      logger.error('Stale data', {
+      return {
+        message: 'ws: stale data',
         detail: err.message
-      });
-      break;
+      };
     case InvalidClientError:
-      logger.error('Invalid client', {
+      return {
+        message: 'ws: invalid client',
         detail: err.message
-      });
-      break;
+      };
+    case StoreError:
+      return {
+        message: 'aircraft store error',
+        detail: err.message,
+        status: 503
+      };
     default:
-      logger.error('Unknown error', {
-        detail: err.message
-      });
+      return {
+        message: 'internal server error',
+        detail: err.message,
+        status: 500
+      };
   }
 }

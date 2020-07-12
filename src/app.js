@@ -17,9 +17,11 @@ async function startServer (port, store, loggers) {
   store.init();
 
   // setup request logger
-  app.use(require('./middleware/request-logger'));
+  app.use(require('./middleware/http-request-logger'));
+
   // init routers
-  app.use('/aircraft', aircraftRouter(store));
+  const secret = getSecret(process.env.SERVE1090_SECRET);
+  app.use('/aircraft', aircraftRouter(store, secret));
 
   try {
     const server = await app.listen(normalizedPort);
@@ -42,6 +44,10 @@ function normalizePort (port) {
   } catch (_) {
     return fallback;
   }
+}
+
+function getSecret (secret) {
+  return secret.length ? secret : false;
 }
 
 module.exports = startServer;

@@ -17,10 +17,13 @@ function millisToSeconds (millis) {
   return millis / 1000;
 }
 
-function tryCatch (tryFunc, catchFunc) {
+function tryCatch (tryFunc, catchFunc, finallyFunc = () => {
+}) {
   try {
     return tryFunc();
   } catch (err) {
     catchFunc(err);
+  } finally {
+    finallyFunc();
   }
 }

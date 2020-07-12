@@ -16,14 +16,19 @@ class StaleDataError extends Error {
   }
 
   get message () {
-    return `client data rejected because of age (${this._clientNowISOString})`;
+    return `client data rejected because of age (${this._clientNowISOString}s)`;
   }
 }
 
-class LoggerError extends Error {}
+class LoggerError extends Error {
+}
+
+class StoreError extends Error {
+}
 
 module.exports = {
   InvalidClientError,
   StaleDataError,
-  LoggerError
+  LoggerError,
+  StoreError
 };

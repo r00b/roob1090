@@ -7,6 +7,8 @@ const _ = require('lodash');
 
 let connections = [];
 
+logger.info('starting serve1090');
+
 app(process.env.PORT, store, loggers).then(server => {
   // maintain array of current ws connections and purge them when they are closed
   // so that server shutdown can proceed normally
@@ -24,7 +26,7 @@ app(process.env.PORT, store, loggers).then(server => {
 
 function shutdown () {
   return () => {
-    logger.info('shutting down serve1090 gracefully...');
+    logger.info('received shutdown signal');
     // kill store jobs
     store.shutdown();
     // kill all connections

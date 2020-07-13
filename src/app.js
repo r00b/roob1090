@@ -6,7 +6,6 @@ const aircraftRouter = require('./routes/aircraft/index.js');
 
 async function startServer (port, store, loggers) {
   const normalizedPort = normalizePort(port);
-  logger.info('starting serve1090', { port: normalizedPort });
 
   app.locals = {
     loggers: {

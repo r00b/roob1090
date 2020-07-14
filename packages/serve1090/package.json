@@ -1,0 +1,30 @@
+{
+  "name": "serve1090",
+  "version": "1.0.0",
+  "private": true,
+  "description": "WebSocket server for receiving dump1090 data.",
+  "repository": "https://github.com/robertsteilberg/serve1090/",
+  "license": "MIT",
+  "author": "Robert Steilberg <rsteilberg@gmail.com>",
+  "scripts": {
+    "start": "yarn && node index.js",
+    "start:pm2": "pm2 start index.js",
+    "debug": "yarn && nodemon --inspect index.js --ignore logs",
+    "purge": "rm -rf logs/*"
+  },
+  "dependencies": {
+    "@hapi/joi": "^17.1.1",
+    "@turf/turf": "^5.1.6",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "express-ws": "^4.0.0",
+    "lodash": "^4.17.15",
+    "pm2": "^4.4.0",
+    "uuid": "^8.2.0",
+    "winston": "^3.2.1",
+    "winston-daily-rotate-file": "^4.4.2"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.2"
+  }
+}

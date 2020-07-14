@@ -1,6 +1,6 @@
 const _ = require('lodash');
-const { store: logger } = require('./../lib/logger');
-const AIRCRAFT_SCHEMA = require('./../schemas/aircraft');
+const { store: logger } = require('../lib/logger');
+const AIRCRAFT_SCHEMA = require('./schemas');
 const {
   secondsToMillis,
   millisToSeconds
@@ -123,7 +123,7 @@ function setNewData (data) {
       clientTimestamp: new Date(clientNowMillis).toISOString(),
       age: millisToSeconds(age).toFixed(2)
     });
-    throw new StaleDataError(millisToSeconds(age))
+    throw new StaleDataError(millisToSeconds(age));
   }
   logger.info({
     message: 'accept dump1090 data',

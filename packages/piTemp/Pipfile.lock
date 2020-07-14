@@ -1,0 +1,38 @@
+{
+    "_meta": {
+        "hash": {
+            "sha256": "07b9643e173a3fab08d9c63f1869e8695970f1c05a6c0cee10c71a7ff3802fa7"
+        },
+        "pipfile-spec": 6,
+        "requires": {
+            "python_version": "3.8"
+        },
+        "sources": [
+            {
+                "name": "pypi",
+                "url": "https://pypi.org/simple",
+                "verify_ssl": true
+            }
+        ]
+    },
+    "default": {
+        "blynklib": {
+            "hashes": [
+                "sha256:066c5c25e2d43a5319cc3433ba525fd8a08916231f22920f39c1f0f0332db250",
+                "sha256:b077e1f86848d3b5c96dd824407dcd705de58b85fb2737d790f0be85574583be",
+                "sha256:cfaeb612c332d1f81ab022bf4b78fc57d9887051da695a8b9df5ffe8eea58cba"
+            ],
+            "index": "pypi",
+            "version": "==0.2.6"
+        },
+        "python-dotenv": {
+            "hashes": [
+                "sha256:8c10c99a1b25d9a68058a1ad6f90381a62ba68230ca93966882a4dbc3bc9c33d",
+                "sha256:c10863aee750ad720f4f43436565e4c1698798d763b63234fb5021b6c616e423"
+            ],
+            "index": "pypi",
+            "version": "==0.14.0"
+        }
+    },
+    "develop": {}
+}

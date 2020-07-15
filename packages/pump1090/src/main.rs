@@ -41,13 +41,15 @@ fn main() -> () {
     "WS_ENDPOINT",
     matches.value_of("endpoint"),
   );
-  let device_id: String = unwrap_arg("undefined", "SERVE1090_SECRET", matches.value_of("secret"));
+  let device_id: String = unwrap_arg("undefined", "DEVICE_ID", matches.value_of("device-id"));
+  let serve1090_secret: String = unwrap_arg("undefined", "SERVE1090_SECRET", matches.value_of("serve1090-secret"));
 
+  // todo throw if no serve secret
   println!("Initializing pump1090...");
   println!("Device id: {}", device_id);
   println!("Dumpfile path: {}", filename);
   println!("Websocket endpoint: {}", endpoint);
-  init_pump(&device_id, &filename, &endpoint);
+  init_pump(&device_id, &serve1090_secret, &filename, &endpoint);
   println!("pump1090 terminated.")
 }
 
@@ -63,10 +65,15 @@ fn unwrap_arg(default_val: &str, env_var_name: &str, cli_arg: Option<&str>) -> S
 /// the timer that watches the dump file; ininitely recurses so that, if the WebSocket
 /// connection is broken, it will attempt to re-establish the WebSocket connection
 #[allow(unconditional_recursion)]
-fn init_pump(device_id: &str, filename: &str, endpoint: &str) -> () {
+fn init_pump(
+  device_id: &str,
+  serve1090_secret: &str,
+  filename: &str,
+  endpoint: &str
+) -> () {
   let socket = init_pipe(endpoint, 1);
-  init_dump_timer(device_id, filename, socket).unwrap_or_else(handle_error);
-  init_pump(device_id, filename, endpoint); // go forever!
+  init_dump_timer(device_id, serve1090_secret, filename, socket).unwrap_or_else(handle_error);
+  init_pump(device_id, serve1090_secret, filename, endpoint); // go forever!
   ()
 }
 
@@ -94,6 +101,7 @@ fn init_pipe(endpoint: &str, attempt: isize) -> WebSocket<AutoStream> {
 /// read the dump file every n seconds and pump it to the WebSocket endpoint
 fn init_dump_timer(
   device_id: &str,
+  serve1090_secret: &str,
   filename: &str,
   mut socket: WebSocket<AutoStream>,
 ) -> Result<(), Box<dyn Error>> {
@@ -101,7 +109,7 @@ fn init_dump_timer(
   print!("Run count: {}", run_count);
   io::stdout().flush().unwrap();
   loop {
-    let data = read_json(device_id, filename)?;
+    let data = read_json(device_id, serve1090_secret, filename)?;
     match pump_data(socket, data) {
       Ok(s) => socket = s, // successfully sent data
       Err(_) => {
@@ -118,14 +126,19 @@ fn init_dump_timer(
 
 /// read the input file, serialize it and attach metadata, and then
 /// convert it back to a string so it can be sent through WebSocket
-fn read_json(device_id: &str, filename: &str) -> Result<String, Box<dyn Error>> {
+fn read_json(
+  device_id: &str,
+  serve1090_secret: &str,
+  filename: &str
+) -> Result<String, Box<dyn Error>> {
   // first, read the input file to string
   let mut file = File::open(filename)?;
   let mut contents = String::new();
   file.read_to_string(&mut contents)?;
   // then, serialize it
   let mut data: Value = serde_json::from_str(&contents)?;
-  data["secret"] = device_id.into();
+  data["device_id"] = device_id.into();
+  data["secret"] = serve1090_secret.into();
   let payload: String = serde_json::to_string(&data)?;
   Ok(payload)
 }

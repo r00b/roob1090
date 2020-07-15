@@ -6,13 +6,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-READ_TEMP_COMMAND = "vcgencmd measure_temp"
-TIMEOUT = 30  # how often to take a temp reading (seconds)
-WARN_TEMP = 80.0
-CRITICAL_TEMP = 85.00
-NOTIFY = False
+READ_TEMP_COMMAND = os.getenv("OS_TEMP")
+INTERVAL = int(os.getenv("INTERVAL"))
+WARN_TEMP = float(os.getenv("WARN_TEMP"))
+CRITICAL_TEMP = float(os.getenv("CRITICAL_TEMP"))
 
 blynk = blynklib.Blynk(os.getenv("BLYNK_AUTH"))
+notify = False
 
 
 # take temp measurement and coerce it to float
@@ -27,38 +27,39 @@ def blynk_loop():
     while True:
         blynk.run()
         blynk.virtual_sync(1)  # sync V1 since it's the only control
-        blynk.virtual_write(2, 255 if NOTIFY else 0)  # 255 for LED on, 0 for LED off
+        blynk.virtual_write(2, 255 if notify else 0)  # 255 for LED on, 0 for LED off
         time.sleep(1)
 
 
 # handle client setting to enable or disable notifications
-@blynk.handle_event('write V1')
+@blynk.handle_event("write V1")
 def write_virtual_pin_handler(pin, value):
     # avert your eyes
-    global NOTIFY
-    NOTIFY = bool(int(value[0]))
+    global notify
+    notify = bool(int(value[0]))
 
 
 # take core temp measurement, push results to virtual pins, and notify
 # if necessary
 def measure_and_notify():
     core_temp = measure_temp()
-    print('Core temp: ' + str(core_temp))
+    print("Core temp: {}".format(core_temp), end="\r"),
     blynk.virtual_write(0, core_temp)
-    global NOTIFY
-    if NOTIFY and core_temp >= WARN_TEMP:
+    global notify
+    if notify and core_temp >= WARN_TEMP:
         blynk.notify("roob1090 core temp warning: {}°C".format(core_temp))
     if core_temp >= CRITICAL_TEMP:
         blynk.notify("roob1090 CRITICAL CORE TEMP ALERT: {}°C".format(core_temp))
 
 
-# start the blynk thread, start the main loop that runs every TIMEOUT seconds
+# start the blynk thread, start the main loop that runs every INTERVAL seconds
 def main():
     blynk.run()
     threading.Thread(target=blynk_loop).start()
+    print("Running piTemp with interval={}s".format(INTERVAL))
     while True:
         measure_and_notify()
-        time.sleep(TIMEOUT)
+        time.sleep(INTERVAL)
 
 
 if __name__ == "__main__":

@@ -4,7 +4,13 @@ piTemp is a simple Python script for monitoring the core temperature of a Raspbe
 
 ### Installation
 
+#### In your shell
+1. Install `python3` and `pip` via `brew`, `apt-get`, or [online](https://www.python.org/downloads/) 
+2. `pip install python-dotenv blynklib`
+4. `python3 src/monitor.py`
+
+#### pipenv
 1. `brew install pipenv` or `sudo apt-get install pipenv` or `pip install pipenv`
 2. `pipenv shell`
 3. `pipenv install`
-4. `python3 monitor.py`
+4. `python3 src/monitor.py`

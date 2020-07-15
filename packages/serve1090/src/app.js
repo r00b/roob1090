@@ -1,6 +1,7 @@
 const express = require('express');
 const app = express();
 const { app: logger } = require('./lib/logger');
+const _ = require('lodash');
 require('express-ws')(app);
 const aircraftRouter = require('./routes/aircraft/index.js');
 
@@ -19,7 +20,7 @@ async function startServer (port, store, loggers) {
   app.use(require('./middleware/http-request-logger'));
 
   // init routers
-  const secret = getSecret(process.env.SERVE1090_SECRET);
+  const secret = getSecret(process.env.SECRET);
   app.use('/aircraft', aircraftRouter(store, secret));
 
   try {
@@ -46,7 +47,7 @@ function normalizePort (port) {
 }
 
 function getSecret (secret) {
-  return secret.length ? secret : false;
+  return _.get(secret, 'length') ? secret : false;
 }
 
 module.exports = startServer;

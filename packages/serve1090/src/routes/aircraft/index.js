@@ -1,6 +1,5 @@
 const express = require('express');
 const { request: logger } = require('./../../lib/logger');
-const { tryCatch } = require('../../lib/utils');
 const { v4: uuid } = require('uuid');
 const {
   InvalidClientError,
@@ -10,7 +9,7 @@ const {
 
 module.exports = (store, secret) => {
   return new express.Router()
-    .ws('/pump', pump(store, secret))
+    .ws('/pump', pump(store, secret), errorHandler)
     .get('/raw', getRaw(store))
     .get('/valid', getValid(store))
     .get('/excluded', getExcluded(store))
@@ -23,25 +22,45 @@ module.exports = (store, secret) => {
  */
 function pump (store, secret) {
   return (ws, req, next) => {
-    ws.on('message', data =>
-      tryCatch(
-        () => {
-          // web sockets don't exactly "work" the way that express middleware
-          // expects them to, so we request log in the listener itself
-          ws.locals = {
-            requestLogger: logger.child({ requestId: uuid() }),
-            start: Date.now()
-          };
-          ws.locals.requestLogger.info('ws message started');
+    ws.on('message', data => {
+      try {
+        // web sockets don't exactly "work" the way that express middleware
+        // expects them to, so we request log in the listener itself
+        ws.locals = {
+          requestLogger: logger.child({ requestId: uuid() }),
+          start: Date.now()
+        };
+        ws.locals.requestLogger.info('ws message started');
 
-          parseAndSetData(store, secret, data);
-        },
-        next,
-        () => {
-          ws.locals.requestLogger.info('ws message completed', {
-            elapsedTime: Date.now() - ws.locals.start
-          });
-        }));
+        parseAndSetData(store, secret, data);
+      } catch (err) {
+        ws.locals.requestLogger.error(err.message, { detail: err.detail });
+      } finally {
+        ws.locals.requestLogger.info('ws message completed', {
+          elapsedTime: Date.now() - ws.locals.start
+        });
+      }
+    });
+
+    // ws.on('message', data =>
+    //   tryCatch(
+    //     () => {
+    //       // web sockets don't exactly "work" the way that express middleware
+    //       // expects them to, so we request log in the listener itself
+    //       ws.locals = {
+    //         requestLogger: logger.child({ requestId: uuid() }),
+    //         start: Date.now()
+    //       };
+    //       ws.locals.requestLogger.info('ws message started');
+    //
+    //       parseAndSetData(store, secret, data);
+    //     },
+    //     next,
+    //     () => {
+    //       ws.locals.requestLogger.info('ws message completed', {
+    //         elapsedTime: Date.now() - ws.locals.start
+    //       });
+    //     }));
   };
 }
 
@@ -93,7 +112,7 @@ function parseAndSetData (store, secret, data) {
  */
 function errorHandler (err, req, res, next) {
   const { message, detail, status } = parseError(err);
-  logger.error(message, { detail });
+  res.locals.requestLogger.error(message, { detail });
   if (status) {
     res.status(status).json({
       status,
@@ -111,7 +130,7 @@ function errorHandler (err, req, res, next) {
  */
 function parseError (err) {
   switch (err.constructor) {
-    case StaleDataError:
+    case StaleDataError: // TODO do we need this
       return {
         message: 'ws: stale data',
         detail: err.message

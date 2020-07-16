@@ -106,7 +106,7 @@ fn init_dump_timer(
   mut socket: WebSocket<AutoStream>,
 ) -> Result<(), Box<dyn Error>> {
   let mut run_count: isize = 1;
-  print!("Run count: {}", run_count);
+  print!("Pump count: {}", run_count);
   io::stdout().flush().unwrap();
   loop {
     let data = read_json(device_id, serve1090_secret, filename)?;

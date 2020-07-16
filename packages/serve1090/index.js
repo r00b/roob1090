@@ -30,7 +30,10 @@ function shutdown () {
     // kill store jobs
     store.shutdown();
     // kill all connections
-    connections.forEach(curr => curr.destroy());
+    connections.forEach(curr => {
+      curr.end();
+      curr.destroy();
+    });
     logger.info('serve1090 shutdown complete');
     process.exit(0);
   };

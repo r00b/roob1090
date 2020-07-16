@@ -1,8 +1,7 @@
 module.exports = {
   rightPad,
   secondsToMillis,
-  millisToSeconds,
-  tryCatch
+  millisToSeconds
 };
 
 function rightPad (str, len) {

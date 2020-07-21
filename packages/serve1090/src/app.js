@@ -3,7 +3,8 @@ const app = express();
 const { app: logger } = require('./lib/logger');
 const _ = require('lodash');
 require('express-ws')(app);
-const aircraftRouter = require('./routes/aircraft/index.js');
+const aircraftRouter = require('./routes/aircraft/index');
+const airspaceService = require('./services/airspace-service');
 
 async function startServer (port, store, loggers) {
   const normalizedPort = normalizePort(port);
@@ -15,6 +16,8 @@ async function startServer (port, store, loggers) {
   };
 
   store.init();
+  const dca = require('./airspaces/airports/dca');
+  airspaceService.init(dca);
 
   // setup request logger
   app.use(require('./middleware/http-request-logger'));

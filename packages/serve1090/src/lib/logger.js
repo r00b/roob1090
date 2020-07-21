@@ -103,20 +103,27 @@ function initializeLogger (opts) {
 module.exports = {
   app: initializeLogger({
     service: 'app',
-    console: true,
+    console: false,
     file: true,
     color: 'magenta'
   }),
   request: initializeLogger({
     service: 'request',
-    console: true,
+    console: false,
     file: true,
     color: 'green',
     pad: 30
   }),
+  services: initializeLogger({
+    service: 'airspace-service',
+    console: true,
+    file: true,
+    color: 'cyan',
+    pad: 30
+  }),
   store: initializeLogger({
     service: 'store',
-    console: true,
+    console: false,
     file: true,
     color: 'blue'
   })

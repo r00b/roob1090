@@ -31,7 +31,6 @@ function pump (store, secret) {
           start: Date.now()
         };
         ws.locals.requestLogger.info('ws message started');
-
         parseAndSetData(store, secret, data);
       } catch (err) {
         ws.locals.requestLogger.error(err.message, { detail: err.detail });
@@ -41,26 +40,6 @@ function pump (store, secret) {
         });
       }
     });
-
-    // ws.on('message', data =>
-    //   tryCatch(
-    //     () => {
-    //       // web sockets don't exactly "work" the way that express middleware
-    //       // expects them to, so we request log in the listener itself
-    //       ws.locals = {
-    //         requestLogger: logger.child({ requestId: uuid() }),
-    //         start: Date.now()
-    //       };
-    //       ws.locals.requestLogger.info('ws message started');
-    //
-    //       parseAndSetData(store, secret, data);
-    //     },
-    //     next,
-    //     () => {
-    //       ws.locals.requestLogger.info('ws message completed', {
-    //         elapsedTime: Date.now() - ws.locals.start
-    //       });
-    //     }));
   };
 }
 

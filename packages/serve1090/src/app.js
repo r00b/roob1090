@@ -1,28 +1,29 @@
 const express = require('express');
 const app = express();
-const { app: logger } = require('./lib/logger');
+const loggers = require('./lib/logger');
+const logger = loggers.get('app');
 const _ = require('lodash');
 require('express-ws')(app);
 const aircraftRouter = require('./routes/aircraft/index');
-const airspaceService = require('./services/airspace-service');
+const RedisService = require('./services/redis-service');
 
-async function startServer (port, store, loggers) {
+async function startServer (port) {
   const normalizedPort = normalizePort(port);
 
+  // configure request logger
   app.locals = {
-    loggers: {
-      ...loggers
-    }
+    logger: loggers.get('request')
   };
-
-  store.init();
-  const dca = require('./airspaces/airports/dca');
-  airspaceService.init(dca);
-
-  // setup request logger
   app.use(require('./middleware/http-request-logger'));
 
-  // init routers
+  // configure redis client
+  const redis = new RedisService();
+  const store = require('../src/stores/redis-store')(redis);
+
+  // kick off the jobs
+  require('./services/worker-service')();
+
+  // set up routers
   const secret = getSecret(process.env.SECRET);
   app.use('/aircraft', aircraftRouter(store, secret));
 

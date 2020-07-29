@@ -384,10 +384,10 @@ braces@~3.0.2:
   dependencies:
     fill-range "^7.0.1"
 
-bree@^1.1.20:
-  version "1.1.20"
-  resolved "https://registry.yarnpkg.com/bree/-/bree-1.1.20.tgz#17c660ce6440a9ce9a3892f78554f104fde451a1"
-  integrity sha512-6fJqPtL/K2o4x/3IROFf+jCXk2TRWakwN1kkYVLaas8N6Q1DOHYuEGhIik97CKgTZQ2PBenwXtVOKdDZi2C6zQ==
+bree@^1.1.21:
+  version "1.1.21"
+  resolved "https://registry.yarnpkg.com/bree/-/bree-1.1.21.tgz#b09347964b3cce6876ff6ad3486d7921ac25a579"
+  integrity sha512-t5H/F+wIsqcq0PSrp3J5fTJzu9UlqcvuHl1y8oCjev2AQ3pN4H3Keb2MLDO7JDwz3sYcKqM2jlbdcvC9svcTHQ==
   dependencies:
     boolean "^3.0.1"
     combine-errors "^3.0.3"

@@ -40,11 +40,11 @@ function setNewData (client, data) {
     });
     throw new StaleDataError(millisToSeconds(age));
   }
-  logger.info({
-    message: 'accept dump1090 data',
-    messages: data.messages,
-    clientTimestamp: new Date(clientNowMillis).toISOString()
-  });
+  // logger.info({
+  //   message: 'accept dump1090 data',
+  //   messages: data.messages,
+  //   clientTimestamp: new Date(clientNowMillis).toISOString()
+  // });
   // first, update and filter the data
   const newAircraftMap = mapifyAircraftArray(data.aircraft.map(setUpdated));
   return validateAndWrite(client, newAircraftMap);

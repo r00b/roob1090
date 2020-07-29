@@ -14,6 +14,18 @@ class RedisService {
     this._pipeline = this.redis.pipeline();
   }
 
+  set (key, value) {
+    return this.redis.set(key, value);
+  }
+
+  setex (key, value, ex) {
+    return this.redis.setex(key, ex, value);
+  }
+
+  get (key) {
+    return this.redis.get(key);
+  }
+
   hset (set, value) {
     return this.redis.hset(set, value);
   }
@@ -48,6 +60,18 @@ class RedisService {
     return this.call('EXPIREMEMBER', key, field, ex);
   }
 
+  async hgetJson (key, field) {
+    const res = await this.redis.hget(key, field);
+    if (res) {
+      try {
+        return JSON.parse(res);
+      } catch (e) {
+        return undefined;
+      }
+    }
+  }
+
+  // TODO try catch
   async hgetAllJson (key) {
     const rawHash = await this.redis.hgetall(key);
     return Object.entries(rawHash).reduce((acc, [key, value]) => {

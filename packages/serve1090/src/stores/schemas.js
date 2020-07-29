@@ -23,8 +23,8 @@ const AIRCRAFT_SCHEMA = Joi1090.object({
   flight: Joi1090.string().trim().required(), // callsign
   lat: Joi1090.number().required(), // latitude in decimal degrees
   lon: Joi1090.number().required(), // longitude in decimal degrees
-  alt_baro: Joi1090.altitude().optional(), // barometric altitude (feet), which may be the string 'ground'
-  track: Joi1090.number().optional(), // true track over ground (degrees 0-359)
+  alt_baro: Joi1090.altitude().required(), // barometric altitude (feet), which may be the string 'ground'
+  track: Joi1090.number().required(), // true track over ground (degrees 0-359) TODO determine if this is ubiquitous to all ac
   true_heading: Joi1090.number().optional(), // heading, degrees clockwise from true north
   seen: Joi1090.number().max(MAX_VALID_SEEN).required(), // max allowed seconds for an aircraft to be considered valid
   seen_pos: Joi1090.number().optional(), // how long ago in seconds position was last updated

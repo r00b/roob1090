@@ -112,7 +112,7 @@ container.add('app', initializeLogger({
 container.add('request', initializeLogger({
   service: 'request',
   console: false,
-  file: true,
+  file: false,
   color: 'green',
   pad: 30
 }));
@@ -128,14 +128,14 @@ container.add('airport-service', initializeLogger({
 container.add('store', initializeLogger({
   service: 'store',
   console: false,
-  file: true,
+  file: false,
   color: 'blue',
   pad: 30
 }));
 
 container.add('worker', initializeLogger({
   service: 'worker',
-  console: false,
+  console: true,
   file: false,
   color: 'green'
 }));

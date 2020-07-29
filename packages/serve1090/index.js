@@ -1,6 +1,6 @@
 require('dotenv').config();
 const app = require('./src/app');
-const logger = require('./src/lib/logger').get('app')
+const logger = require('./src/lib/logger').get('app');
 const _ = require('lodash');
 
 let connections = [];

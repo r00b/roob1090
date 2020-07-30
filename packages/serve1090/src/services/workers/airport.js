@@ -1,4 +1,5 @@
 const logger = require('../../lib/logger').get('airport-service');
+const workerLogger = require('../../lib/logger').get('worker');
 const _ = require('lodash');
 const RedisService = require('../../services/redis-service');
 const { point, polygon } = require('@turf/helpers');
@@ -9,16 +10,12 @@ const redis = new RedisService();
 
 (async () => {
   try {
+    const start = Date.now();
     const airport = require(`../${configPath}`);
     const aircraft = await redis.hgetAllJsonValues('store:valid');
     if (!aircraft.length) return exit(0);
-
-    const {
-      arrivals,
-      departures,
-      onRunway
-    } = await computeAirportBoard(aircraft, airport);
-    // TODO do something with this data
+    await computeAirportBoard(aircraft, airport);
+    workerLogger.info('airport worker completed', { module: airport.key, duration: Date.now() - start });
     exit(0);
   } catch (e) {
     logger.error(e.message);
@@ -57,28 +54,13 @@ async function computeAirportBoard (aircraft, airport) {
   return board;
 }
 
-/**
- * Merge two airport boards; assumes that each board is not malformed and contains only
- * arrays as properties; does not eliminate duplicates, since this would require deep
- * object comparison
- *
- * @param a array from first board
- * @param b array from second board
- * @returns merged airport boards
- */
-function mergeBoards (a, b) {
-  if (Array.isArray(a) && Array.isArray(b)) {
-    return [...a, ...b];
-  } else throw new Error('expected boards to only contain arrays');
-}
-
 async function partitionAndLogRoute (aircraft, route) {
   // first, get aircraft in the two regions on either side of and inside the runway
   // this will write each region to redis so that the runway job can compute
   // the active runway
-  const inHead = await reduceAndLog(aircraft, route.head);
-  const inTail = await reduceAndLog(aircraft, route.tail);
-  const onRunway = await reduceAndLog(aircraft, route.runway);
+  const inHead = await reduceAndLogRegion(aircraft, route.head);
+  const inTail = await reduceAndLogRegion(aircraft, route.tail);
+  const onRunway = await reduceAndLogRegion(aircraft, route.runway);
 
   // check if the active runway is already known (and thus can determine approach/departure)
   const activeRunway = await redis.get(`${route.key}:activeRunway`);
@@ -96,17 +78,29 @@ async function partitionAndLogRoute (aircraft, route) {
   const {
     arrived,
     toDepart
-  } = await partitionAndLogRunway(onRunway, approachRegion, departureRegion);
+  } = await partitionAndLogRunway(onRunway, route);
+
+  const arrivals = [...toArrive, ...arrived];
+  const departures = [...toDepart, ...departed];
+
+  redis.pipeline();
+  if (arrivals.length) {
+    redis.saddEx(`${route.parent}:arrivals`, 5, ...arrivals.map(hex));
+  }
+  if (departures.length) {
+    redis.saddEx(`${route.parent}:departures`, 5, ...departures.map(hex));
+  }
+  await redis.exec();
 
   return {
-    arrivals: [...toArrive, ...arrived],
-    departures: [...toDepart, ...departed],
+    arrivals,
+    departures,
     onRunway,
     runways: [activeRunway]
   };
 }
 
-async function reduceAndLog (aircraft, airspace) {
+async function reduceAndLogRegion (aircraft, airspace) {
   redis.pipeline();
   const matches = aircraft.reduce((acc, aircraft) => {
     const acLoc = point([aircraft.lon, aircraft.lat]);
@@ -114,7 +108,7 @@ async function reduceAndLog (aircraft, airspace) {
     const inAirspace = pointInPolygon(acLoc, boundary);
     const validAltitude = aircraft.alt_baro < airspace.maxAltitude;
     if (inAirspace && validAltitude) {
-      redis.saddEx(`${airspace.key}:aircraft`, aircraft.hex, 5);
+      redis.saddEx(`${airspace.key}:aircraft`, 5, aircraft.hex);
       acc.push(aircraft);
     }
     return acc;
@@ -123,27 +117,43 @@ async function reduceAndLog (aircraft, airspace) {
   return matches;
 }
 
-async function partitionAndLogRunway (onRunway, approachRegionKey, departureRegionKey) {
-  const arrivalHexes = await redis.smembers(`${approachRegionKey}:aircraft`); // todo this string concat is bad
-  redis.pipeline();
-  const partition = onRunway.reduce((acc, aircraft) => {
+async function partitionAndLogRunway (onRunway, route) {
+  // get all aircraft that are arriving on the route
+  const arrivalHexes = await redis.smembers(`${route.parent}:arrivals`);
+  return onRunway.reduce((acc, aircraft) => {
     const hex = aircraft.hex;
-    let regionKey;
-    if (arrivalHexes.includes(hex)) { // aircraft was previously in arrival region
+    if (arrivalHexes.includes(hex)) {
+      // aircraft was previously put into arrival region, so it must be coming in
+      // to land and thus an arrival
       acc.arrived.push(aircraft);
-      regionKey = approachRegionKey;
-    } else { // aircraft was previously in no region, must be a departure
+    } else {
+      // aircraft was previously in no region, so it must be a departure
       acc.toDepart.push(aircraft);
-      regionKey = departureRegionKey;
     }
-    redis.expiremember(`${regionKey}:aircraft`, hex, 5);
     return acc;
   }, {
     arrived: [],
     toDepart: []
   });
-  await redis.exec();
-  return partition;
+}
+
+/**
+ * Merge two airport boards; assumes that each board is not malformed and contains only
+ * arrays as properties; does not eliminate duplicates, since this would require deep
+ * object comparison
+ *
+ * @param a array from first board
+ * @param b array from second board
+ * @returns merged airport boards
+ */
+function mergeBoards (a, b) {
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return [...a, ...b];
+  } else throw new Error('expected boards to only contain arrays');
+}
+
+function hex (aircraft) {
+  return aircraft.hex;
 }
 
 function exit (code) {

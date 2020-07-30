@@ -30,17 +30,22 @@ class RedisService {
     return this.redis.hset(set, value);
   }
 
-  sadd (set, value) {
-    return this.redis.sadd(set, value);
+  async sadd (set, ...values) {
+    if (values.length) {
+      return this.redis.sadd(set, ...values);
+    }
+  }
+
+  async saddEx (set, ex, ...values) {
+    if (values.length) {
+      await this.sadd(set, ...values);
+      const expires = values.map(v => this.expiremember(set, v, ex));
+      return Promise.all(expires);
+    }
   }
 
   expiremember (key, value, ex) {
-    return this.call('EXPIREMEMBER', key, value,ex);
-  }
-
-  async saddEx (set, value, ex) {
-    await this.sadd(set, value);
-    return this.expiremember(set, value, ex);
+    return this.call('EXPIREMEMBER', key, value, ex);
   }
 
   sismember (set, value) {
@@ -77,7 +82,7 @@ class RedisService {
     return Object.entries(rawHash).reduce((acc, [key, value]) => {
       acc[key] = JSON.parse(value);
       return acc;
-    }, {})
+    }, {});
   }
 
   async hgetAllJsonValues (key) {
@@ -85,11 +90,11 @@ class RedisService {
     return Object.values(rawHash).reduce((acc, value) => {
       acc.push(JSON.parse(value));
       return acc;
-    }, [])
+    }, []);
   }
 
   call (...args) {
-    return this.redis.call(...args)
+    return this.redis.call(...args);
   }
 
   async exec () {

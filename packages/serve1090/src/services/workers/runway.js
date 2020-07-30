@@ -1,4 +1,5 @@
 const logger = require('../../lib/logger').get('airport-service');
+const workerLogger = require('../../lib/logger').get('worker');
 const RedisService = require('../../services/redis-service');
 const configPath = require('worker_threads').workerData.job.configPath;
 
@@ -6,10 +7,12 @@ const redis = new RedisService();
 
 (async () => {
   try {
+    const start = Date.now();
     const airport = require(`../${configPath}`);
     const routes = airport.getRoutes();
     const runs = routes.map(route => computeActiveRunway(route));
     await Promise.all(runs);
+    workerLogger.info('runway worker completed', { module: airport.key, duration: Date.now() - start });
     exit(0);
   } catch (e) {
     logger.error(e.message);
@@ -45,6 +48,7 @@ async function computeActiveRunway (route) {
 }
 
 async function findCandidates (route) {
+  // try to check only one route for a sample if possible
   let candidates = await redis.smembers(`${route.tail.key}:aircraft`);
   if (!candidates.length) {
     candidates = await redis.smembers(`${route.head.key}:aircraft`);

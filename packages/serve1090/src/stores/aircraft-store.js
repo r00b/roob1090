@@ -138,8 +138,9 @@ function setNewData (data) {
     newAircraftMap[hex].error = error;
   });
   // then merge it with existing data stores
-  this.currentRawAircraft = _mergeIntoStore(this.currentRawAircraft, newAircraftMap);
-  this.currentValidAircraft = _mergeIntoStore(this.currentValidAircraft, validatedMap);
+  this.currentRawAircraft = _mergeIntoStore(this.currentRawAircraft, newAircraftMap, this.client);
+  this.currentValidAircraft = _mergeIntoStore(this.currentValidAircraft, validatedMap, this.client);
+
   return true;
 }
 
@@ -152,7 +153,7 @@ function setNewData (data) {
  * @returns newly merged aircraft data store | { hex: aircraft }
  * @private
  */
-function _mergeIntoStore (store, newMap) {
+function _mergeIntoStore (store, newMap, client) {
   const updated = [];
   const added = [];
   const mergedStore = Object.entries(newMap).reduce((acc, [hex, aircraft]) => {
@@ -172,6 +173,9 @@ function _mergeIntoStore (store, newMap) {
     }
     logArray.push(hex);
     acc.aircraft[hex] = aircraft;
+    // client.hset(store.name, hex, JSON.stringify(aircraft)).then(_ => {
+    //   console.log('set ' + hex)
+    // });
     return acc;
   }, _.cloneDeep(store));
   const size = Object.keys(mergedStore.aircraft).length;

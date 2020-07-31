@@ -1,15 +1,13 @@
 require('dotenv').config();
 const app = require('./src/app');
-const store = require('./src/stores/aircraft-store');
-const loggers = require('./src/lib/logger');
-const { app: logger } = loggers;
+const logger = require('./src/lib/logger').get('app');
 const _ = require('lodash');
 
 let connections = [];
 
 logger.info('starting serve1090');
 
-app(process.env.PORT, store, loggers).then(server => {
+app(process.env.PORT).then(server => {
   // maintain array of current ws connections and purge them when they are closed
   // so that server shutdown can proceed normally
   server.on('connection', connection => {
@@ -27,8 +25,6 @@ app(process.env.PORT, store, loggers).then(server => {
 function shutdown () {
   return () => {
     logger.info('received shutdown signal');
-    // kill store jobs
-    store.shutdown();
     // kill all connections
     connections.forEach(curr => {
       curr.end();

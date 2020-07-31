@@ -92,32 +92,52 @@ function initializeLogger (opts) {
   if (file) {
     transports.push(...rotateFileTransport(service, pad));
   }
-  return winston.createLogger({
+  return {
     levels: config.levels,
     format: combine(timestamp(), json()),
     defaultMeta: { service },
     transports
-  });
+  };
 }
 
-module.exports = {
-  app: initializeLogger({
-    service: 'app',
-    console: true,
-    file: true,
-    color: 'magenta'
-  }),
-  request: initializeLogger({
-    service: 'request',
-    console: true,
-    file: true,
-    color: 'green',
-    pad: 30
-  }),
-  store: initializeLogger({
-    service: 'store',
-    console: true,
-    file: true,
-    color: 'blue'
-  })
-};
+const container = new winston.Container();
+
+container.add('app', initializeLogger({
+  service: 'app',
+  console: true,
+  file: false,
+  color: 'magenta'
+}));
+
+container.add('request', initializeLogger({
+  service: 'request',
+  console: false,
+  file: false,
+  color: 'green',
+  pad: 30
+}));
+
+container.add('airport-service', initializeLogger({
+  service: 'airport-service',
+  console: true,
+  file: false,
+  color: 'cyan',
+  pad: 30
+}));
+
+container.add('store', initializeLogger({
+  service: 'store',
+  console: false,
+  file: false,
+  color: 'blue',
+  pad: 30
+}));
+
+container.add('worker', initializeLogger({
+  service: 'worker',
+  console: true,
+  file: false,
+  color: 'green'
+}));
+
+module.exports = container;

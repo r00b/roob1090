@@ -1,5 +1,5 @@
 const express = require('express');
-const { request: logger } = require('./../../lib/logger');
+const logger = require('../../lib/logger').get('request');
 const { v4: uuid } = require('uuid');
 const {
   InvalidClientError,
@@ -10,9 +10,9 @@ const {
 module.exports = (store, secret) => {
   return new express.Router()
     .ws('/pump', pump(store, secret), errorHandler)
-    .get('/raw', getRaw(store))
+    .get('/all', getAll(store))
     .get('/valid', getValid(store))
-    .get('/excluded', getExcluded(store))
+    .get('/invalid', getInvalid(store))
     .use(errorHandler);
 };
 
@@ -22,7 +22,7 @@ module.exports = (store, secret) => {
  */
 function pump (store, secret) {
   return (ws, req, next) => {
-    ws.on('message', data => {
+    ws.on('message', async data => {
       try {
         // web sockets don't exactly "work" the way that express middleware
         // expects them to, so we request log in the listener itself
@@ -31,8 +31,7 @@ function pump (store, secret) {
           start: Date.now()
         };
         ws.locals.requestLogger.info('ws message started');
-
-        parseAndSetData(store, secret, data);
+        await parseAndSetData(store, secret, data);
       } catch (err) {
         ws.locals.requestLogger.error(err.message, { detail: err.detail });
       } finally {
@@ -41,35 +40,15 @@ function pump (store, secret) {
         });
       }
     });
-
-    // ws.on('message', data =>
-    //   tryCatch(
-    //     () => {
-    //       // web sockets don't exactly "work" the way that express middleware
-    //       // expects them to, so we request log in the listener itself
-    //       ws.locals = {
-    //         requestLogger: logger.child({ requestId: uuid() }),
-    //         start: Date.now()
-    //       };
-    //       ws.locals.requestLogger.info('ws message started');
-    //
-    //       parseAndSetData(store, secret, data);
-    //     },
-    //     next,
-    //     () => {
-    //       ws.locals.requestLogger.info('ws message completed', {
-    //         elapsedTime: Date.now() - ws.locals.start
-    //       });
-    //     }));
   };
 }
 
 /**
  * GET raw parsed data store of aircraft
  */
-function getRaw (store) {
+function getAll (store) {
   return (req, res, next) => {
-    return res.status(200).json(store.getRawAircraft());
+    return store.getAllAircraft().then(result => res.status(200).json(result)).catch(next);
   };
 }
 
@@ -78,16 +57,16 @@ function getRaw (store) {
  */
 function getValid (store) {
   return (req, res, next) => {
-    return res.status(200).json(store.getValidAircraft());
+    return store.getValidAircraft().then(result => res.status(200).json(result)).catch(next);
   };
 }
 
 /**
  * GET excluded/rejected aircraft
  */
-function getExcluded (store) {
+function getInvalid (store) {
   return (req, res, next) => {
-    return res.status(200).json(store.getExcludedAircraft());
+    return store.getInvalidAircraft().then(result => res.status(200).json(result)).catch(next);
   };
 }
 
@@ -104,7 +83,7 @@ function parseAndSetData (store, secret, data) {
   if (!json.secret || secret !== json.secret) {
     throw new InvalidClientError(json.secret);
   }
-  store.setNewData(json);
+  return store.setNewData(json);
 }
 
 /**

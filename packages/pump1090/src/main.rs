@@ -25,6 +25,7 @@ type AutoStream = StreamSwitcher<TcpStream, TlsStream<TcpStream>>;
 #[cfg(feature = "tls")]
 use native_tls::TlsStream;
 
+/// Parses arguments and kicks of the WebSocket initialization
 fn main() -> () {
     // load env file
     dotenv().ok();
@@ -32,14 +33,15 @@ fn main() -> () {
     let yaml = load_yaml!("cli.yaml");
     let matches = App::from_yaml(yaml).get_matches();
 
+    let undefined: &str = "undefined";
     let device_id: String = unwrap_arg(
         "DEVICE_ID",
         matches.value_of("device-id"),
-        "undefined");
+        undefined);
     let serve1090_secret: String = unwrap_arg(
         "SERVE1090_SECRET",
         matches.value_of("serve1090-secret"),
-        "undefined");
+        undefined);
     let filename: String = unwrap_arg(
         "DUMPFILE_PATH",
         matches.value_of("dumpfile"),
@@ -49,7 +51,7 @@ fn main() -> () {
         matches.value_of("endpoint"),
         "ws://localhost:3000/pump");
 
-    if serve1090_secret == "undefined" {
+    if serve1090_secret == undefined {
         handle_fatal(String::from("unable to find serve1090_secret").into());
     }
 
@@ -75,9 +77,16 @@ fn unwrap_arg(env_var_name: &str, cli_arg: Option<&str>, default_val: &str) -> S
     unwrapped_arg.to_string()
 }
 
-/// start the infinite loop that will establish the WebSocket and begin the timer that watches
-/// the dump file; ininitely loops so that, if the WebSocket connection is broken, it will attempt
-/// to re-establish the WebSocket connection; recursion is not used to avoid a stack overflow
+/// Starts an infinite loop that establishes the WebSocket connection and starts the timer that
+/// will watch the dumpfile; loops infinitely so that, if the WebSocket connection is broken,
+/// it will attempt to re-establish the connection (recursion not used to avoid stack overflow)
+///
+/// # Arguments
+///
+/// * `device_id` - unique string identifier of the machine from args
+/// * `serve1090_secret` - serve1090 uuid that the receiving server expects
+/// * `filename` - path to the dumpfile JSON
+/// * `endpoint` - WebSocket endpoint of the server
 fn init_pump(
     device_id: &str,
     serve1090_secret: &str,
@@ -90,8 +99,12 @@ fn init_pump(
     }
 }
 
-/// actually establish the WebSocket connection; do this by repeatedly attempting to connect
-/// to the endpoint, sleeping for 5 seconds between attempts; return socket
+/// Creates the WebSocket connection, repeatedly attempting to connect to the endpoint every
+/// 5 seconds until connection occurs; returns socket
+///
+/// # Arguments
+///
+/// * `endpoint` - WebSocket endpoint with which to establish connection
 fn init_pipe(endpoint: &str) -> WebSocket<AutoStream> {
     let mut attempt: isize = 1;
     let sleep_interval: u64 = 5000;
@@ -101,7 +114,6 @@ fn init_pipe(endpoint: &str) -> WebSocket<AutoStream> {
             endpoint, attempt
         );
         io::stdout().flush().unwrap();
-        // TODO better error handling
         let resp = connect(Url::parse(endpoint).unwrap());
         match resp {
             Ok((socket, _)) => {
@@ -116,7 +128,15 @@ fn init_pipe(endpoint: &str) -> WebSocket<AutoStream> {
     }
 }
 
-/// read the dump file every n seconds and pump it to the WebSocket endpoint
+/// Reads the dumpfile JSON every read_interval seconds and send it to the WebSocket
+/// endpoint
+///
+/// # Arguments
+///
+/// * `device_id` - unique string identifier of the machine from args
+/// * `serve1090_secret` - serve1090 uuid that the receiving server expects
+/// * `filename` - path to the dumpfile JSON
+/// * `socket` - WebSocket created by `init_pipe`
 fn init_dump_timer(
     device_id: &str,
     serve1090_secret: &str,
@@ -129,8 +149,8 @@ fn init_dump_timer(
     io::stdout().flush().unwrap();
     loop {
         let data = read_json(device_id, serve1090_secret, filename)?;
-        match pump_data(socket, data) {
-            Ok(s) => socket = s, // successfully sent data
+        match pump_data(data, socket) {
+            Ok(s) => socket = s, // data send was successful
             Err(_) => {
                 println!("\nUnable to write to pipe; attempting to re-establish connection...");
                 break Ok(());
@@ -143,8 +163,14 @@ fn init_dump_timer(
     }
 }
 
-/// read the input file, serialize it and attach metadata, and then
-/// convert it back to a string so it can be sent through WebSocket
+/// Opens and reads the input file, parses it into JSON and attached metadata,
+/// and then stringifies and returns it
+///
+/// # Arguments
+///
+/// * `device_id` - unique string identifier of the machine from args
+/// * `serve1090_secret` - serve1090 uuid that the receiving server expects
+/// * `filename` - path to the dumpfile JSON
 fn read_json(
     device_id: &str,
     serve1090_secret: &str,
@@ -156,16 +182,22 @@ fn read_json(
     file.read_to_string(&mut contents)?;
     // then, serialize it
     let mut data: Value = serde_json::from_str(&contents)?;
+    // attach metadata
     data["device_id"] = device_id.into();
     data["secret"] = serve1090_secret.into();
     let payload: String = serde_json::to_string(&data)?;
     Ok(payload)
 }
 
-/// take a message (string) and send it to the specified socket
+/// Takes a message (string) and sends it to a specified WebSocket
+///
+/// # Arguments
+///
+/// * `data` - message to send through WebSocket, must be a string
+/// * `socket` - WebSocket created by `init_pipe`
 fn pump_data(
-    mut socket: WebSocket<AutoStream>,
     data: String,
+    mut socket: WebSocket<AutoStream>,
 ) -> Result<WebSocket<AutoStream>, tungstenite::error::Error> {
     // ping the socket for liveness check
     socket.write_message(Message::Ping(Vec::new()))?;
@@ -174,9 +206,12 @@ fn pump_data(
     Ok(socket)
 }
 
-/// generic error handler that panics the entire thread
+/// Handles a fatal error and panics the thread
+///
+/// # Arguments
+/// * `e` - Error object
 fn handle_fatal(e: Box<dyn Error>) -> () {
     println!("FATAL ERROR ----------------------------------------------------------");
-    println!("Fatal error: {}", e);
+    println!("Detail: {}", e);
     panic!()
 }

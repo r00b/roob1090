@@ -1,8 +1,6 @@
 ---
 name: pump1090
-version: "0.3.0"
 author: Robert Steilberg <rsteilberg@gmail.com>
-about: Reads dump1090 JSON output and sends it to an endpoint via a WebSocket.
 args:
   - dumpfile:
       short: d

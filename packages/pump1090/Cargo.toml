@@ -1,9 +1,9 @@
 [package]
 name = "pump1090"
-version = "0.2.1"
+version = "0.3.0"
 authors = ["Robert Steilberg <rsteilberg@gmail.com>"]
 license = "MIT"
-description = "Simple tool for sending dump1090 data to a websocket endpoint."
+description = "Reads dump1090 JSON output and sends it to an endpoint via a WebSocket"
 readme = "README.md"
 repository = "https://github.com/robertsteilberg/pump1090"
 edition = "2018"

@@ -28,7 +28,7 @@ fn main() -> () {
   // load env file
   dotenv().ok();
   // load cli args
-  let yaml = load_yaml!("cli.yml");
+  let yaml = load_yaml!("cli.yaml");
   let matches = App::from_yaml(yaml).get_matches();
 
   let filename: String = unwrap_arg(
@@ -41,8 +41,16 @@ fn main() -> () {
     "WS_ENDPOINT",
     matches.value_of("endpoint"),
   );
-  let device_id: String = unwrap_arg("undefined", "DEVICE_ID", matches.value_of("device-id"));
-  let serve1090_secret: String = unwrap_arg("undefined", "SERVE1090_SECRET", matches.value_of("serve1090-secret"));
+  let device_id: String = unwrap_arg(
+    "undefined",
+    "DEVICE_ID",
+    matches.value_of("device-id"));
+  let serve1090_secret: String = unwrap_arg(
+    "undefined",
+    "SERVE1090_SECRET",
+    matches.value_of("serve1090-secret"));
+
+  println!("SECRET: {}", serve1090_secret);
 
   // todo throw if no serve secret
   println!("Initializing pump1090...");

@@ -10,6 +10,10 @@ Theoretically, `pump1090` could work with any server with a WebSocket endpoint t
 
 This program would probably have been much easier to write in Python or some other scripting language, but where's the fun in that? It was a nice introduction to learning Rust.
 
+### Prerequisites
+1. At least `cargo` and `rustc` `1.42.0-nightly`
+2. Something running `dump1090` and generating the requisite dump JSON files
+
 ### Installation
 1. For a development run, `cargo run` or `cargo run -- -f shortArg --long longArg`
 2. For a release (optimized) run, `cargo run --release -- -f shorgArg --long longArg`

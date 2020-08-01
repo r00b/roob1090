@@ -1,3 +1,0 @@
-[submodule "packages/dump1090/dump1090-fa"]
-	path = packages/dump1090/dump1090-fa
-	url = git@github.com:robertsteilberg/dump1090-fa.git

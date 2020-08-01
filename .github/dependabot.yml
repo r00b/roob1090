@@ -1,0 +1,14 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/packages/serve1090"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "cargo"
+    directory: "/packages/pump1090"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "pip"
+    directory: "/packages/piTemp"
+    schedule:
+      interval: "daily"

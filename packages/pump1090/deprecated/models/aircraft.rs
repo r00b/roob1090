@@ -23,7 +23,7 @@ pub struct Aircraft {
     #[serde(skip_serializing_if = "Option::is_none")]
     mach: Option<f32>, // Mach Number
     #[serde(skip_serializing_if = "Option::is_none")]
-    track: Option<f32>, // tru track over ground (degrees, 0-359)
+    track: Option<f32>, // true track over ground (degrees, 0-359)
     #[serde(skip_serializing_if = "Option::is_none")]
     track_rate: Option<f32>, // rate of change of track (degrees/second)
     #[serde(skip_serializing_if = "Option::is_none")]

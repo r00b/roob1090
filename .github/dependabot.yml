@@ -12,3 +12,7 @@ updates:
     directory: "/packages/piTemp"
     schedule:
       interval: "daily"
+  - package-ecosystem: "gitsubmodule"
+    directory: "/packages/dump1090"
+    schedule:
+      interval: "daily"

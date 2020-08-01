@@ -8,7 +8,7 @@ This package contains a [git submodule](https://git-scm.com/book/en/v2/Git-Tools
 
 1. `git submodule init` if not already done
 2. `git submodule update` will fetch `dump1090` if not already done
-3. `sudo chmod +x scripts/install.sh && ./scripts/install.sh`
+3. From the `scripts` directory, `sudo chmod +x scripts/install.sh && ./scripts/install.sh`
 
 (or, follow the instructions in `dump1090-fa/README.md`)
 
@@ -17,9 +17,10 @@ Removing the generated debian build files that pollute the Git source tree shoul
 ### Execution
 
 1. Modify `dump.sh` with the correct gain, latitude, and longitude appropriate for the receiver
-2. `sudo chmod +x scripts/dump.sh && ./scripts/dump.sh`
+2. From the `scripts` directory, `sudo chmod +x scripts/dump.sh && ./scripts/dump.sh`
+3. To compute gain, from the `scripts` directory, `sudo chmod +x scripts/gain.sh && ./scripts/gain.sh`
 
-It is also possible to directly execute `dump1090-fa/dump1090` if desired. Execute `./dump1090 -h` for more information.
+It is also possible to directly execute `dump1090-fa/dump1090` if desired. Try `./dump1090 -h` for more information.
 
 ### Remarks
 

@@ -23,7 +23,7 @@
     "ioredis": "^4.17.3",
     "lodash": "^4.17.15",
     "pm2": "^4.4.0",
-    "uuid": "^8.2.0",
+    "uuid": "^8.3.0",
     "winston": "^3.3.3",
     "winston-daily-rotate-file": "^4.4.2"
   },

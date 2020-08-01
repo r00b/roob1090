@@ -13,6 +13,6 @@ updates:
     schedule:
       interval: "daily"
   - package-ecosystem: "gitsubmodule"
-    directory: "/packages/dump1090"
+    directory: "/"
     schedule:
       interval: "daily"

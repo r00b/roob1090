@@ -11,8 +11,6 @@ services:
     depends_on:
       - redis
     environment:
-      - PORT=80
       - KEYDB_HOST=redis
-      - KEYDB_PORT=6379
     ports:
       - 80:80

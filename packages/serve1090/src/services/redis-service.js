@@ -91,7 +91,7 @@ class RedisService {
    * @returns Promise
    */
   async hgetJson (key, field) {
-    let res = await this.redis.hget(key, field);
+    const res = await this.redis.hget(key, field);
     try {
       return JSON.parse(res);
     } catch (e) {

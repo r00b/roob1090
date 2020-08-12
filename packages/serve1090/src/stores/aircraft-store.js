@@ -6,7 +6,6 @@ const {
   millisToSeconds
 } = require('../lib/utils');
 const {
-  StoreError,
   StaleDataError
 } = require('../lib/errors');
 const RedisService = require('../services/redis-service');

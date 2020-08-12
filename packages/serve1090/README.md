@@ -24,4 +24,4 @@ See [package.json](package.json) for more info.
 
 `serve1090` depends on [KeyDB](https://github.com/JohnSully/KeyDB), a high performance fork of [Redis](https://github.com/redis/redis) with some extra features that are particularly useful for keeping and constantly refreshing an updated data stream of aircraft. Specifically, `serve1090` leverages the `EXPIREMEMBER` command unique to KeyDB that allows for an individual member of a hash or set to be given an expiration time, something that is not possible in Redis and saves a lot of complicated store logic to purge out stale aircraft as the fly out of range of the dependent `dump1090` receiver(s).
 
-`serve1090` will fail to persist aircraft without a properly configured instance of KeyDB exposed on port 6379 (see [keydb.conf](keydb.conf)). 
+`serve1090` will fail to persist aircraft without a properly configured instance of KeyDB exposed on port 6379 (see [keydb.conf.template](keydb.conf.template)). 

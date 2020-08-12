@@ -5,7 +5,7 @@ bind 0.0.0.0
 port 6379
 
 # set password
-requirepass xiFCffbPCXGp>9NZr9sQPHMnw3BaTDv>x{Gxe
+requirepass REPLACE_WITH_KEYDB_PASSWORD
 
 # KeyDB configuration file example.
 #

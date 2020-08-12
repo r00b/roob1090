@@ -12,7 +12,6 @@
     "serve:debug": "yarn redis-restart && yarn debug",
     "debug": "yarn && nodemon --inspect index.js --ignore logs",
     "redis": "docker run -v $PWD/keydb.conf:/etc/keydb/keydb.conf --publish=6379:6379 --name=serve1090_keydb -d eqalpha/keydb:latest",
-    "redis-cli": "keydb-cli -a skyhawk",
     "redis-stop": "docker stop serve1090_keydb",
     "redis-remove": "docker rm serve1090_keydb",
     "redis-restart": "yarn redis-stop && yarn redis-remove && yarn redis",

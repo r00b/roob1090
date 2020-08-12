@@ -78,12 +78,12 @@ function getInvalid (store) {
  * @param secret serve1090's configured secret
  * @param data raw ws message
  */
-function parseAndSetData (store, secret, data) {
+async function parseAndSetData (store, secret, data) {
   const json = JSON.parse(data);
   if (!json.secret || secret !== json.secret) {
     throw new InvalidClientError(json.secret);
   }
-  return store.setNewData(json);
+  await store.addAircraft(json);
 }
 
 /**

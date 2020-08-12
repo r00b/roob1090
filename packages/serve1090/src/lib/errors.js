@@ -26,9 +26,26 @@ class LoggerError extends Error {
 class StoreError extends Error {
 }
 
+class RedisError extends Error {
+  constructor (message, details) {
+    super();
+    this._message = message;
+    this._details = details;
+  }
+
+  get message () {
+    return `RedisError: ${this._message}`;
+  }
+
+  get details () {
+    return this._details;
+  }
+}
+
 module.exports = {
   InvalidClientError,
   StaleDataError,
   LoggerError,
-  StoreError
+  StoreError,
+  RedisError
 };

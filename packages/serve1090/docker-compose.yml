@@ -1,0 +1,19 @@
+version: '3.8'
+services:
+  redis:
+    image: eqalpha/keydb:latest
+    ports:
+      - 6379:6379
+    volumes:
+      - $PWD/keydb.conf:/etc/keydb/keydb.conf
+  express:
+    build: .
+    depends_on:
+      - redis
+    environment:
+      - PORT=80
+      - KEYDB_HOST=redis
+      - KEYDB_PORT=6379
+      - KEYDB_PASSWORD=skyhawk
+    ports:
+      - 42058:80

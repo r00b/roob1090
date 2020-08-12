@@ -9,13 +9,15 @@ const redis = new RedisService();
   try {
     const start = Date.now();
     const airport = require(`../${configPath}`);
+
     const routes = airport.getRoutes();
     const runs = routes.map(route => computeActiveRunway(route));
     await Promise.all(runs);
+
     workerLogger.info('runway worker completed', { module: airport.key, duration: Date.now() - start });
     exit(0);
   } catch (e) {
-    logger.error(e.message);
+    logger.error(e.message, { ...e.details });
     exit(1);
   }
 })();
@@ -32,7 +34,7 @@ async function computeActiveRunway (route) {
     if (sample) {
       const activeRunway = route.computeActiveRunway(sample);
       if (activeRunway) {
-        await redis.setex(`${route.key}:activeRunway`, activeRunway, 28800);
+        await redis.setex(`${route.key}:activeRunway`, 28800, activeRunway);
         logger.info('set active runway', {
           route: route.key,
           runway: activeRunway,

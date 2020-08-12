@@ -12,8 +12,12 @@ const redis = new RedisService();
   try {
     const start = Date.now();
     const airport = require(`../${configPath}`);
-    const aircraft = await redis.hgetAllJsonValues('store:valid');
-    if (!aircraft.length) return exit(0);
+
+    const aircraft = await redis.hgetAllAsJsonValues('store:valid');
+    if (!aircraft.length) {
+      return exit(0);
+    }
+
     await computeAirportBoard(aircraft, airport);
     workerLogger.info('airport worker completed', { module: airport.key, duration: Date.now() - start });
     exit(0);
@@ -83,14 +87,14 @@ async function partitionAndLogRoute (aircraft, route) {
   const arrivals = [...toArrive, ...arrived];
   const departures = [...toDepart, ...departed];
 
-  redis.pipeline();
+  const pipeline = redis.pipeline();
   if (arrivals.length) {
-    redis.saddEx(`${route.parent}:arrivals`, 5, ...arrivals.map(hex));
+    pipeline.saddEx(`${route.parent}:arrivals`, 5, ...arrivals.map(hex));
   }
   if (departures.length) {
-    redis.saddEx(`${route.parent}:departures`, 5, ...departures.map(hex));
+    pipeline.saddEx(`${route.parent}:departures`, 5, ...departures.map(hex));
   }
-  await redis.exec();
+  await pipeline.exec();
 
   return {
     arrivals,
@@ -101,19 +105,19 @@ async function partitionAndLogRoute (aircraft, route) {
 }
 
 async function reduceAndLogRegion (aircraft, airspace) {
-  redis.pipeline();
+  const pipeline = redis.pipeline();
   const matches = aircraft.reduce((acc, aircraft) => {
     const acLoc = point([aircraft.lon, aircraft.lat]);
     const boundary = polygon(airspace.coordinates);
     const inAirspace = pointInPolygon(acLoc, boundary);
     const validAltitude = aircraft.alt_baro < airspace.maxAltitude;
     if (inAirspace && validAltitude) {
-      redis.saddEx(`${airspace.key}:aircraft`, 5, aircraft.hex);
+      pipeline.saddEx(`${airspace.key}:aircraft`, 5, aircraft.hex);
       acc.push(aircraft);
     }
     return acc;
   }, []);
-  await redis.exec();
+  await pipeline.exec();
   return matches;
 }
 

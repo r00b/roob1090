@@ -5,7 +5,6 @@ const logger = loggers.get('app');
 const _ = require('lodash');
 require('express-ws')(app);
 const aircraftRouter = require('./routes/aircraft/index');
-const RedisService = require('./services/redis-service');
 
 async function startServer (port) {
   const normalizedPort = normalizePort(port);
@@ -16,9 +15,7 @@ async function startServer (port) {
   };
   app.use(require('./middleware/http-request-logger'));
 
-  // configure redis client
-  const redis = new RedisService();
-  const store = require('../src/stores/redis-store')(redis);
+  const store = require('../src/stores/aircraft-store');
 
   // kick off the jobs
   require('./services/worker-service')();

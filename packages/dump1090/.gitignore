@@ -1,3 +1,6 @@
+# env
+.env
+
 # Dump files
 dumpfiles/*
 !dumpfiles/.gitkeep

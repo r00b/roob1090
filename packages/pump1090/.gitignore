@@ -1,2 +1,6 @@
+# env
+.env
+
+# Rust build
 /target
 **/*.rs.bk

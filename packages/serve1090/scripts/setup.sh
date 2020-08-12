@@ -1,3 +1,5 @@
+#!/bin/bash
+
 printf 'Initializing environment for serve1090...\n'
 
 printf 'Specify the pump1090 secret:\n'

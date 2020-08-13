@@ -1,6 +1,8 @@
 // this module defines an approach/departure route for runway 01-19 at KDCA
 // polygons generated via https://www.keene.edu/campus/maps/tool/
 // headings generated via https://www.acscdg.com/
+const { point } = require('@turf/helpers');
+const distance = require('@turf/distance').default;
 
 const airspaceName = 'Washington Reagan National Airport';
 const airspaceKey = 'kdca';
@@ -110,6 +112,14 @@ const north01_19 = {
   key: `${airspaceKey}:north:01-19`,
   name: '',
   maxAltitude: 5000,
+  rank: function (a, b) {
+    const extremity = [38.861209, -77.0386846]; // lat/lon
+    const aPos = point([a.lon, a.lat]);
+    const bPos = point([b.lon, b.lat]);
+    const aDistance = distance(aPos, extremity);
+    const bDistance = distance(bPos, extremity);
+    return bDistance - aDistance; // sorts according to closest to point
+  },
   coordinates: [[
     [
       -77.0384254,
@@ -184,6 +194,14 @@ const south01_19 = {
   key: `${airspaceKey}:south:01-19`,
   name: '',
   maxAltitude: 5000,
+  rank: function (a, b) {
+    const extremity = [38.8416032, -77.0366997]; // lat/lon
+    const aPos = point([a.lon, a.lat]);
+    const bPos = point([b.lon, b.lat]);
+    const aDistance = distance(aPos, extremity);
+    const bDistance = distance(bPos, extremity);
+    return bDistance - aDistance; // sorts according to closest to point
+  },
   coordinates: [[
     [
       -77.0370474,

@@ -41,17 +41,29 @@ async function computeAirportBoard (aircraft, airport) {
     });
     return acc;
   }, {
-    arrivals: [],
-    departures: [],
+    arriving: [],
+    arrived: [],
+    departing: [],
+    departed: [],
     onRunway: [],
     runways: []
   });
   const board = await runs;
 
+
+  const arriving = await redis.zmembers(`kdca:arriving`);
+  const departed = await redis.zmembers(`kdca:departed`);
+
+
+  // const arriving = [];
+  // const departed = [];
+
   logger.info(`${airport.key} board`, {
-    arrivals: board.arrivals.map(a => a.flight),
-    departures: board.departures.map(a => a.flight),
-    onRunway: board.onRunway.map(a => a.flight),
+    arriving: arriving,
+    arrived: board.arrived.map(flight),
+    departing: board.departing.map(flight),
+    departed: departed,
+    onRunway: board.onRunway.map(flight),
     runways: board.runways
   });
 
@@ -71,22 +83,33 @@ async function partitionAndLogRoute (aircraft, route) {
   if (!activeRunway) return false;
 
   // get the keys of the approach and departure region
-  const approachRegion = route.getApproachRouteKey(activeRunway);
-  const departureRegion = route.getDepartureRouteKey(activeRunway);
+  const approachRegionKey = route.getApproachRouteKey(activeRunway);
+  const departureRegionKey = route.getDepartureRouteKey(activeRunway);
 
   // correspond those keys to the hashes containing the aircraft in each route
-  const toArrive = approachRegion === route.head.key ? inHead : inTail;
-  const departed = departureRegion === route.tail.key ? inTail : inHead;
+  const arriving = approachRegionKey === route.head.key ? inHead : inTail;
+  const departed = departureRegionKey === route.tail.key ? inTail : inHead;
+
+  arriving.sort(approachRegionKey === route.head.key ? route.head.rank : route.tail.rank);
+  departed.sort(departureRegionKey === route.tail.key ? route.tail.rank : route.head.rank);
 
   // partition the aircraft currently on the runway
   const {
     arrived,
-    toDepart
+    departing
   } = await partitionAndLogRunway(onRunway, route);
 
-  const arrivals = [...toArrive, ...arrived];
-  const departures = [...toDepart, ...departed];
 
+  const p = redis.pipeli{route.pne();
+  p.saddEx(`$arent}:arrived`, 5, ...arrived.map(flight));
+  p.saddEx(`${route.parent}:departing`, 5, ...departing.map(flight));
+  arriving.forEach((a, index) => p.zaddEx(`${route.parent}:arriving`, 5, index, a.flight));
+  departed.forEach((d, index) => p.zaddEx(`${route.parent}:departed`, 5, index, d.flight));
+  await p.exec();
+
+  // todo do we want to store like this?
+  const arrivals = [...arriving, ...arrived];
+  const departures = [...departing, ...departed];
   const pipeline = redis.pipeline();
   if (arrivals.length) {
     pipeline.saddEx(`${route.parent}:arrivals`, 5, ...arrivals.map(hex));
@@ -97,8 +120,10 @@ async function partitionAndLogRoute (aircraft, route) {
   await pipeline.exec();
 
   return {
-    arrivals,
-    departures,
+    arriving,
+    arrived,
+    departing,
+    departed,
     onRunway,
     runways: [activeRunway]
   };
@@ -132,12 +157,12 @@ async function partitionAndLogRunway (onRunway, route) {
       acc.arrived.push(aircraft);
     } else {
       // aircraft was previously in no region, so it must be a departure
-      acc.toDepart.push(aircraft);
+      acc.departing.push(aircraft);
     }
     return acc;
   }, {
     arrived: [],
-    toDepart: []
+    departing: []
   });
 }
 
@@ -158,6 +183,10 @@ function mergeBoards (a, b) {
 
 function hex (aircraft) {
   return aircraft.hex;
+}
+
+function flight (aircraft) {
+  return aircraft.flight;
 }
 
 function exit (code) {

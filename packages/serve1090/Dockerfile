@@ -1,11 +1,15 @@
-FROM node:14.5.0
+FROM node:14.5.0-alpine3.11
 
-WORKDIR /app
+RUN npm i -g nodemon
 
-COPY ./package.json ./
+ENV APP_DIR /app/serve1090
 
-RUN yarn install
+WORKDIR $APP_DIR
 
-COPY ./ ./
+COPY package.json $APP_DIR
+RUN yarn install --prod --frozen-lockfile
 
-CMD ["yarn", "start"]
+COPY index.js $APP_DIR
+COPY src $APP_DIR/src
+
+CMD ["yarn", "debug"]

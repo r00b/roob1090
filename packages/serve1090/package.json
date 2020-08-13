@@ -7,16 +7,17 @@
   "license": "AGPLv3",
   "author": "Robert Steilberg <rsteilberg@gmail.com>",
   "scripts": {
-    "start": "yarn && node index.js",
-    "serve": "docker-compose up -d --build",
+    "start": "node index.js",
+    "debug": "nodemon --inspect=0.0.0.0 index.js --ignore logs",
+    "compose": "docker-compose up -d --build && yarn tail-logs",
+    "tail-logs": "docker logs --follow serve1090_express",
     "serve:debug": "yarn redis-restart && yarn debug",
-    "debug": "yarn && nodemon --inspect index.js --ignore logs",
     "redis": "docker run -v $PWD/keydb.conf:/etc/keydb/keydb.conf --publish=6379:6379 --name=serve1090_keydb -d eqalpha/keydb:latest",
     "redis-stop": "docker stop serve1090_keydb",
     "redis-remove": "docker rm serve1090_keydb",
     "redis-restart": "yarn redis-stop && yarn redis-remove && yarn redis",
     "start-pm2": "pm2 start index.js",
-    "purge": "rm -rf logs/*"
+    "clean-logs": "rm -rf logs/*"
   },
   "dependencies": {
     "joi": "^17.2.0",

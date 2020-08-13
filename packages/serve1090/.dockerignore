@@ -1,0 +1,8 @@
+node_modules/
+test/
+*.log
+*.md
+.git
+.vscode
+.idea
+.nyc_output

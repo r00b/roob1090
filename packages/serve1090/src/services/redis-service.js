@@ -50,7 +50,7 @@ class RedisService {
   async hsetJsonEx (key, field, value, ex) {
     const stringVal = JSON.stringify(value);
     const set = this.send('hset', key, field, stringVal);
-    const expire = this.send('call', 'EXPIREMEMBER', key, field, ex);
+    const expire = this.send('call', 'expiremember', key, field, ex);
     return Promise.all([set, expire]);
   }
 
@@ -65,9 +65,17 @@ class RedisService {
   async saddEx (set, ex, ...values) {
     if (values.length) {
       const add = this.send('sadd', set, ...values);
-      const expires = values.map(v => this.send('call', 'EXPIREMEMBER', set, v, ex));
+      const expires = values.map(v => this.send('call', 'expiremember', set, v, ex));
       return Promise.all([add, ...expires]);
     }
+  }
+
+  async zaddEx (set, ex, score, member) {
+    // if (values.length) {
+      const zadd = this.send('zadd', set, score, member);
+      const expire = this.send('call', 'expiremember', set, member, ex);
+      return Promise.all([zadd, expire]);
+    // }
   }
 
   // READ OPERATIONS
@@ -126,6 +134,10 @@ class RedisService {
    */
   smembers (set) {
     return this.send('smembers', set);
+  }
+
+  zmembers (set) {
+    return this.send('zrange', set, 0, -1);
   }
 
   // OTHER OPERATIONS

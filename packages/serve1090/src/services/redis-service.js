@@ -1,7 +1,8 @@
 const Redis = require('ioredis');
+const config = require('../config');
 const { RedisError } = require('../lib/errors');
 const logger = require('../lib/logger').get('redis');
-const config = require('../config');
+const _ = require('lodash');
 
 class RedisService {
   constructor () {
@@ -57,9 +58,9 @@ class RedisService {
   /**
    * Add a value to a set with an expiration time
    *
-   * @param {string} key - key of set
-   * @param {integer} ex - number of seconds until value is deleted
-   * @param {string} values - values to add to set
+   * @param {string} set - key of set
+   * @param {string|integer} ex - number of seconds until value is deleted
+   * @param {string[]} values - values to add to set
    * @returns Promise
    */
   async saddEx (set, ex, ...values) {
@@ -70,12 +71,21 @@ class RedisService {
     }
   }
 
-  async zaddEx (set, ex, score, member) {
-    // if (values.length) {
-      const zadd = this.send('zadd', set, score, member);
-      const expire = this.send('call', 'expiremember', set, member, ex);
-      return Promise.all([zadd, expire]);
-    // }
+  /**
+   * Add a value to a sorted set with an expiration time
+   *
+   * @param {string} set - key of set
+   * @param {string|integer} ex - number of seconds until value is deleted
+   * @param {string[]} values - values to add to set
+   * @returns Promise
+   */
+  async zaddEx (set, ex, ...values) {
+    if (values.length) {
+      const pairs = _.chunk(values, 2);
+      const zadds = pairs.map(pair => this.send('zadd', set, pair[0], pair[1]));
+      const expires = pairs.map(pair => this.send('call', 'expiremember', set, pair[1], ex));
+      return Promise.all([...zadds, ...expires]);
+    }
   }
 
   // READ OPERATIONS
@@ -136,6 +146,13 @@ class RedisService {
     return this.send('smembers', set);
   }
 
+  /**
+   * Get all members of a sorted set via ZRANGE;
+   * https://redis.io/commands/zrange
+   *
+   * @param set
+   * @returns {Promise}
+   */
   zmembers (set) {
     return this.send('zrange', set, 0, -1);
   }

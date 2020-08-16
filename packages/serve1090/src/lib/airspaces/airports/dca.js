@@ -1,8 +1,7 @@
 // this module defines an approach/departure route for runway 01-19 at KDCA
 // polygons generated via https://www.keene.edu/campus/maps/tool/
 // headings generated via https://www.acscdg.com/
-const { point } = require('@turf/helpers');
-const distance = require('@turf/distance').default;
+const { compareDistancesToExtremity } = require('../../utils');
 
 const airspaceName = 'Washington Reagan National Airport';
 const airspaceKey = 'kdca';
@@ -11,81 +10,36 @@ const airspaceKey = 'kdca';
  * Runway 01/19
  *
  * Coordinates: (lon/lat)
- -77.0391322, 38.8617231
- -77.0390886, 38.8612313
- -77.0403761, 38.8609828
- -77.0409071, 38.8596231
- -77.0389062, 38.8585955
- -77.0373023, 38.8429374
- -77.0386863, 38.8433343
- -77.0385736, 38.8417424
- -77.0377100, 38.8414374
- -77.0370991, 38.8414719
- -77.0370461, 38.8410071
- -77.0363440, 38.8410462
- -77.0384254, 38.8617691
- -77.0391322, 38.8617231
+ -77.0370488, 38.8410045
+ -77.0363414, 38.8410421
+ -77.0384321, 38.8617660
+ -77.0391355, 38.8617211
+ -77.0370488, 38.8410045
  */
 const runway01_19 = {
   key: `${airspaceKey}:runway:01-19`,
-  name: 'Runway 01-19',
+  name: 'KDCA Runway 01-19',
   maxAltitude: 500,
   coordinates: [[
     [
-      -77.0391322,
-      38.8617231
+      -77.0370488,
+      38.8410045
     ],
     [
-      -77.0390886,
-      38.8612313
+      -77.0363414,
+      38.8410421
     ],
     [
-      -77.0403761,
-      38.8609828
+      -77.0384321,
+      38.861766
     ],
     [
-      -77.0409071,
-      38.8596231
+      -77.0391355,
+      38.8617211
     ],
     [
-      -77.0389062,
-      38.8585955
-    ],
-    [
-      -77.0373023,
-      38.8429374
-    ],
-    [
-      -77.0386863,
-      38.8433343
-    ],
-    [
-      -77.0385736,
-      38.8417424
-    ],
-    [
-      -77.03771,
-      38.8414374
-    ],
-    [
-      -77.0370991,
-      38.8414719
-    ],
-    [
-      -77.0370461,
-      38.8410071
-    ],
-    [
-      -77.036344,
-      38.8410462
-    ],
-    [
-      -77.0384254,
-      38.8617691
-    ],
-    [
-      -77.0391322,
-      38.8617231
+      -77.0370488,
+      38.8410045
     ]
   ]]
 };
@@ -110,15 +64,11 @@ const runway01_19 = {
  */
 const north01_19 = {
   key: `${airspaceKey}:north:01-19`,
-  name: '',
+  name: 'KDCA North',
   maxAltitude: 5000,
-  rank: function (a, b) {
-    const extremity = [38.861209, -77.0386846]; // lat/lon
-    const aPos = point([a.lon, a.lat]);
-    const bPos = point([b.lon, b.lat]);
-    const aDistance = distance(aPos, extremity);
-    const bDistance = distance(bPos, extremity);
-    return bDistance - aDistance; // sorts according to closest to point
+  sort: function (a, b) {
+    const extremity = [-77.0386846, 38.861209]; // lon/lat
+    return compareDistancesToExtremity(a, b, extremity);
   },
   coordinates: [[
     [
@@ -192,15 +142,11 @@ const north01_19 = {
  */
 const south01_19 = {
   key: `${airspaceKey}:south:01-19`,
-  name: '',
+  name: 'KDCA South',
   maxAltitude: 5000,
-  rank: function (a, b) {
-    const extremity = [38.8416032, -77.0366997]; // lat/lon
-    const aPos = point([a.lon, a.lat]);
-    const bPos = point([b.lon, b.lat]);
-    const aDistance = distance(aPos, extremity);
-    const bDistance = distance(bPos, extremity);
-    return bDistance - aDistance; // sorts according to closest to point
+  sort: function (a, b) {
+    const extremity = [-77.0366997, 38.8416032]; // lon/lat
+    return compareDistancesToExtremity(a, b, extremity);
   },
   coordinates: [[
     [
@@ -253,21 +199,35 @@ const route01_19 = {
     return isNorthward(sample.track) ? '1' : '19';
   },
   getApproachRouteKey (runway) {
-    return runway === '1' ? south01_19.key : north01_19.key;
+    switch (runway) {
+      case '1':
+        return south01_19.key;
+      case '19':
+        return north01_19.key;
+      default:
+        return false;
+    }
   },
   getDepartureRouteKey (runway) {
-    return runway === '1' ? north01_19.key : south01_19.key;
+    switch (runway) {
+      case '1':
+        return north01_19.key;
+      case '19':
+        return south01_19.key;
+      default:
+        return false;
+    }
   }
 };
-
-function getRoutes () {
-  return [route01_19];
-}
 
 function isNorthward (track) {
   const isNE = (track > 275 && track <= 360);
   const isNW = (track >= 0 && track < 90);
   return (isNE || isNW);
+}
+
+function getRoutes () {
+  return [route01_19];
 }
 
 module.exports = {

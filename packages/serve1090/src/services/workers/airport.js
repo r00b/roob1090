@@ -83,7 +83,7 @@ async function partitionAndLogRoute (aircraft, route) {
 
   // determine the semantic meaning of each region
   const arriving = partition[approachRegionKey];
-  const departed = partition[departureRegionKey];
+  const departed = partition[departureRegionKey].reverse(); // sort in order of most recent departure
   const onRunway = partition[route.runway.key];
 
   // partition the aircraft currently on the runway

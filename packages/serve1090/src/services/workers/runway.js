@@ -2,6 +2,7 @@ const logger = require('../../lib/logger').get('airport-service');
 const workerLogger = require('../../lib/logger').get('worker');
 const RedisService = require('../../services/redis-service');
 const configPath = require('worker_threads').workerData.job.configPath;
+const RUNWAY_LIFETIME_SECS = 28800; // 8 hours
 
 const redis = new RedisService();
 
@@ -11,7 +12,7 @@ const redis = new RedisService();
     const airport = require(`../${configPath}`);
 
     const routes = airport.getRoutes();
-    const runs = routes.map(route => computeActiveRunway(route));
+    const runs = routes.map(route => computeAndWriteActiveRunway(route));
     await Promise.all(runs);
 
     workerLogger.info('runway worker completed', { module: airport.key, duration: Date.now() - start });
@@ -22,7 +23,14 @@ const redis = new RedisService();
   }
 })();
 
-async function computeActiveRunway (route) {
+/**
+ * Identify candidate aircraft in a route (i.e. in the approach or departure regions) and use
+ * candidate data to determine the currently active runway
+ *
+ * @param route - route object from airport store
+ * @returns {string|bool} the active runway or false if one cannot be computed
+ */
+async function computeAndWriteActiveRunway (route) {
   const candidates = await findCandidates(route);
   if (!candidates.length) {
     logger.warn('failed to find candidates to detect active runway');
@@ -32,9 +40,10 @@ async function computeActiveRunway (route) {
     const hex = candidates[i];
     const sample = await redis.hgetJson('store:valid', hex);
     if (sample) {
+      // use logic defined in the route module to compute the active runway
       const activeRunway = route.computeActiveRunway(sample);
       if (activeRunway) {
-        await redis.setex(`${route.key}:activeRunway`, 28800, activeRunway);
+        await redis.setex(`${route.key}:activeRunway`, RUNWAY_LIFETIME_SECS, activeRunway);
         logger.info('set active runway', {
           route: route.key,
           runway: activeRunway,
@@ -49,6 +58,12 @@ async function computeActiveRunway (route) {
   return false;
 }
 
+/**
+ * Check the route's head and tail for candidate aircraft
+ *
+ * @param route - route object from airport store
+ * @returns array of aircraft candidates, or false if none are found
+ */
 async function findCandidates (route) {
   // try to check only one route for a sample if possible
   let candidates = await redis.smembers(`${route.tail.key}:aircraft`);
@@ -59,7 +74,7 @@ async function findCandidates (route) {
 }
 
 function exit (code) {
-  // flush winston and console
+  // flush logger and console
   logger.on('finish', function (info) {
     process.stdout.write('', () => {
       process.exit(code);

@@ -17,7 +17,7 @@ aircraft whose api data we want:
 
 * aircraft that are departing
 * aircraft that are arriving
-... so pretty much everything
+... so pretty much everything will get queried at some point
 
 so...
 

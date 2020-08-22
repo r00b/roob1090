@@ -44,7 +44,7 @@ class RedisService {
    *
    * @param {string} key - key of hash
    * @param {string} field - field in hash
-   * @param {string} value - value to set
+   * @param {object} value - value to set
    * @param {string|integer} ex - number of seconds until key-value pair is deleted
    * @returns {Promise|Pipeline}
    */
@@ -150,11 +150,22 @@ class RedisService {
    * Get all members of a sorted set via ZRANGE;
    * https://redis.io/commands/zrange
    *
-   * @param set
-   * @returns {Promise}
+   * @param {string} set - key of set
+   * @returns {Promise|Pipeline}
    */
   zmembers (set) {
     return this.send('zrange', set, 0, -1);
+  }
+
+  /**
+   * Determine if field is an existing field in the given hash
+   *
+   * @param {string} hash - key of hash
+   * @param {string} field - field in hash
+   * @returns {Promise|Pipeline}
+   */
+  hexists (hash, field) {
+    return this.send('hexists', hash, field);
   }
 
   // OTHER OPERATIONS

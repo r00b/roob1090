@@ -2,7 +2,7 @@ version: '3.8'
 services:
   redis:
     image: eqalpha/keydb:latest
-    container_name: serve1090_redis
+    container_name: serve1090_keydb
     ports:
       - 6379:6379
     volumes:

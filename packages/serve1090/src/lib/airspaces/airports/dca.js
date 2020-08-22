@@ -191,6 +191,8 @@ const south01_19 = {
 const route01_19 = {
   key: `${airspaceKey}:route01_19`,
   parent: airspaceKey,
+  // todo clean this up
+  regions: [south01_19, runway01_19, north01_19],
   runway: runway01_19,
   head: north01_19,
   tail: south01_19,

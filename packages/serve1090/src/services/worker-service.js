@@ -25,22 +25,31 @@ function generateAirportWorkers (airportDir) {
   return modules
     .reduce((acc, file) => {
       const airportConfig = file.replace(/\.js/, '');
-      // each airport module needs two jobs/workers:
-      // the first (airport) reduces the valid aircraft store to those aircraft contained
-      // within the regions defined in the config
-      acc.push({
-        name: 'airport',
-        interval: '1s',
-        configPath: `${airportDir}/${airportConfig}`
-      });
-      // the second (runway) picks sample aircraft from the results of the airport job
-      // to determine which runway is active
-      acc.push({
-        name: 'runway',
-        timeout: '5s',
-        interval: '1m',
-        configPath: `${airportDir}/${airportConfig}`
-      });
+      const configPath = `${airportDir}/${airportConfig}`;
+      // each airport module needs three jobs/workers:
+      acc.push(
+        // the first (airport) reduces the valid aircraft store to those aircraft contained
+        // within the regions defined in the config
+        {
+          name: 'airport',
+          interval: '1s',
+          configPath
+        },
+        // the second (runway) picks sample aircraft from the results of the airport job
+        // to determine which runway is active
+        {
+          name: 'runway',
+          timeout: '5s',
+          interval: '1m',
+          configPath
+        },
+        // the third (fa-api) fetches enriched data for each aircraft in each region of the route
+        {
+          name: 'enrichments',
+          interval: '1s',
+          configPath
+        }
+      );
       return acc;
     }, []);
 }

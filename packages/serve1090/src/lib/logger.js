@@ -127,6 +127,14 @@ container.add('airport-service', initializeLogger({
   pad: 30
 }));
 
+container.add('api-service', initializeLogger({
+  service: 'api-service',
+  console: true,
+  file,
+  color: 'cyan',
+  pad: 30
+}));
+
 container.add('store', initializeLogger({
   service: 'store',
   console: false,

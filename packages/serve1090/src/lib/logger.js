@@ -102,11 +102,11 @@ function initializeLogger (opts) {
 
 const container = new winston.Container();
 
-const file = true;
+const file = false;
 
 container.add('app', initializeLogger({
   service: 'app',
-  console: true,
+  console: false,
   file,
   color: 'magenta'
 }));
@@ -145,14 +145,14 @@ container.add('store', initializeLogger({
 
 container.add('redis', initializeLogger({
   service: 'redis',
-  console: true,
+  console: false,
   file,
   color: 'green'
 }));
 
 container.add('worker', initializeLogger({
   service: 'worker',
-  console: false,
+  console: true,
   file,
   color: 'green'
 }));

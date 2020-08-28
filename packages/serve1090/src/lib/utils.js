@@ -1,5 +1,6 @@
 const { point } = require('@turf/helpers');
 const distance = require('@turf/distance').default;
+const got = require('got');
 
 function rightPad (str, len) {
   return str.padEnd(len, ' ');
@@ -39,10 +40,29 @@ function computeDistance (a, b) {
   return distance(point(a), point(b));
 }
 
+/**
+ * Make an HTTP GET request on url using basic auth if username and password
+ * are specified
+ *
+ * @param {string} url - request URL
+ * @param {string} username
+ * @param {string} password
+ * @returns {Promise}
+ */
+function get (url, username, password) {
+  const options = {
+    responseType: 'json'
+  };
+  if (username) options.username = username;
+  if (password) options.password = password;
+  return got(url, options);
+}
+
 module.exports = {
   rightPad,
   secondsToMillis,
   millisToSeconds,
   compareDistancesToExtremity,
-  computeDistance
+  computeDistance,
+  get
 };

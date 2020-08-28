@@ -4,14 +4,14 @@ const _ = require('lodash');
 const RedisService = require('../../services/redis-service');
 const { point, polygon } = require('@turf/helpers');
 const pointInPolygon = require('@turf/boolean-point-in-polygon').default;
-const configPath = require('worker_threads').workerData.job.configPath;
+const airspacePath = require('worker_threads').workerData.job.airspacePath;
 
 const redis = new RedisService();
 
 (async () => {
   try {
     const start = Date.now();
-    const airport = require(`../${configPath}`);
+    const airport = require(`../${airspacePath}`);
 
     const aircraft = await redis.hgetAllAsJsonValues('store:valid');
     if (!aircraft.length) { // nothing to do

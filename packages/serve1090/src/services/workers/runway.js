@@ -1,7 +1,7 @@
 const logger = require('../../lib/logger').get('airport-service');
 const workerLogger = require('../../lib/logger').get('worker');
 const RedisService = require('../../services/redis-service');
-const configPath = require('worker_threads').workerData.job.configPath;
+const airspacePath = require('worker_threads').workerData.job.airspacePath;
 const RUNWAY_LIFETIME_SECS = 28800; // 8 hours
 
 const redis = new RedisService();
@@ -9,7 +9,7 @@ const redis = new RedisService();
 (async () => {
   try {
     const start = Date.now();
-    const airport = require(`../${configPath}`);
+    const airport = require(`../${airspacePath}`);
 
     const routes = airport.getRoutes();
     const runs = routes.map(route => computeAndWriteActiveRunway(route));

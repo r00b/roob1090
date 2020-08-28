@@ -2,20 +2,37 @@ const Joi = require('joi');
 const MAX_VALID_SEEN = 10;
 
 /**
- * Define a custom type `altitude`, which allows numbers or a string
- * equal to "ground" which it will coerce to 0
+ * Define a custom validator with the following addon types:
+ *
+ * altitude: allows numbers, or a string equal to "ground" which it will coerce to 0
+ * stripString: allows strings, and will strip the entire key/value pair if it is empty/violates Joi.string() or null
+ * stripNumber: allows numbers, and will strip the entire key/value pair if it is empty/violates Joi.number() or null
  */
-const Joi1090 = Joi.extend(joi => {
-  return {
-    type: 'altitude',
-    base: joi.alternatives().try(Joi.number(), Joi.string().valid('ground')),
-    coerce (value, helpers) {
-      if (value === 'ground') {
-        return { value: 0 };
+const Joi1090 = Joi.extend(
+  joi => {
+    return {
+      type: 'altitude',
+      base: joi.alternatives().try(joi.number(), joi.string().valid('ground')),
+      coerce (value, helpers) {
+        if (value === 'ground') {
+          return { value: 0 };
+        }
       }
-    }
-  };
-});
+    };
+  },
+  joi => {
+    return {
+      type: 'stripString',
+      base: joi.alternatives().try(joi.string(), joi.any().strip())
+    };
+  },
+  joi => {
+    return {
+      type: 'stripNumber',
+      base: joi.alternatives().try(joi.number(), joi.any().strip())
+    };
+  }
+);
 
 // https://github.com/flightaware/dump1090/blob/master/README-json.md
 const AIRCRAFT_SCHEMA = Joi1090.object({
@@ -65,4 +82,77 @@ const AIRCRAFT_SCHEMA = Joi1090.object({
   rssi: Joi1090.number().optional() // recent verage RSSI (signal power) (dbFS) (always negative)
 }).options({ stripUnknown: true });
 
-module.exports = AIRCRAFT_SCHEMA;
+const ENRICHMENTS_SCHEMA = Joi1090.object({
+  // OpenSky
+  registration: Joi1090.stripString(), // airframe registration number
+  manufacturerName: Joi1090.stripString(), // manufacturer name, well-formatted (i.e. Boeing)
+  manufacturerIcao: Joi1090.stripString(), // manufacturer ICAO (i.e. BOEING)
+  model: Joi1090.stripString(), // aircraft model full name (i.e. Boeing 737-8HF)
+  type: Joi1090.stripString(), // aircraft type (i.e. B737)
+  serialNumber: Joi1090.stripString(), // airframe serial number
+  lineNumber: Joi1090.stripString(), // airframe line number
+  icaoAircraftClass: Joi1090.stripString(), // ICAO class
+  selCal: Joi1090.stripString(),
+  operator: Joi1090.stripString(),
+  operatorCallsign: Joi1090.stripString(), // operator ATC callsign
+  operatorIcao: Joi1090.stripString(), // operator ICAO callsign/ident prefix
+  operatorIata: Joi1090.stripString(), // operator IATA callsign/ident prefix
+  owner: Joi1090.stripString(), // full name of owner
+  categoryDescription: Joi1090.stripString(), // (i.e. Large (75000 to 300000 lbs))
+  registered: Joi1090.stripString(), // date registered
+  regUntil: Joi1090.stripString(), // expiration date of registration
+  status: Joi1090.stripString(),
+  built: Joi1090.stripString(), // date airframe was completed
+  firstFlightDate: Joi1090.stripString(), // date of first flight
+  engines: Joi1090.stripString(), // engine equipment
+  modes: Joi1090.boolean().optional(),
+  adsb: Joi1090.boolean().optional(),
+  acars: Joi1090.boolean().optional(),
+  vdl: Joi1090.boolean().optional(),
+  notes: Joi1090.stripString(),
+  country: Joi1090.stripString(), // country of registration
+
+  // FlightAware
+  faFlightId: Joi1090.stripString(), // FlightAware unique identifier for flight
+  prefix: Joi1090.stripString(),
+  suffix: Joi1090.stripString(),
+  departureTime: Joi1090.stripNumber(), // time of departure, epoch
+  firstPositionTime: Joi1090.stripNumber(), // time of first recorded position
+  arrivalTime: Joi1090.stripNumber(), // time of arrival
+  altitudeStatus: Joi1090.stripString(), // "C" when the aircraft is more than 200 feet away from its ATC-assigned altitude
+  updateType: Joi1090.stripString(), // update type: TP=projected, TO=oceanic, TZ=radar, TA=broadcast, TM=multilateration, TD=datalink, TX=surface, TS=space-based
+  altitudeChange: Joi1090.stripString(), // "C" when climbing, "D" when descending, empty if neither
+  waypoints: Joi1090.stripString(), // space-separated lat/long pairs drawing a line approximating the path of the aircraft's route
+
+  // OpenSky or FlightAware
+  origin: Joi1090.stripString(), // ICAO identifier of originating airport
+  destination: Joi1090.stripString() // ICAO identifier of destination airport
+}).options({ stripUnknown: true }).rename('typecode', 'type', { override: true });
+
+// stripped from enrichments
+// OpenSky:
+// lastSeen
+// firstSeen
+// icao24
+// timestamp
+
+// FlightAware:
+// ident
+// prefix
+// suffix
+// timeout
+// timestamp
+// longitude
+// latitude
+// lowLongitude
+// lowLatitude
+// highLongitude
+// highLatitude
+// groundspeed
+// altitude
+// heading
+
+module.exports = {
+  AIRCRAFT_SCHEMA,
+  ENRICHMENTS_SCHEMA
+};

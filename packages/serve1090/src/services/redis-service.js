@@ -27,6 +27,18 @@ class RedisService {
   // WRITE OPERATIONS
 
   /**
+   * Set a value;
+   * https://redis.io/commands/set
+   *
+   * @param {string} key - key of variable
+   * @param {string} value - value of variable
+   * @returns {Promise|Pipeline}
+   */
+  async set (key, value) {
+    return this.send('set', key, value);
+  }
+
+  /**
    * Set a value with an expiry time;
    * https://redis.io/commands/setex
    *
@@ -35,8 +47,21 @@ class RedisService {
    * @param {string} value - value of variable
    * @returns {Promise|Pipeline}
    */
-  async setex (key, ex, ...values) {
-    return this.send('setex', key, ex, ...values);
+  async setex (key, ex, value) {
+    return this.send('setex', key, ex, value);
+  }
+
+  /**
+   * Set a JSON object into a field within a hash
+   *
+   * @param {string} key - key of hash
+   * @param {string} field - field in hash
+   * @param {object} value - value to set
+   * @returns {Promise|Pipeline}
+   */
+  async hsetJson (key, field, value) {
+    const stringVal = JSON.stringify(value);
+    return this.send('hset', key, field, stringVal);
   }
 
   /**
@@ -49,8 +74,7 @@ class RedisService {
    * @returns {Promise|Pipeline}
    */
   async hsetJsonEx (key, field, value, ex) {
-    const stringVal = JSON.stringify(value);
-    const set = this.send('hset', key, field, stringVal);
+    const set = this.hsetJson(key, field, value);
     const expire = this.send('call', 'expiremember', key, field, ex);
     return Promise.all([set, expire]);
   }

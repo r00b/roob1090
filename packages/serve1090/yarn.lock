@@ -2,14 +2,7 @@
 # yarn lockfile v1
 
 
-"@babel/runtime@^7.10.5":
-  version "7.11.0"
-  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.11.0.tgz#f10245877042a815e07f7e693faff0ae9d3a2aac"
-  integrity sha512-qArkXsjJq7H+T86WrIFV0Fnu/tNOkZ4cgXmjkzAu3b/58D5mFIO8JH/y77t7C9q0OdDRdh9s7Ue5GasYssxtXw==
-  dependencies:
-    regenerator-runtime "^0.13.4"
-
-"@babel/runtime@^7.11.2":
+"@babel/runtime@^7.10.5", "@babel/runtime@^7.11.2":
   version "7.11.2"
   resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.11.2.tgz#f549c13c754cc40b87644b9fa9f09a6a95fe0736"
   integrity sha512-TeWkU52so0mPtDcaCTxNBI/IHiz0pZgr8VEFqXFtZWpYD08ZB6FaSwVAS8MKRQAP3bYKiVjwysOJgMFY28o6Tw==
@@ -444,10 +437,10 @@ braces@~3.0.2:
   dependencies:
     fill-range "^7.0.1"
 
-bree@^3.1.0:
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/bree/-/bree-3.1.0.tgz#b4d691047fb465b7632f9c82bd21aeee9a10c352"
-  integrity sha512-TK5+dTqXHwAO9PWfyGAUFyxOJauLsHR395kGbKrBVstA2/shoGdisiuSLb7dzMLHcdXItoYZ+alV53w0i9arbQ==
+bree@^3.3.0:
+  version "3.3.0"
+  resolved "https://registry.yarnpkg.com/bree/-/bree-3.3.0.tgz#7a5a812d3f478de19c22c6e357370b38ba29695c"
+  integrity sha512-1mc16Qv9229j7qP2aE8lq6Sv2RaVqlXMiRlQydHJXncH6tIFlBEMJ1rV8uuIa0NedmhqutzRRcr66js/e67UAQ==
   dependencies:
     "@babel/runtime" "^7.11.2"
     "@breejs/later" "^4.0.2"

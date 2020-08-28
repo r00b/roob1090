@@ -24,7 +24,7 @@
     "@turf/distance": "^6.0.1",
     "@turf/helpers": "^6.1.4",
     "base-64": "^0.1.0",
-    "bree": "^3.1.0",
+    "bree": "^3.3.0",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "express-ws": "^4.0.0",

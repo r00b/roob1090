@@ -1,0 +1,5 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Debugger (droplet)" type="ChromiumRemoteDebugType" factoryName="Chromium Remote" host="67.207.88.230" port="9229" restartOnDisconnect="true">
+    <method v="2" />
+  </configuration>
+</component>

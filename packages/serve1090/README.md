@@ -6,9 +6,17 @@
 
 ### Prerequisites
 
+1. From the repo root, run `chmod +x scripts/setup.sh && ./scripts/setup.sh` and follow prompts
+
+Then, if running via Docker only: 
+
 1. [Docker CLI](https://docs.docker.com/get-docker/)
-2. Node as defined in `.nvmrc` (recommend using `nvm`) if running the `express` server outside of a Docker container
-3. From the repo root, run `chmod +x scripts/setup.sh && ./scripts/setup.sh` and follow prompts
+
+Alternatively, if running the `express` server outside of a Docker container:
+
+1. Volta: `curl https://get.volta.sh | bash`
+2. Node: `volta install node`
+3. Yarn: `volta install yarn`
 
 ### Installation and execution
 

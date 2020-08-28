@@ -11,7 +11,7 @@ function init () {
   const airspaceWorkers = generateAirspaceWorkers(AIRSPACES_PATH);
   const airportWorkers = generateAirportWorkers(AIRPORTS_PATH);
 
-  const config = getBreeConfig(...airportWorkers, ...airspaceWorkers);
+  const config = getWorkerConfig(...airportWorkers, ...airspaceWorkers);
   const jobs = new Bree(config);
 
   jobs.start();
@@ -25,7 +25,7 @@ function generateAirportWorkers (airportDir) {
   return modules
     .reduce((acc, file) => {
       const airportConfig = file.replace(/\.js/, '');
-      const configPath = `${airportDir}/${airportConfig}`;
+      const airspacePath = `${airportDir}/${airportConfig}`;
       // each airport module needs three jobs/workers:
       acc.push(
         // the first (airport) reduces the valid aircraft store to those aircraft contained
@@ -33,7 +33,7 @@ function generateAirportWorkers (airportDir) {
         {
           name: 'airport',
           interval: '1s',
-          configPath
+          airspacePath
         },
         // the second (runway) picks sample aircraft from the results of the airport job
         // to determine which runway is active
@@ -41,13 +41,13 @@ function generateAirportWorkers (airportDir) {
           name: 'runway',
           timeout: '5s',
           interval: '1m',
-          configPath
+          airspacePath
         },
         // the third (fa-api) fetches enriched data for each aircraft in each region of the route
         {
-          name: 'enrichments',
-          interval: '1s',
-          configPath
+          name: 'enrichment',
+          interval: '5s',
+          airspacePath
         }
       );
       return acc;
@@ -68,7 +68,7 @@ function generateAirspaceWorkers (airspaceDir) {
     });
 }
 
-function getBreeConfig (...jobs) {
+function getWorkerConfig (...jobs) {
   return {
     logger: _.assign(_.create(logger), {
       info () {
@@ -79,7 +79,7 @@ function getBreeConfig (...jobs) {
       }
     }),
     root: path.join(__dirname, 'workers'),
-    // closeWorkerAfterMs: 5000,
+    // closeWorkerAfterMs: 5000, TODO
     jobs
   };
 }

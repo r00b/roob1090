@@ -1,6 +1,6 @@
 const _ = require('lodash');
 const logger = require('../lib/logger').get('store');
-const AIRCRAFT_SCHEMA = require('./schemas');
+const { AIRCRAFT_SCHEMA } = require('./schemas');
 const {
   secondsToMillis,
   millisToSeconds
@@ -18,7 +18,8 @@ module.exports = {
   addAircraft,
   getAllAircraft,
   getValidAircraft,
-  getInvalidAircraft
+  getInvalidAircraft,
+  getValidatedAircraft
 };
 
 // CREATE
@@ -93,12 +94,20 @@ function getAllAircraft () {
   return getStore('store:all');
 }
 
-async function getValidAircraft (client) {
+function getValidAircraft () {
   return getStore('store:valid');
 }
 
-async function getInvalidAircraft (client) {
+function getInvalidAircraft () {
   return getStore('store:invalid');
+}
+
+function getAircraft (hex) {
+  return redis.hgetJson('store:all', hex);
+}
+
+function getValidatedAircraft (hex) {
+  return redis.hgetJson('store:valid', hex);
 }
 
 async function getStore (store) {

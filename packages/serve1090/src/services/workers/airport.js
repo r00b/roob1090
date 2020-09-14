@@ -5,6 +5,7 @@ const RedisService = require('../../services/redis-service');
 const { point, polygon } = require('@turf/helpers');
 const pointInPolygon = require('@turf/boolean-point-in-polygon').default;
 const airspacePath = require('worker_threads').workerData.job.airspacePath;
+const store = require('../../stores/aircraft-store');
 
 const redis = new RedisService();
 
@@ -13,12 +14,14 @@ const redis = new RedisService();
     const start = Date.now();
     const airport = require(`../${airspacePath}`);
 
-    const aircraft = await redis.hgetAllAsJsonValues('store:valid');
-    if (!aircraft.length) { // nothing to do
+    const validStore = await store.getAllValidAircraft();
+    if (!validStore.aircraft.length) { // nothing to do
       return exit(0);
     }
 
-    await computeAirportBoard(aircraft, airport);
+    const board = await computeAirportBoard(validStore.aircraft, airport);
+    await redis.setex(`board:${airport.key}`, 60, JSON.stringify(board));
+
     workerLogger.info('airport worker completed', { module: airport.key, duration: Date.now() - start });
     exit(0);
   } catch (e) {
@@ -48,19 +51,8 @@ async function computeAirportBoard (aircraft, airport) {
     onRunway: [],
     runways: []
   });
-  const board = await runs;
-
-  // TODO kill logger
-  logger.info(`${airport.key} board`, {
-    arriving: board.arriving.map(flight),
-    arrived: board.arrived.map(flight),
-    departing: board.departing.map(flight),
-    departed: board.departed.map(flight),
-    onRunway: board.onRunway.map(flight),
-    runways: board.runways
-  });
-
-  return board;
+  const f = await runs;
+  return f;
 }
 
 async function partitionAndLogRoute (aircraft, route) {
@@ -119,7 +111,7 @@ async function partitionAndLogRoute (aircraft, route) {
  * Reduces an array of aircraft to those currently located within the region, as
  * defined by the region's boundary property; write them to their respective stores
  *
- * @param {aircraft[]} aircraft - array of aircraft objects
+ * @param {aircraft[]} aircraft - array of hashes for all valid aircraft
  * @param region - a region object taken from the route object
  * @returns array of aircraft objects currently located within the region
  */
@@ -143,7 +135,16 @@ async function reduceAndWriteRegion (aircraft, region) {
     matches.sort(region.sort);
   }
 
-  return matches;
+  const enrichedMatches = matches.reduce(async (acc, a) => {
+    const hex = a.hex;
+    const enrichments = await redis.hgetJson('store:enrichments', hex) || {};
+    const results = {};
+    Object.assign(results, a, enrichments);
+    acc.push(results);
+    return acc;
+  }, []);
+
+  return enrichedMatches;
 }
 
 /**

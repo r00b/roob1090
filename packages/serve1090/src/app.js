@@ -1,31 +1,34 @@
-const express = require('express');
-const app = express();
+const app = require('express')();
 const loggers = require('./lib/logger');
 const logger = loggers.get('app');
 const _ = require('lodash');
-require('express-ws')(app);
 const aircraftRouter = require('./routes/aircraft/index');
+const airspacesRouter = require('./routes/airspaces/index');
 
 async function startServer (port) {
   const normalizedPort = normalizePort(port);
 
-  // configure request logger
-  app.locals = {
-    logger: loggers.get('request')
-  };
-  app.use(require('./middleware/http-request-logger'));
-
-  const store = require('../src/stores/aircraft-store');
-
-  // kick off the jobs
-  require('./services/worker-service')();
-
-  // set up routers
-  const secret = getSecret(process.env.SECRET);
-  app.use('/aircraft', aircraftRouter(store, secret));
-
   try {
     const server = await app.listen(normalizedPort);
+
+    require('express-ws')(app, server);
+
+    // configure request logger
+    app.locals = {
+      logger: loggers.get('request')
+    };
+    app.use(require('./middleware/http-request-logger'));
+
+    const store = require('../src/stores/aircraft-store');
+
+    // kick off the jobs
+    require('./services/worker-service')();
+
+    // set up routers
+    const secret = getSecret(process.env.SECRET);
+    app.use('/aircraft', aircraftRouter(store, secret));
+    app.use('/airports', airspacesRouter(secret));
+
     logger.info('started serve1090', { port: normalizedPort });
     return server;
   } catch (err) {
@@ -47,7 +50,7 @@ function normalizePort (port) {
   }
 }
 
-function getSecret (secret) {
+function getSecret (secret) { // TODO throw if no secret found
   return _.get(secret, 'length') ? secret : false;
 }
 

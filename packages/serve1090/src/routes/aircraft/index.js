@@ -7,6 +7,7 @@ const {
   StoreError
 } = require('../../lib/errors');
 
+// TODO - GET a secret for WS pump
 module.exports = (store, secret) => {
   return new express.Router()
     .ws('/pump', pump(store, secret), errorHandler)
@@ -33,6 +34,10 @@ function pump (store, secret) {
         ws.locals.requestLogger.info('ws message started');
         await parseAndSetData(store, secret, data);
       } catch (err) {
+        ws.send(JSON.stringify({
+          stack: err.stack,
+          message: err.message
+        }));
         ws.locals.requestLogger.error(err.message, { detail: err.detail });
       } finally {
         ws.locals.requestLogger.info('ws message completed', {
@@ -57,7 +62,7 @@ function getAll (store) {
  */
 function getValid (store) {
   return (req, res, next) => {
-    return store.getValidAircraft().then(result => res.status(200).json(result)).catch(next);
+    return store.getAllValidAircraft().then(result => res.status(200).json(result)).catch(next);
   };
 }
 
@@ -90,7 +95,7 @@ async function parseAndSetData (store, secret, data) {
  * Handle errors thrown at any point in the request
  */
 function errorHandler (err, req, res, next) {
-  const { message, detail, status } = parseError(err);
+  const { status, message, detail } = parseError(err);
   res.locals.requestLogger.error(message, { detail });
   if (status) {
     res.status(status).json({
@@ -121,15 +126,15 @@ function parseError (err) {
       };
     case StoreError:
       return {
+        status: 503,
         message: 'aircraft store error',
-        detail: err.message,
-        status: 503
+        detail: err.message
       };
     default:
       return {
+        status: 500,
         message: 'internal server error',
-        detail: err.message,
-        status: 500
+        detail: err.message
       };
   }
 }

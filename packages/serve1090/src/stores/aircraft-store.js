@@ -17,7 +17,7 @@ const MAX_DATA_AGE = 10000;
 module.exports = {
   addAircraft,
   getAllAircraft,
-  getValidAircraft,
+  getAllValidAircraft,
   getInvalidAircraft,
   getValidatedAircraft
 };
@@ -94,9 +94,11 @@ function getAllAircraft () {
   return getStore('store:all');
 }
 
-function getValidAircraft () {
+function getAllValidAircraft () {
   return getStore('store:valid');
 }
+
+// todo use hlen to get length of aircraft
 
 function getInvalidAircraft () {
   return getStore('store:invalid');

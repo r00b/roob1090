@@ -126,6 +126,21 @@ class RedisService {
   }
 
   /**
+   * Get a value and parse it into JSON
+   *
+   * @param {string} key - key of value to get
+   * @returns Promise
+   */
+  async getAsJson (key) {
+    const res = await this.get(key);
+    try {
+      return JSON.parse(res);
+    } catch (e) {
+      throw new RedisError('unable to parse result into JSON', { key, value: String(res) });
+    }
+  }
+
+  /**
    * Get a value in a hash and parse the result into JSON; ignores any active pipelines
    *
    * @param {string} key - key of hash
@@ -140,6 +155,17 @@ class RedisService {
       throw new RedisError('unable to parse result into JSON', { key, field, value: String(res) });
     }
   }
+
+  // async hgetAllAsJson (hash) {
+  //   const hashWithStringValues = await this.redis.get(hash);
+  //   return Object.entries(hashWithStringValues).reduce((acc, [key, value]) => {
+  //     try {
+  //       acc[key] = JSON.parse(value);
+  //     } catch (e) {
+  //       throw new RedisError('unable to parse result into JSON', { hash, value: value });
+  //     }
+  //   }, {})
+  // }
 
   /**
    * Get array of values of a hash as JSON objects; ignores any active pipelines

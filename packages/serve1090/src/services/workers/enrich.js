@@ -50,7 +50,7 @@ async function enrichAircraft (hex) {
   const airframeEnrichments = await queryAirframe(hex);
   const routeEnrichments = await queryRoute(flight);
   let faEnrichments = {};
-  if (!routeEnrichments.origin) {
+  if (!routeEnrichments.origin || !airframeEnrichments.typecode) {
     faEnrichments = await queryFa(flight);
   }
 
@@ -114,13 +114,15 @@ async function queryRoute (flight) {
       config.openSkyUsername,
       config.openSkyPassword
     );
-    if (_.get(body, 'route.length') === 2) {
+    // todo this is probably wrong
+    if (_.get(body, 'route.length') <= 2) {
       return {
         origin: body.route[0],
         destination: body.route[1]
       };
+    } else {
+      return {};
     }
-    return {};
   } catch (e) {
     logger.warn('failed to fetch route from OpenSky', e);
     return {};

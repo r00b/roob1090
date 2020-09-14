@@ -53,3 +53,8 @@ Notes:
 
 * investigate ws broadcast
 * stringify en _entire_ payload of a single hash with routes containing their arrival/departure aircraft stores and broacast via websocket? probably
+
+
+
+
+* look into p-map for mapping over promises

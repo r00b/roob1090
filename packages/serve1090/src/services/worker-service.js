@@ -13,7 +13,6 @@ function init () {
 
   const config = getWorkerConfig(...airportWorkers, ...airspaceWorkers);
   const jobs = new Bree(config);
-
   jobs.start();
 
   const workerNames = [...new Set(config.jobs.map(j => j.name))];
@@ -45,7 +44,7 @@ function generateAirportWorkers (airportDir) {
         },
         // the third (fa-api) fetches enriched data for each aircraft in each region of the route
         {
-          name: 'enrichment',
+          name: 'enrich',
           interval: '5s',
           airspacePath
         }

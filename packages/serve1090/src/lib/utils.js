@@ -1,6 +1,8 @@
 const { point } = require('@turf/helpers');
-const distance = require('@turf/distance').default;
+const fs = require('fs');
+const path = require('path');
 const got = require('got');
+const distance = require('@turf/distance').default;
 
 function rightPad (str, len) {
   return str.padEnd(len, ' ');
@@ -58,11 +60,29 @@ function get (url, username, password) {
   return got(url, options);
 }
 
+function stripFileExtension (filename) {
+  return filename.replace(/\.[^.]+$/, '');
+}
+
+function close (ws) {
+  ws.close();
+  setTimeout(() => {
+    ws.terminate();
+  }, 1000);
+}
+
+function getFileNames (relativePathToDir) {
+  return fs.readdirSync(path.resolve(__dirname, relativePathToDir)).map(stripFileExtension);
+}
+
+
 module.exports = {
   rightPad,
   secondsToMillis,
   millisToSeconds,
   compareDistancesToExtremity,
   computeDistance,
-  get
+  get,
+  getFileNames,
+  close
 };

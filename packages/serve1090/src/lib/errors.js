@@ -1,13 +1,31 @@
-class InvalidClientError extends Error {
+// TODO see if basic errors need their constructors
+
+class InvalidSocketError extends Error {
   constructor (clientSecret) {
     super();
     this._clientSecret = clientSecret;
   }
 
   get message () {
-    return `client provided secret (${this._clientSecret}) did not match serve1090 secret`;
+    if (this._clientSecret) {
+      return `invalid request secret (${this._clientSecret})`;
+    } else {
+      return `no request secret specified`;
+    }
   }
 }
+
+class BroadcastError extends Error {
+  constructor (message) {
+    super();
+    this._message = message;
+  }
+
+  get message () {
+    return this._message;
+  }
+}
+
 
 class StaleDataError extends Error {
   constructor (clientNowISOString) {
@@ -43,7 +61,8 @@ class RedisError extends Error {
 }
 
 module.exports = {
-  InvalidClientError,
+  InvalidSocketError,
+  BroadcastError,
   StaleDataError,
   LoggerError,
   StoreError,

@@ -1,11 +1,13 @@
-const logger = require('../../lib/logger').get('airport-service');
-const workerLogger = require('../../lib/logger').get('worker');
+const logger = require('../../lib/logger')().scope('worker airport');
 const _ = require('lodash');
+
+const airspacePath = require('worker_threads').workerData.job.airspacePath;
 const RedisService = require('../../services/redis-service');
+const store = require('../../stores/aircraft-store');
+
 const { point, polygon } = require('@turf/helpers');
 const pointInPolygon = require('@turf/boolean-point-in-polygon').default;
-const airspacePath = require('worker_threads').workerData.job.airspacePath;
-const store = require('../../stores/aircraft-store');
+const { exit } = require('../../lib/utils');
 
 const redis = new RedisService();
 
@@ -22,10 +24,10 @@ const redis = new RedisService();
     const board = await computeAirportBoard(validStore.aircraft, airport);
     await redis.setex(`board:${airport.key}`, 60, JSON.stringify(board));
 
-    workerLogger.info('airport worker completed', { module: airport.key, duration: Date.now() - start });
+    logger.scope('worker meta').info('airport worker completed', { module: airport.key, duration: Date.now() - start });
     exit(0);
   } catch (e) {
-    logger.error(e.message);
+    logger.error(e.message, e);
     exit(1);
   }
 })();
@@ -38,7 +40,7 @@ async function computeAirportBoard (aircraft, airport) {
     if (routeBoard) {
       return _.mergeWith(acc, routeBoard, mergeBoards);
     }
-    logger.warn(`unable to determine approach/departure without active runway`, {
+    logger.warn('unable to determine approach/departure without active runway', {
       airport: airport.key,
       route: route.key
     });
@@ -143,8 +145,9 @@ async function reduceAndWriteRegion (aircraft, region) {
     acc.push(results);
     return acc;
   }, []);
+  const result = await enrichedMatches;
 
-  return enrichedMatches;
+  return result;
 }
 
 /**
@@ -209,18 +212,4 @@ function scoreArray (arr) {
 
 function hex (aircraft) {
   return aircraft.hex;
-}
-
-function flight (aircraft) {
-  return aircraft.flight;
-}
-
-function exit (code) {
-  // flush logger and console
-  logger.on('finish', function (info) {
-    process.stdout.write('', () => {
-      process.exit(code);
-    });
-  });
-  logger.end();
 }

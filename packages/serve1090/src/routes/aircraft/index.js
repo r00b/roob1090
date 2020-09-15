@@ -1,5 +1,5 @@
 const express = require('express');
-const logger = require('../../lib/logger').get('request');
+const logger = require('../../lib/logger')().scope('request');
 const { v4: uuid } = require('uuid');
 const {
   InvalidClientError,
@@ -22,27 +22,24 @@ module.exports = (store, secret) => {
  * and passing them to the aircraft store
  */
 function pump (store, secret) {
-  return (ws, req, next) => {
+  return (ws, { originalUrl }, next) => { // todo impl next() and error handler
+
+    ws.locals = {
+      socketLogger: logger.scope('ws').child({ requestId: uuid() }),
+      start: Date.now()
+    };
+    ws.locals.socketLogger.info('init pump pipe', { start: ws.locals.start, url: originalUrl });
+
     ws.on('message', async data => {
       try {
-        // web sockets don't exactly "work" the way that express middleware
-        // expects them to, so we request log in the listener itself
-        ws.locals = {
-          requestLogger: logger.child({ requestId: uuid() }),
-          start: Date.now()
-        };
-        ws.locals.requestLogger.info('ws message started');
         await parseAndSetData(store, secret, data);
       } catch (err) {
         ws.send(JSON.stringify({
           stack: err.stack,
           message: err.message
         }));
-        ws.locals.requestLogger.error(err.message, { detail: err.detail });
-      } finally {
-        ws.locals.requestLogger.info('ws message completed', {
-          elapsedTime: Date.now() - ws.locals.start
-        });
+        // todo replace in next
+        ws.locals.socketLogger.error(err.message, { detail: err.detail });
       }
     });
   };

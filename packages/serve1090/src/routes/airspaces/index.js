@@ -1,5 +1,7 @@
 const express = require('express');
 const _ = require('lodash');
+const logger = require('../../lib/logger')().scope('request');
+const { v4: uuid } = require('uuid');
 const WebSocket = require('ws');
 const RedisService = require('../../services/redis-service');
 const AIRSPACES_PATH = '../lib/airspaces';
@@ -55,11 +57,25 @@ function authenticate (secret) {
  * @param {string} airspace - module name of the airspace to broadcast
  */
 function broadcast (airspace) {
-  return (ws, _, next) => {
+  return (ws, { originalUrl }, next) => {
+    ws.locals = {
+      socketLogger: logger.scope('ws').child({ requestId: uuid() }),
+      start: Date.now()
+    };
+    ws.locals.socketLogger.info('init board pipe', {
+      start: ws.locals.start,
+      url: originalUrl,
+      airspace
+    });
     const broadcast = setInterval(sendBoard(airspace, ws, next), 1000);
     ws.on('close', async _ => {
       clearInterval(broadcast);
       ws.terminate();
+      ws.locals.socketLogger.info('close board pipe', {
+        elapsedTime: Date.now() - ws.locals.start,
+        url: originalUrl,
+        airspace
+      });
     });
   };
 }
@@ -104,12 +120,15 @@ function errorHandler (err, req, res, next) {
   const { status, message, detail } = parseError(err);
   // send over both ws and HTTP
   if (req.ws) {
+    req.ws.socketLogger.error(message, { detail });
     req.ws.send(JSON.stringify({
       status,
       message,
       detail
     }));
     close(req.ws);
+  } else {
+    res.locals.requestLogger.error(message, { detail });
   }
   return res.status(status).json({
     message,

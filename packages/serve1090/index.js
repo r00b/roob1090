@@ -1,20 +1,21 @@
 require('dotenv').config();
 const app = require('./src/app');
-const logger = require('./src/lib/logger').get('app');
 const _ = require('lodash');
+const config = require('./src/config');
+const logger = require('./src/lib/logger')().scope('app');
 
 let connections = [];
 
-logger.info('starting serve1090');
+logger.info('starting serve1090', config);
 
 app(process.env.PORT).then(server => {
   // maintain array of current ws connections and purge them when they are closed
   // so that server shutdown can proceed normally
   server.on('connection', connection => {
-    logger.info('connection established');
+    // logger.info('connection established');
     connections.push(connection);
     connection.on('close', () => {
-      logger.info('connection closed');
+      // logger.info('connection closed');
       connections = _.without(connections, connection);
     });
   });
@@ -30,7 +31,7 @@ function shutdown () {
       curr.end();
       curr.destroy();
     });
-    logger.info('serve1090 shutdown complete');
+    logger.info('shutdown complete');
     process.exit(0);
   };
 }

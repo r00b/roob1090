@@ -1,6 +1,5 @@
 const app = require('express')();
-const loggers = require('./lib/logger');
-const logger = loggers.get('app');
+const logger = require('./lib/logger')().scope('app');
 const _ = require('lodash');
 const aircraftRouter = require('./routes/aircraft/index');
 const airspacesRouter = require('./routes/airspaces/index');
@@ -13,10 +12,6 @@ async function startServer (port) {
 
     require('express-ws')(app, server);
 
-    // configure request logger
-    app.locals = {
-      logger: loggers.get('request')
-    };
     app.use(require('./middleware/http-request-logger'));
 
     const store = require('../src/stores/aircraft-store');

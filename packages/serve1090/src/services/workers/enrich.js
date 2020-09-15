@@ -1,14 +1,14 @@
+const logger = require('../../lib/logger')().scope('worker enrich');
 const _ = require('lodash');
-const logger = require('../../lib/logger').get('api-service');
-const workerLogger = require('../../lib/logger').get('worker');
 
 const airspacePath = require('worker_threads').workerData.job.airspacePath;
 const config = require('../../config');
 const RedisService = require('../../services/redis-service');
 const store = require('../../stores/aircraft-store');
 
-const { get } = require('../../lib/utils');
+const { get, exit } = require('../../lib/utils');
 const { ENRICHMENTS_SCHEMA } = require('../../stores/schemas');
+
 const ENRICHMENT_LIFETIME_SECS = 900; // 15 min
 
 const redis = new RedisService();
@@ -22,10 +22,10 @@ const redis = new RedisService();
     const routeEnrichments = routes.map(enrichRoute);
     await Promise.all(routeEnrichments);
 
-    workerLogger.info('enrichment worker completed', { duration: Date.now() - start });
+    logger.scope('worker meta').info('enrichment worker completed', { duration: Date.now() - start });
     exit(0);
   } catch (e) {
-    logger.error(e.message, { ...e.details });
+    logger.error(e.message, e);
     exit(1);
   }
 })();
@@ -124,7 +124,7 @@ async function queryRoute (flight) {
       return {};
     }
   } catch (e) {
-    logger.warn('failed to fetch route from OpenSky', e);
+    logger.warn('failed to fetch route data from OpenSky', e);
     return {};
   }
 }
@@ -144,17 +144,7 @@ async function queryFa (flight) {
     );
     return body.InFlightInfoResult || {};
   } catch (e) {
-    logger.warn('failed to fetch enrichments from FlightAware', e);
+    logger.warn('failed to fetch flight data from FlightAware', e);
     return {};
   }
-}
-
-function exit (code) {
-  // flush logger and console
-  logger.on('finish', function (info) {
-    process.stdout.write('', () => {
-      process.exit(code);
-    });
-  });
-  logger.end();
 }

@@ -1,7 +1,7 @@
 const Redis = require('ioredis');
 const config = require('../config');
 const { RedisError } = require('../lib/errors');
-const logger = require('../lib/logger').get('redis');
+const logger = require('../lib/logger')().scope('redis');
 const _ = require('lodash');
 
 class RedisService {
@@ -11,17 +11,11 @@ class RedisService {
     this.redis = new Redis({
       host,
       port,
-      password: config.dbPassword
+      password: config.dbPassword,
+      retryStrategy: (_) => 5000
     });
-    this.redis.on('error', function (err) {
-      logger.error('redis client error', { detail: err.message, host, port });
-    });
-    this.redis.on('close', function () {
-      logger.info('redis connection closed', { host, port });
-    });
-    this.redis.on('end', function () {
-      logger.info('redis connection ended', { host, port });
-    });
+    this.redis.on('error', (err) => logger.fatal('redis client error', { detail: err.message, host, port }));
+    this.redis.on('end', () => logger.info('redis connection ended', { host, port }));
   }
 
   // WRITE OPERATIONS
@@ -267,7 +261,7 @@ class RedisService {
    */
   errHandler (err, result) {
     if (err) {
-      logger.error('redis command error', { detail: err.message, ...err.command });
+      logger.error('redis op error', { detail: err.message, ...err.command });
     }
   }
 }

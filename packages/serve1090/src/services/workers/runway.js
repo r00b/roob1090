@@ -1,7 +1,8 @@
-const logger = require('../../lib/logger').get('airport-service');
-const workerLogger = require('../../lib/logger').get('worker');
+const logger = require('../../lib/logger')().scope('worker runway');
 const RedisService = require('../../services/redis-service');
 const airspacePath = require('worker_threads').workerData.job.airspacePath;
+const { exit } = require('../../lib/utils');
+
 const RUNWAY_LIFETIME_SECS = 28800; // 8 hours
 
 const redis = new RedisService();
@@ -15,10 +16,10 @@ const redis = new RedisService();
     const runs = routes.map(route => computeAndWriteActiveRunway(route));
     await Promise.all(runs);
 
-    workerLogger.info('runway worker completed', { module: airport.key, duration: Date.now() - start });
+    logger.scope('worker meta').info('runway worker completed', { module: airport.key, duration: Date.now() - start });
     exit(0);
   } catch (e) {
-    logger.error(e.message, { ...e.details });
+    logger.error(e.message, e);
     exit(1);
   }
 })();
@@ -71,14 +72,4 @@ async function findCandidates (route) {
     candidates = await redis.smembers(`${route.head.key}:aircraft`);
   }
   return candidates.length ? candidates : false;
-}
-
-function exit (code) {
-  // flush logger and console
-  logger.on('finish', function (info) {
-    process.stdout.write('', () => {
-      process.exit(code);
-    });
-  });
-  logger.end();
 }

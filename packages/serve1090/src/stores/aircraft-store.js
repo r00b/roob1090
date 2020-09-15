@@ -1,5 +1,5 @@
 const _ = require('lodash');
-const logger = require('../lib/logger').get('store');
+const logger = require('../lib/logger')().scope('aircraft store');
 const { AIRCRAFT_SCHEMA } = require('./schemas');
 const {
   secondsToMillis,
@@ -35,21 +35,19 @@ async function addAircraft (data) {
   const now = Date.now();
   const age = now - clientNowMillis;
   if (age > MAX_DATA_AGE) {
-    logger.info({
-      message: 'reject new data',
+    logger.warn('reject dump data', {
       clientTimestamp: new Date(clientNowMillis).toISOString(),
       age: millisToSeconds(age).toFixed(2)
     });
     throw new StaleDataError(millisToSeconds(age));
   }
-  // logger.info({
-  //   message: 'accept dump1090 data',
-  //   messages: data.messages,
-  //   clientTimestamp: new Date(clientNowMillis).toISOString()
-  // });
   // first, update and filter the data
   const newAircraftMap = mapifyAircraftArray(data.aircraft.map(setUpdated));
   await validateAndWrite(newAircraftMap);
+  logger.info('accept dump data', {
+    messages: data.messages,
+    clientTimestamp: new Date(clientNowMillis).toISOString()
+  });
 }
 
 /**

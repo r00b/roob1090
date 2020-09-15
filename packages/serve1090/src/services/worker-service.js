@@ -1,5 +1,4 @@
-const logger = require('../lib/logger').get('worker');
-const _ = require('lodash');
+const logger = require('../lib/logger')().scope('worker service');
 const path = require('path');
 const fs = require('fs');
 const Bree = require('bree');
@@ -69,14 +68,7 @@ function generateAirspaceWorkers (airspaceDir) {
 
 function getWorkerConfig (...jobs) {
   return {
-    logger: _.assign(_.create(logger), {
-      info () {
-      },
-      error (message, err) {
-        const detail = err ? { detail: err.err.message } : undefined;
-        logger.error(message, detail);
-      }
-    }),
+    logger: logger.scope('worker meta'),
     root: path.join(__dirname, 'workers'),
     // closeWorkerAfterMs: 5000, TODO
     jobs

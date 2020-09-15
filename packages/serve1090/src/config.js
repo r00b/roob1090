@@ -1,6 +1,7 @@
 const env = process.env;
 
 module.exports = {
+  nodeEnv: env.NODE_ENV || 'development',
   port: env.PORT,
   secret: env.SECRET,
   dbHost: env.KEYDB_HOST,

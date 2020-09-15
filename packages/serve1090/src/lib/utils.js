@@ -75,6 +75,12 @@ function getFileNames (relativePathToDir) {
   return fs.readdirSync(path.resolve(__dirname, relativePathToDir)).map(stripFileExtension);
 }
 
+function exit (code) {
+  // flush console
+  process.stdout.write('', () => {
+    process.exit(code);
+  });
+}
 
 module.exports = {
   rightPad,
@@ -84,5 +90,6 @@ module.exports = {
   computeDistance,
   get,
   getFileNames,
-  close
+  close,
+  exit
 };

@@ -15,7 +15,7 @@
     "redis": "docker run -v $PWD/keydb.conf:/etc/keydb/keydb.conf --publish=6379:6379 --name=serve1090_keydb -d eqalpha/keydb:latest",
     "redis-start": "docker start serve1090_keydb",
     "redis-stop": "docker stop serve1090_keydb",
-    "redis-remove": "docker rm serve1090_keydb",
+    "redis-remove": "yarn redis-stop && docker rm serve1090_keydb",
     "redis-restart": "yarn redis-stop && yarn redis-remove && yarn redis",
     "start-pm2": "pm2 start index.js"
   },

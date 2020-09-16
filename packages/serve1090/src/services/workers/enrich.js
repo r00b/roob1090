@@ -7,9 +7,10 @@ const RedisService = require('../../services/redis-service');
 const store = require('../../stores/aircraft-store');
 
 const { get, exit } = require('../../lib/utils');
+const pMap = require('p-map');
 const { ENRICHMENTS_SCHEMA } = require('../../stores/schemas');
 
-const ENRICHMENT_LIFETIME_SECS = 900; // 15 min
+const ENRICHMENT_TTL = 900; // 15 min
 
 const redis = new RedisService();
 
@@ -19,8 +20,7 @@ const redis = new RedisService();
 
     const airspace = require(`../${airspacePath}`);
     const routes = airspace.getRoutes();
-    const routeEnrichments = routes.map(enrichRoute);
-    await Promise.all(routeEnrichments);
+    await pMap(routes, enrichRoute);
 
     logger.scope('worker meta').info('enrichment worker completed', { duration: Date.now() - start });
     exit(0);
@@ -32,12 +32,12 @@ const redis = new RedisService();
 
 async function enrichRoute (route) {
   const regions = Object.values(route.regions);
-  return Promise.all(regions.map(enrichRegion));
+  return pMap(regions, enrichRegion);
 }
 
 async function enrichRegion (region) {
   const hexes = await redis.smembers(`${region.key}:aircraft`);
-  return Promise.all(hexes.map(enrichAircraft));
+  return pMap(hexes, enrichAircraft);
 }
 
 async function enrichAircraft (hex) {
@@ -58,7 +58,7 @@ async function enrichAircraft (hex) {
   const { value: validatedEnrichments, error } = ENRICHMENTS_SCHEMA.validate(rawEnrichments);
 
   if (!error) {
-    await redis.hsetJsonEx('store:enrichments', hex, validatedEnrichments, ENRICHMENT_LIFETIME_SECS);
+    await redis.hsetJsonEx('store:enrichments', hex, validatedEnrichments, ENRICHMENT_TTL);
   }
 }
 

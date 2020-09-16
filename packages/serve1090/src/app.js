@@ -3,6 +3,7 @@ const logger = require('./lib/logger')().scope('app');
 const _ = require('lodash');
 const aircraftRouter = require('./routes/aircraft/index');
 const airspacesRouter = require('./routes/airspaces/index');
+const { ServerError } = require('./lib/errors');
 
 async function startServer (port) {
   const normalizedPort = normalizePort(port);
@@ -45,8 +46,11 @@ function normalizePort (port) {
   }
 }
 
-function getSecret (secret) { // TODO throw if no secret found
-  return _.get(secret, 'length') ? secret : false;
+function getSecret (secret) {
+  if (secret.length) {
+    return secret;
+  }
+  throw new ServerError('serve1090 requires a secret');
 }
 
 module.exports = startServer;

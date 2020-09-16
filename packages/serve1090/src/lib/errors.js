@@ -1,5 +1,3 @@
-// TODO see if basic errors need their constructors
-
 class InvalidSocketError extends Error {
   constructor (clientSecret) {
     super();
@@ -16,14 +14,6 @@ class InvalidSocketError extends Error {
 }
 
 class BroadcastError extends Error {
-  constructor (message) {
-    super();
-    this._message = message;
-  }
-
-  get message () {
-    return this._message;
-  }
 }
 
 
@@ -42,6 +32,10 @@ class LoggerError extends Error {
 }
 
 class StoreError extends Error {
+}
+
+class ServerError extends Error {
+
 }
 
 class RedisError extends Error {
@@ -66,5 +60,6 @@ module.exports = {
   StaleDataError,
   LoggerError,
   StoreError,
-  RedisError
+  RedisError,
+  ServerError
 };

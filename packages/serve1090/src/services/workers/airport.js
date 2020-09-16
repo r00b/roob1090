@@ -5,6 +5,7 @@ const airspacePath = require('worker_threads').workerData.job.airspacePath;
 const RedisService = require('../../services/redis-service');
 const store = require('../../stores/aircraft-store');
 
+const pMap = require('p-map');
 const { point, polygon } = require('@turf/helpers');
 const pointInPolygon = require('@turf/boolean-point-in-polygon').default;
 const { exit } = require('../../lib/utils');
@@ -35,26 +36,28 @@ const redis = new RedisService();
 async function computeAirportBoard (aircraft, airport) {
   const routes = airport.getRoutes();
 
-  const runs = routes.reduce(async (acc, route) => {
-    const routeBoard = await partitionAndLogRoute(aircraft, route);
-    if (routeBoard) {
-      return _.mergeWith(acc, routeBoard, mergeBoards);
-    }
-    logger.warn('unable to determine approach/departure without active runway', {
-      airport: airport.key,
-      route: route.key
-    });
-    return acc;
-  }, {
+  let result = {
     arriving: [],
     arrived: [],
     departing: [],
     departed: [],
     onRunway: [],
     runways: []
-  });
-  const f = await runs;
-  return f;
+  };
+
+  for (const route of routes) {
+    const routeBoard = await partitionAndLogRoute(aircraft, route);
+    if (routeBoard) {
+      _.mergeWith(result, routeBoard, mergeBoards);
+    } else {
+      logger.warn('unable to determine approach/departure without active runway', {
+        airport: airport.key,
+        route: route.key
+      });
+    }
+  }
+
+  return result;
 }
 
 async function partitionAndLogRoute (aircraft, route) {
@@ -137,17 +140,13 @@ async function reduceAndWriteRegion (aircraft, region) {
     matches.sort(region.sort);
   }
 
-  const enrichedMatches = matches.reduce(async (acc, a) => {
-    const hex = a.hex;
-    const enrichments = await redis.hgetJson('store:enrichments', hex) || {};
-    const results = {};
-    Object.assign(results, a, enrichments);
-    acc.push(results);
-    return acc;
-  }, []);
-  const result = await enrichedMatches;
-
-  return result;
+  // fetch enrichments for each aircraft;
+  // it seems counterintuitive to add enrichments here, but it is much more efficient and
+  // only requires one extra read from redis. we don't want to store enrichments in the
+  // stores since we overwrite each hash every time new data comes in (since dump1090
+  // will omit data that is no longer current) and it would not be performant to keep a
+  // separate hash in each aircraft hash in the store for enrichments
+  return pMap(matches, fetchEnrichments);
 }
 
 /**
@@ -178,6 +177,22 @@ async function partitionAndWriteRunway (onRunway, parentKey) {
     arrived: [],
     departing: []
   });
+}
+
+/**
+ * Fetch enrichments for an aircraft from the store and add them to the aircraft
+ * hash
+ *
+ * @param aircraft - aircraft hash
+ * @returns Promise
+ */
+async function fetchEnrichments (aircraft) {
+  const hex = aircraft.hex;
+  const enrichments = await redis.hgetJson('store:enrichments', hex);
+  if (enrichments) {
+    Object.assign(aircraft, enrichments);
+  }
+  return aircraft;
 }
 
 /**

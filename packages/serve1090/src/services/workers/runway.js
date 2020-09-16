@@ -1,9 +1,11 @@
 const logger = require('../../lib/logger')().scope('worker runway');
-const RedisService = require('../../services/redis-service');
-const airspacePath = require('worker_threads').workerData.job.airspacePath;
-const { exit } = require('../../lib/utils');
 
-const RUNWAY_LIFETIME_SECS = 28800; // 8 hours
+const airspacePath = require('worker_threads').workerData.job.airspacePath;
+const RedisService = require('../../services/redis-service');
+const { exit } = require('../../lib/utils');
+const pMap = require('p-map');
+
+const RUNWAY_TTL = 28800; // 8 hours
 
 const redis = new RedisService();
 
@@ -13,8 +15,7 @@ const redis = new RedisService();
     const airport = require(`../${airspacePath}`);
 
     const routes = airport.getRoutes();
-    const runs = routes.map(route => computeAndWriteActiveRunway(route));
-    await Promise.all(runs);
+    await pMap(routes, computeAndWriteActiveRunway);
 
     logger.scope('worker meta').info('runway worker completed', { module: airport.key, duration: Date.now() - start });
     exit(0);
@@ -37,14 +38,14 @@ async function computeAndWriteActiveRunway (route) {
     logger.warn('failed to find candidates to detect active runway');
     return false;
   }
-  for (let i = 0; i < candidates.length; i++) {
-    const hex = candidates[i];
+
+  for (const hex of candidates) {
     const sample = await redis.hgetJson('store:valid', hex);
     if (sample) {
       // use logic defined in the route module to compute the active runway
       const activeRunway = route.computeActiveRunway(sample);
       if (activeRunway) {
-        await redis.setex(`${route.key}:activeRunway`, RUNWAY_LIFETIME_SECS, activeRunway);
+        await redis.setex(`${route.key}:activeRunway`, RUNWAY_TTL, activeRunway);
         logger.info('set active runway', {
           route: route.key,
           runway: activeRunway,
@@ -55,6 +56,7 @@ async function computeAndWriteActiveRunway (route) {
       }
     }
   }
+
   logger.warn('failed to detect runway with available candidates', { candidates });
   return false;
 }

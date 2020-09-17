@@ -8,7 +8,7 @@ let connections = [];
 
 logger.info('starting serve1090', config);
 
-app(process.env.PORT).then(server => {
+app(config).then(server => {
   // maintain array of current ws connections and purge them when they are closed
   // so that server shutdown can proceed normally
   server.on('connection', connection => {

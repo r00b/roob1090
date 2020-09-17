@@ -1,15 +1,18 @@
 const app = require('express')();
 const logger = require('./lib/logger')().scope('app');
 const _ = require('lodash');
+
+const fs = require('fs');
+const path = require('path');
+
 const aircraftRouter = require('./routes/aircraft/index');
 const airspacesRouter = require('./routes/airspaces/index');
 const { ServerError } = require('./lib/errors');
 
-async function startServer (port) {
-  const normalizedPort = normalizePort(port);
-
+async function startServer (config) {
+  const normalizedPort = normalizePort(config.port);
   try {
-    const server = await app.listen(normalizedPort);
+    const server = getServer().listen(normalizedPort);
 
     require('express-ws')(app, server);
 
@@ -21,7 +24,7 @@ async function startServer (port) {
     require('./services/worker-service')();
 
     // set up routers
-    const secret = getSecret(process.env.SECRET);
+    const secret = getSecret(config.secret);
     app.use('/aircraft', aircraftRouter(store, secret));
     app.use('/airports', airspacesRouter(secret));
 
@@ -46,8 +49,21 @@ function normalizePort (port) {
   }
 }
 
+function getServer () {
+  try {
+    const cert = {
+      key: fs.readFileSync(path.resolve(__dirname, '../.ssl/server.key')),
+      cert: fs.readFileSync(path.resolve(__dirname, '../.ssl/server.cert'))
+    };
+    return require('https')
+      .createServer(cert, app);
+  } catch (e) {
+    return app;
+  }
+}
+
 function getSecret (secret) {
-  if (secret.length) {
+  if (secret && secret.length) {
     return secret;
   }
   throw new ServerError('serve1090 requires a secret');

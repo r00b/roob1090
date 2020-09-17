@@ -18,6 +18,10 @@ const redis = new RedisService();
   try {
     const start = Date.now();
 
+    // const res = await queryRoute('AAL2148');
+    // const res2 = await queryFa('AAL2148');
+    // debugger;
+
     const airspace = require(`../${airspacePath}`);
     const routes = airspace.getRoutes();
     await pMap(routes, enrichRoute);
@@ -41,17 +45,19 @@ async function enrichRegion (region) {
 }
 
 async function enrichAircraft (hex) {
-  const flight = await hasEnrichments(hex);
-  if (!flight) {
-    // the aircraft already has enrichments, or it's not in the valid store
+  if (await hasEnrichments(hex)) {
+    return;
+  }
+  const aircraft = await store.getValidatedAircraft(hex);
+  if (!aircraft) {
     return;
   }
 
   const airframeEnrichments = await queryAirframe(hex);
-  const routeEnrichments = await queryRoute(flight);
+  const routeEnrichments = await queryRoute(aircraft.flight);
   let faEnrichments = {};
-  if (!routeEnrichments.origin || !airframeEnrichments.typecode) {
-    faEnrichments = await queryFa(flight);
+  if (!routeEnrichments.origin || !_.get(airframeEnrichments, 'typecode.length')) { // typecode may just be empty string
+    faEnrichments = await queryFa(aircraft.flight);
   }
 
   const rawEnrichments = _.merge({}, airframeEnrichments, routeEnrichments, faEnrichments);
@@ -63,20 +69,15 @@ async function enrichAircraft (hex) {
 }
 
 /**
- * Determine if enrichments should be fetched for this aircraft; return false if enrichments
- * already exist and have not expired, or if the aircraft is not currently in the valid aircraft
- * store
+ * Determine if enrichments should be fetched for this aircraft; return true if enrichments
+ * already exist and have not expired
  *
  * @param {string} hex - icao24 of the aircraft
  * @returns aircraft callsign if enrichments should be fetched, false otherwise
  */
 async function hasEnrichments (hex) {
-  const hasEnrichments = await redis.hexists(`store:enrichments`, hex);
-  if (hasEnrichments) {
-    return false;
-  }
-  const aircraft = await store.getValidatedAircraft(hex);
-  return aircraft ? aircraft.flight : false;
+  const enrichments = await redis.hexists(`store:enrichments`, hex);
+  return !!enrichments;
 }
 
 /**
@@ -114,7 +115,6 @@ async function queryRoute (flight) {
       config.openSkyUsername,
       config.openSkyPassword
     );
-    // todo this is probably wrong
     if (_.get(body, 'route.length') <= 2) {
       return {
         origin: body.route[0],
@@ -142,7 +142,11 @@ async function queryFa (flight) {
       config.faUsername,
       config.faPassword
     );
-    return body.InFlightInfoResult || {};
+    const res = body.InFlightInfoResult;
+    if (res.timeout === 'ok') { // FA can return stale data, marked by timeout = 'timed_out'
+      return res;
+    }
+    return {};
   } catch (e) {
     logger.warn('failed to fetch flight data from FlightAware', e);
     return {};

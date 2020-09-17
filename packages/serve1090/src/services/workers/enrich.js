@@ -18,10 +18,6 @@ const redis = new RedisService();
   try {
     const start = Date.now();
 
-    // const res = await queryRoute('AAL2148');
-    // const res2 = await queryFa('AAL2148');
-    // debugger;
-
     const airspace = require(`../${airspacePath}`);
     const routes = airspace.getRoutes();
     await pMap(routes, enrichRoute);

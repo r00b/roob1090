@@ -146,7 +146,7 @@ async function reduceAndWriteRegion (aircraft, region) {
   // stores since we overwrite each hash every time new data comes in (since dump1090
   // will omit data that is no longer current) and it would not be performant to keep a
   // separate hash in each aircraft hash in the store for enrichments
-  return pMap(matches, fetchEnrichments);
+  return pMap(matches, fetchEnrichments, region);
 }
 
 /**
@@ -186,7 +186,7 @@ async function partitionAndWriteRunway (onRunway, parentKey) {
  * @param aircraft - aircraft hash
  * @returns Promise
  */
-async function fetchEnrichments (aircraft) {
+async function fetchEnrichments (aircraft, region) {
   const hex = aircraft.hex;
   const enrichments = await redis.hgetJson('store:enrichments', hex);
   if (enrichments) {

@@ -91,17 +91,17 @@ function sendBoard (airspace, ws, next) {
   return async () => {
     try {
       if (ws.readyState === WebSocket.OPEN) {
-        const board = await redis.getAsJson(`board:${airspace}`);
+        const board = await redis.getAsJson(`board:${airspace}`) || {};
         const valid = await store.getAllValidAircraft();
 
         const result = {
-          arriving: board.arriving,
-          arrived: board.arrived,
-          departing: board.departing,
-          departed: board.departed,
+          arriving: board.arriving || [],
+          arrived: board.arrived || [],
+          departing: board.departing || [],
+          departed: board.departed || [],
           stats: {
             now: Date.now(),
-            numInRange: valid.count
+            numInRange: valid.count || 0
           }
         };
 

@@ -106,6 +106,26 @@ class RedisService {
     }
   }
 
+  /**
+   * Delete a value;
+   * see https://redis.io/commands/del
+   *
+   * @param {string[]} keys - key(s) of value to delete
+   */
+  async del (...keys) {
+    return this.send('del', ...keys);
+  }
+
+  /**
+   * Delete all values;
+   * see https://redis.io/commands/flushall
+   *
+   * @returns {Promise|Pipeline}
+   */
+  async flushall () {
+    return this.send('flushall');
+  }
+
   // READ OPERATIONS
 
   /**
@@ -184,10 +204,22 @@ class RedisService {
    * https://redis.io/commands/smembers
    *
    * @param {string} set - key of set
-   * @returns Promise
+   * @returns {Promise|Pipeline}
    */
   smembers (set) {
     return this.send('smembers', set);
+  }
+
+  /**
+   * Determine if key is a member of set;
+   * https://redis.io/commands/sismember
+   *
+   * @param {string} set - key of set
+   * @param {string} key - key of member to check
+   * @returns {Promise|Pipeline}
+   */
+  sismember (set, key) {
+    return this.send('sismember', set, key);
   }
 
   /**

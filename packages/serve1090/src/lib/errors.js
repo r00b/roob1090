@@ -1,21 +1,16 @@
-class InvalidSocketError extends Error {
-  constructor (clientSecret) {
+class AuthError extends Error {
+  constructor (message) {
     super();
-    this._clientSecret = clientSecret;
+    this._message = message;
   }
 
   get message () {
-    if (this._clientSecret) {
-      return `invalid request secret (${this._clientSecret})`;
-    } else {
-      return `no request secret specified`;
-    }
+    return `authentication error: ${this._message}`;
   }
 }
 
 class BroadcastError extends Error {
 }
-
 
 class StaleDataError extends Error {
   constructor (clientNowISOString) {
@@ -55,7 +50,7 @@ class RedisError extends Error {
 }
 
 module.exports = {
-  InvalidSocketError,
+  AuthError,
   BroadcastError,
   StaleDataError,
   LoggerError,

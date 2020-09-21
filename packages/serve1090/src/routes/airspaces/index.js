@@ -1,25 +1,28 @@
 const express = require('express');
 const _ = require('lodash');
 const logger = require('../../lib/logger')().scope('request');
-const { v4: uuid } = require('uuid');
-const WebSocket = require('ws');
-const RedisService = require('../../services/redis-service');
+const { getFileNames, close } = require('../../lib/utils');
+const { nanoid } = require('nanoid');
+const safeCompare = require('safe-compare');
+const { AuthError, BroadcastError } = require('../../lib/errors');
+
 const AIRSPACES_PATH = '../lib/airspaces';
 const AIRPORTS_PATH = `${AIRSPACES_PATH}/airports`;
-const { getFileNames, close } = require('../../lib/utils');
-const { InvalidSocketError, BroadcastError } = require('../../lib/errors');
-const store = require('../../stores/aircraft-store');
 
+const RedisService = require('../../services/redis-service');
 const redis = new RedisService();
 
-module.exports = (secret) => {
+const AUTH_TIMEOUT = 5000;
+
+module.exports = (broadcastKey, store) => {
   const airports = getFileNames(AIRPORTS_PATH);
 
   const router = new express.Router()
     .get('/', getAirports(airports));
 
+  // mount all airports
   airports.forEach((airport) => {
-    router.ws(`/${airport}`, authenticate(secret), broadcast(airport));
+    router.ws(`/${airport}`, authenticate(broadcastKey, airport), broadcast(store));
   });
 
   router.use(errorHandler);
@@ -36,64 +39,97 @@ function getAirports (airports) {
 }
 
 /**
- * Authenticate a WebSocket connection request against the server secret
+ * Set up the ws object and listen for a ticket sent by the client for
+ * authentication
  *
- * @param {string} secret - server secret
+ * @param {string} airspace - module name of the airspace to broadcast
  */
-function authenticate (secret) {
-  return (ws, { query: { secret: clientSecret } }, next) => {
-    if (!clientSecret || clientSecret !== secret) {
-      next(new InvalidSocketError(clientSecret));
-    } else {
-      next();
-    }
+function authenticate (broadcastKey, airspace) {
+  return (ws, { originalUrl }, next) => {
+    ws.locals = {
+      originalUrl,
+      airspace,
+      socketLogger: logger.scope('ws').child({ requestId: nanoid() }),
+      start: Date.now()
+    };
+    const authTimeout = setTimeout(() => {
+      // client only has AUTH_TIMEOUT ms to send a ticket
+      next(new AuthError('auth request timed out'));
+    }, AUTH_TIMEOUT);
+    ws.on('message', async (data) => {
+      clearTimeout(authTimeout);
+      await checkToken(broadcastKey, data, ws, next);
+    });
   };
 }
 
 /**
- * Init a interval on a WebSocket that broadcasts the requested board
- * every second
+ * Check that the ticket initially sent by the client is valid, and
+ * call the subsequent middleware if so
  *
- * @param {string} airspace - module name of the airspace to broadcast
+ * @param {string} broadcastKey - secret that token must match
+ * @param {string} data - data sent via WebSocket containing the ticket
+ * @param {WebSocket} ws
+ * @param next
  */
-function broadcast (airspace) {
-  return (ws, { originalUrl }, next) => {
-    ws.locals = {
-      socketLogger: logger.scope('ws').child({ requestId: uuid() }),
-      start: Date.now()
-    };
+async function checkToken (broadcastKey, data, ws, next) {
+  try {
+    const token = _.get(JSON.parse(data), 'token', null);
+    if (token) {
+      if (safeCompare(token, broadcastKey)) {
+        ws.locals.socketLogger.info('authenticated WebSocket client', {
+          airspace: ws.locals.airspace
+        });
+        return next();
+      }
+      throw new AuthError('bad token');
+    }
+    throw new AuthError('missing token');
+  } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * Init a interval on a WebSocket that broadcasts the requested board
+ * every second, checking to ensure the WebSocket's ticket is valid before
+ * each send
+ *
+ * @param store - aircraft store
+ */
+function broadcast (store) {
+  return (ws, req, next) => {
     ws.locals.socketLogger.info('init board pipe', {
       start: ws.locals.start,
-      url: originalUrl,
-      airspace
+      url: ws.locals.originalUrl,
+      airspace: ws.locals.airspace
     });
-    const broadcast = setInterval(sendBoard(airspace, ws, next), 1000);
+    const broadcast = setInterval(sendBoard(store, ws, next), 1000);
     ws.on('close', async _ => {
       clearInterval(broadcast);
-      ws.terminate();
+      close(ws);
       ws.locals.socketLogger.info('close board pipe', {
         elapsedTime: Date.now() - ws.locals.start,
-        url: originalUrl,
-        airspace
+        url: ws.locals.originalUrl,
+        airspace: ws.locals.airspace
       });
     });
   };
 }
 
 /**
- * Broadcast the specified airspace's board over the given WebSocket
+ * Send the specified airspace's board over the given WebSocket
  *
- * @param {string} airspace - module name of airspace
+ * @param store - aircraft store
  * @param {WebSocket} ws
  * @param next
  */
-function sendBoard (airspace, ws, next) {
+function sendBoard (store, ws, next) {
   return async () => {
     try {
-      if (ws.readyState === WebSocket.OPEN) {
-        const board = await redis.getAsJson(`board:${airspace}`) || {};
+      if (ws.readyState === 1) {
+        const board = await redis.getAsJson(`board:${ws.locals.airspace}`) || {};
         const valid = await store.getAllValidAircraft();
-
         const result = {
           arriving: board.arriving || [],
           arrived: board.arrived || [],
@@ -104,7 +140,6 @@ function sendBoard (airspace, ws, next) {
             numInRange: valid.count || 0
           }
         };
-
         ws.send(JSON.stringify(result));
       }
     } catch (e) {
@@ -116,32 +151,37 @@ function sendBoard (airspace, ws, next) {
 /**
  * Handle errors thrown at any point in the request
  */
-function errorHandler (err, req, res, next) {
-  const { status, message, detail } = parseError(err);
-  // send over both ws and HTTP
-  if (req.ws) {
-    req.ws.socketLogger.error(message, { detail });
-    req.ws.send(JSON.stringify({
-      status,
+function errorHandler (err, req, res, _) {
+  try {
+    const { status, message, detail } = parseError(err);
+    // send over both ws and HTTP
+    if (req.ws) {
+      req.ws.locals.socketLogger.error(message, { detail });
+      req.ws.send(JSON.stringify({
+        status,
+        message,
+        detail
+      }));
+      close(req.ws);
+    } else {
+      res.locals.requestLogger.error(message, { detail });
+    }
+    return res.status(status).json({
       message,
       detail
-    }));
-    close(req.ws);
-  } else {
-    res.locals.requestLogger.error(message, { detail });
+    });
+  } catch (e) {
+    res.status(500);
+    logger.error('unhandled router error', e);
   }
-  return res.status(status).json({
-    message,
-    detail
-  });
 }
 
 function parseError (err) {
   switch (err.constructor) {
-    case InvalidSocketError:
+    case AuthError:
       return {
         status: 401,
-        message: 'bad request',
+        message: 'unauthorized',
         detail: err.message
       };
     case BroadcastError:

@@ -43,7 +43,7 @@ function signale (secrets) {
 
 module.exports = () => {
   const config = require('../config');
-  const { port, dbHost, dbPort, nodeEnv, ...secrets } = config;
+  const { port, dbHost, dbPort, nodeEnv, auth, ...secrets } = config;
   if (nodeEnv === 'production') {
     return pino(secrets);
   } else {

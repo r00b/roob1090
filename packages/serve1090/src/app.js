@@ -1,10 +1,12 @@
 const app = require('express')();
 const logger = require('./lib/logger')().scope('app');
 const _ = require('lodash');
+const cors = require('cors');
 
 const fs = require('fs');
 const path = require('path');
 
+const authRouter = require('./routes/auth/index');
 const aircraftRouter = require('./routes/aircraft/index');
 const airspacesRouter = require('./routes/airspaces/index');
 const { ServerError } = require('./lib/errors');
@@ -15,6 +17,14 @@ async function startServer (config) {
     const server = getServer().listen(normalizedPort);
 
     require('express-ws')(app, server);
+    app.use(cors());
+
+    // ensure no artifacts remain from previous runs
+    if (config.nodeEnv === 'production') {
+      const RedisService = require('./services/redis-service');
+      const redis = new RedisService();
+      await redis.flushall();
+    }
 
     app.use(require('./middleware/http-request-logger'));
 
@@ -25,8 +35,9 @@ async function startServer (config) {
 
     // set up routers
     const secret = getSecret(config.secret);
+    // app.use('/auth', authRouter(config.auth));
     app.use('/aircraft', aircraftRouter(store, secret));
-    app.use('/airports', airspacesRouter(secret));
+    app.use('/airports', airspacesRouter(config.broadcastKey, store));
 
     logger.info('started serve1090', { port: normalizedPort });
     return server;

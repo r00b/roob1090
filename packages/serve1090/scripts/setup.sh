@@ -2,21 +2,33 @@
 
 printf 'Initializing environment for serve1090...\n'
 
-printf 'Specify the pump1090 secret:\n'
-read -p '> ' PUMP1090_SECRET
+random() {
+  base64 /dev/urandom | tr -dc A-Za-z0-9 | head -c 64
+}
 
-# printf 'Specify an arbitrary password for KeyDB (recommend a long, randomized string of mixed case characters, numbers, and symbols)\n'
-# read -p '> ' KEYDB_PASSWORD
+# generate keys
+KEYDB_PASSWORD=$(random)
+PUMP_KEY=$(random)
+BROADCAST_KEY=$(random)
 
-KEYDB_PASSWORD=$(date +%s | sha256sum | base64 | head -c 64)
+printf '\n'
+printf 'Use the following pump and broadcast keys for data sources and clients:\n'
+printf 'PUMP_KEY: %s\n' $PUMP_KEY
+printf 'BROADCAST_KEY: %s\n' $BROADCAST_KEY
+printf '\n'
+
+printf 'Add OpenSky and FlightXML2 credentials to .env to enable enrichments.\n'
+printf '\n'
 
 printf 'Generating .env and keydb.conf...\n'
 
 cp .env.template .env
 cp keydb.conf.template keydb.conf
 
-sed -i '' -e "s/REPLACE_WITH_SECRET/$PUMP1090_SECRET/" .env
-sed -i '' -e "s/REPLACE_WITH_KEYDB_PASSWORD/$KEYDB_PASSWORD/" .env
+# inject secrets into env files
+sed -i '' -e "s/PUMP_KEY=/PUMP_KEY=$PUMP_KEY/" .env
+sed -i '' -e "s/BROADCAST_KEY=/BROADCAST_KEY=$BROADCAST_KEY/" .env
+sed -i '' -e "s/KEYDB_PASSWORD=/KEYDB_PASSWORD=$KEYDB_PASSWORD/" .env
 sed -i '' -e "s/REPLACE_WITH_KEYDB_PASSWORD/$KEYDB_PASSWORD/" keydb.conf
 
 printf 'serve1090 environment setup complete\n'

@@ -4,8 +4,9 @@ ENV APP_DIR /app/serve1090
 
 WORKDIR $APP_DIR
 
-COPY package.json $APP_DIR
-RUN yarn install --frozen-lockfile
+COPY package.json yarn.lock $APP_DIR/
+
+RUN yarn install
 
 COPY index.js $APP_DIR
 COPY src $APP_DIR/src

@@ -1,6 +1,5 @@
 const app = require('express')();
 const logger = require('./lib/logger')().scope('app');
-const _ = require('lodash');
 const cors = require('cors');
 
 const fs = require('fs');
@@ -64,9 +63,12 @@ function getServer () {
       key: fs.readFileSync(path.resolve(__dirname, '../.ssl/server.key')),
       cert: fs.readFileSync(path.resolve(__dirname, '../.ssl/server.cert'))
     };
-    return require('https')
+    const server = require('https')
       .createServer(cert, app);
+    logger.info('certificate found, HTTPS server enabled');
+    return server;
   } catch (e) {
+    logger.info('no certificate found, HTTPS server not enabled');
     return app;
   }
 }

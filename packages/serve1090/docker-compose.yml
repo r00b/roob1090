@@ -17,9 +17,10 @@ services:
       - redis
     environment:
       - NODE_ENV=development
+      - PORT=80
       - KEYDB_HOST=redis
       - KEYDB_PORT=6379
     entrypoint: /docker-entrypoint.sh
     ports:
-      - 8008:8008
+      - 80:80
       - 9229:9229

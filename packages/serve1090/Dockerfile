@@ -8,6 +8,7 @@ COPY package.json yarn.lock $APP_DIR/
 
 RUN yarn install
 
+COPY .ssl $APP_DIR/.ssl
 COPY index.js $APP_DIR
 COPY src $APP_DIR/src
 

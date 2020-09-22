@@ -170,16 +170,22 @@ class RedisService {
     }
   }
 
-  // async hgetAllAsJson (hash) {
-  //   const hashWithStringValues = await this.redis.get(hash);
-  //   return Object.entries(hashWithStringValues).reduce((acc, [key, value]) => {
-  //     try {
-  //       acc[key] = JSON.parse(value);
-  //     } catch (e) {
-  //       throw new RedisError('unable to parse result into JSON', { hash, value: value });
-  //     }
-  //   }, {})
-  // }
+  /**
+   * Get a hash as a JSON object; ignores any active pipelines
+   *
+   * @param {string} hash - key of hash
+   * @returns Promise
+   */
+  async hgetAllAsJson (hash) {
+    const hashWithStringValues = await this.redis.get(hash);
+    return Object.entries(hashWithStringValues).reduce((acc, [key, value]) => {
+      try {
+        acc[key] = JSON.parse(value);
+      } catch (e) {
+        throw new RedisError('unable to parse result into JSON', { hash, value: value });
+      }
+    }, {});
+  }
 
   /**
    * Get array of values of a hash as JSON objects; ignores any active pipelines
@@ -242,6 +248,17 @@ class RedisService {
    */
   hexists (hash, field) {
     return this.send('hexists', hash, field);
+  }
+
+  /**
+   * Get the number of fields in the hash stored at key;
+   * see https://redis.io/commands/hlen
+   *
+   * @param {string} key - key of hash
+   * @returns {Promise|Pipeline}
+   */
+  hlen (key) {
+    return this.send('hlen', key);
   }
 
   // OTHER OPERATIONS

@@ -1,11 +1,11 @@
 const logger = require('../lib/logger')().scope('request');
-const { v4: uuid } = require('uuid');
+const { nanoid } = require('nanoid');
 
 module.exports = (req, res, next) => {
   const start = Date.now();
 
   res.locals = {
-    requestLogger: logger.child({ requestId: uuid() })
+    requestLogger: logger.child({ requestId: nanoid() })
   };
   res.locals.requestLogger.info('request started', {
     url: req.originalUrl,

@@ -64,13 +64,6 @@ function stripFileExtension (filename) {
   return filename.replace(/\.[^.]+$/, '');
 }
 
-function close (ws) {
-  ws.close();
-  setTimeout(() => {
-    ws.terminate();
-  }, 1000);
-}
-
 function getFileNames (relativePathToDir) {
   return fs.readdirSync(path.resolve(__dirname, relativePathToDir)).map(stripFileExtension);
 }
@@ -90,6 +83,5 @@ module.exports = {
   computeDistance,
   get,
   getFileNames,
-  close,
   exit
 };

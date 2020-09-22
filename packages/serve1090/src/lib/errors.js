@@ -1,36 +1,23 @@
 class AuthError extends Error {
-  constructor (message) {
+  constructor (message, code) {
     super();
     this._message = message;
+    this._code = code;
   }
 
   get message () {
     return `authentication error: ${this._message}`;
   }
+
+  get code () {
+    return this._code;
+  }
+}
+
+class PumpError extends Error {
 }
 
 class BroadcastError extends Error {
-}
-
-class StaleDataError extends Error {
-  constructor (clientNowISOString) {
-    super();
-    this._clientNowISOString = clientNowISOString;
-  }
-
-  get message () {
-    return `client data rejected because of age (${this._clientNowISOString}s)`;
-  }
-}
-
-class LoggerError extends Error {
-}
-
-class StoreError extends Error {
-}
-
-class ServerError extends Error {
-
 }
 
 class RedisError extends Error {
@@ -51,10 +38,7 @@ class RedisError extends Error {
 
 module.exports = {
   AuthError,
+  PumpError,
   BroadcastError,
-  StaleDataError,
-  LoggerError,
-  StoreError,
-  RedisError,
-  ServerError
+  RedisError
 };

@@ -1,4 +1,5 @@
 const logger = require('../lib/logger')().scope('worker service');
+const config = require('../config');
 const path = require('path');
 const fs = require('fs');
 const Bree = require('bree');
@@ -40,14 +41,29 @@ function generateAirportWorkers (airportDir) {
           timeout: '5s',
           interval: '1m',
           airspacePath
-        },
-        // the third (fa-api) fetches enriched data for each aircraft in each region of the route
-        {
-          name: 'enrich',
-          interval: '5s',
-          airspacePath
         }
       );
+      // check for OpenSky/FlightXML2 keys and add enrich worker if they exist
+      const {
+        openSkyUsername,
+        openSkyPassword,
+        faUsername,
+        faPassword
+      } = config;
+      // TODO: only require one pair of creds at minimum
+      if (openSkyUsername && openSkyPassword && faUsername && faPassword) {
+        acc.push({
+          name: 'enrich',
+          interval: '5s',
+          airspacePath,
+          credentials: {
+            openSkyUsername,
+            openSkyPassword,
+            faUsername,
+            faPassword
+          }
+        });
+      }
       return acc;
     }, []);
 }
@@ -70,7 +86,7 @@ function getWorkerConfig (...jobs) {
   return {
     logger: logger.scope('worker meta'),
     root: path.join(__dirname, 'workers'),
-    // closeWorkerAfterMs: 5000, TODO
+    closeWorkerAfterMs: 5000,
     jobs
   };
 }

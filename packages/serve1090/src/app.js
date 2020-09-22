@@ -6,10 +6,9 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 
-const authRouter = require('./routes/auth/index');
+// const authRouter = require('./routes/auth/index');
 const aircraftRouter = require('./routes/aircraft/index');
 const airspacesRouter = require('./routes/airspaces/index');
-const { ServerError } = require('./lib/errors');
 
 async function startServer (config) {
   const normalizedPort = normalizePort(config.port);
@@ -34,9 +33,8 @@ async function startServer (config) {
     require('./services/worker-service')();
 
     // set up routers
-    const secret = getSecret(config.secret);
     // app.use('/auth', authRouter(config.auth));
-    app.use('/aircraft', aircraftRouter(store, secret));
+    app.use('/aircraft', aircraftRouter(config.pumpKey, store));
     app.use('/airports', airspacesRouter(config.broadcastKey, store));
 
     logger.info('started serve1090', { port: normalizedPort });
@@ -71,13 +69,6 @@ function getServer () {
   } catch (e) {
     return app;
   }
-}
-
-function getSecret (secret) {
-  if (secret && secret.length) {
-    return secret;
-  }
-  throw new ServerError('serve1090 requires a secret');
 }
 
 module.exports = startServer;

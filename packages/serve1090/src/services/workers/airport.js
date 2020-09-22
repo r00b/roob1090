@@ -17,7 +17,7 @@ const redis = new RedisService();
     const start = Date.now();
     const airport = require(`../${airspacePath}`);
 
-    const validStore = await store.getAllValidAircraft();
+    const validStore = await store.getValidAircraft();
     if (!validStore.aircraft.length) { // nothing to do
       return exit(0);
     }

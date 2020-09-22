@@ -1,6 +1,6 @@
 [package]
 name = "pump1090"
-version = "0.3.1"
+version = "0.3.2"
 authors = ["Robert Steilberg <rsteilberg@gmail.com>"]
 license = "MIT"
 description = "Reads dump1090 JSON output and sends it to an endpoint via a WebSocket"

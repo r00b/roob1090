@@ -9,6 +9,12 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Removed
 ### Breaking
 
+## [0.3.2] - 2020-09-22
+### Added
+### Changed
+- store token in `token` field instead of `secret`
+### Fixed
+
 ## [0.3.1] - 2020-07-31
 ### Added
 - changelog

@@ -2,21 +2,24 @@ version: '3.8'
 services:
   redis:
     image: eqalpha/keydb:latest
-    container_name: serve1090_keydb
+    container_name: serve1090_redis
     ports:
       - 6379:6379
     volumes:
       - $PWD/keydb.conf:/etc/keydb/keydb.conf
   express:
     build: .
+    container_name: serve1090
     volumes:
       - .:/app/serve1090
       - /app/serve1090/node_modules
-    container_name: serve1090_express
     depends_on:
       - redis
     environment:
+      - NODE_ENV=development
       - KEYDB_HOST=redis
+      - KEYDB_PORT=6379
+    entrypoint: /docker-entrypoint.sh
     ports:
-      - 80:80
+      - 8008:8008
       - 9229:9229

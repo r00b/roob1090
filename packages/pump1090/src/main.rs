@@ -184,7 +184,7 @@ fn read_json(
     let mut data: Value = serde_json::from_str(&contents)?;
     // attach metadata
     data["device_id"] = device_id.into();
-    data["secret"] = serve1090_secret.into();
+    data["token"] = serve1090_secret.into();
     let payload: String = serde_json::to_string(&data)?;
     Ok(payload)
 }

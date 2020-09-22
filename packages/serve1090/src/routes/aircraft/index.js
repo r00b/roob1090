@@ -1,52 +1,55 @@
 const express = require('express');
 const logger = require('../../lib/logger')().scope('request');
-const { v4: uuid } = require('uuid');
-const {
-  InvalidClientError,
-  StaleDataError,
-  StoreError
-} = require('../../lib/errors');
+const { PUMP_SCHEMA } = require('./schemas');
+const { PumpError } = require('../../lib/errors');
+const { checkToken, errorHandler } = require('../middleware');
+const { nanoid } = require('nanoid');
 
-// TODO - GET a secret for WS pump
-module.exports = (store, secret) => {
+module.exports = (pumpKey, store) => {
   return new express.Router()
-    .ws('/pump', pump(store, secret), errorHandler)
+    .ws('/pump', pump(pumpKey, store))
     .get('/all', getAll(store))
     .get('/valid', getValid(store))
     .get('/invalid', getInvalid(store))
+    .get('/numInRange', getNumInRange(store))
     .use(errorHandler);
 };
 
 /**
- * WS handler for parsing web socket message events into data
- * and passing them to the aircraft store
+ * Set up the ws object and create a listener that will handle messages
+ *
+ * @param {string} pumpKey - key that token in each payload must match to be accepted
+ * @param store - aircraft store
  */
-function pump (store, secret) {
-  return (ws, { originalUrl }, next) => { // todo impl next() and error handler
-
+function pump (pumpKey, store) {
+  return (ws, { originalUrl }, next) => {
     ws.locals = {
-      socketLogger: logger.scope('ws').child({ requestId: uuid() }),
+      originalUrl,
+      socketLogger: logger.scope('ws').child({ requestId: nanoid() }),
       start: Date.now()
     };
-    ws.locals.socketLogger.info('init pump pipe', { start: ws.locals.start, url: originalUrl });
-
-    ws.on('message', async data => {
+    ws.on('message', data => {
       try {
-        await parseAndSetData(store, secret, data);
-      } catch (err) {
-        ws.send(JSON.stringify({
-          stack: err.stack,
-          message: err.message
-        }));
-        // todo replace in next
-        ws.locals.socketLogger.error(err.message, { detail: err.detail });
+        // parse the payload
+        const rawPayload = JSON.parse(data);
+        // check for a valid token; throws AuthError
+        checkToken(pumpKey, rawPayload);
+        // validate payload to ensure it has required props
+        const { value: payload, error } = PUMP_SCHEMA.validate(rawPayload);
+        if (error) {
+          throw new PumpError(error.message.replace(/"/g, '\''));
+        }
+        store.addAircraft(payload).catch(next);
+      } catch (e) {
+        next(e);
       }
     });
+    ws.locals.socketLogger.info('established pump pipe', { start: ws.locals.start, url: originalUrl });
   };
 }
 
 /**
- * GET raw parsed data store of aircraft
+ * GET entire raw store of aircraft
  */
 function getAll (store) {
   return (req, res, next) => {
@@ -55,16 +58,16 @@ function getAll (store) {
 }
 
 /**
- * GET valid/filtered aircraft
+ * GET valid aircraft
  */
 function getValid (store) {
   return (req, res, next) => {
-    return store.getAllValidAircraft().then(result => res.status(200).json(result)).catch(next);
+    return store.getValidAircraft().then(result => res.status(200).json(result)).catch(next);
   };
 }
 
 /**
- * GET excluded/rejected aircraft
+ * GET aircraft that failed validation
  */
 function getInvalid (store) {
   return (req, res, next) => {
@@ -73,65 +76,10 @@ function getInvalid (store) {
 }
 
 /**
- * Convert the ws data to JSON, validate it against the secret, and pass
- * it to the store
- *
- * @param store aircraft store
- * @param secret serve1090's configured secret
- * @param data raw ws message
+ * GET number of validated aircraft in the store
  */
-async function parseAndSetData (store, secret, data) {
-  const json = JSON.parse(data);
-  if (!json.secret || secret !== json.secret) {
-    throw new InvalidClientError(json.secret);
-  }
-  await store.addAircraft(json);
-}
-
-/**
- * Handle errors thrown at any point in the request
- */
-function errorHandler (err, req, res, next) {
-  const { status, message, detail } = parseError(err);
-  res.locals.requestLogger.error(message, { detail });
-  if (status) {
-    res.status(status).json({
-      status,
-      message,
-      detail
-    });
-  }
-}
-
-/**
- * Generate an error hash for each thrown error object
- * @param err thrown error object
- * @returns error hash with a message, detail, and optionally a status if it
- * should be returned as an HTTP response
- */
-function parseError (err) {
-  switch (err.constructor) {
-    case StaleDataError: // TODO do we need this
-      return {
-        message: 'ws: stale data',
-        detail: err.message
-      };
-    case InvalidClientError:
-      return {
-        message: 'ws: invalid client',
-        detail: err.message
-      };
-    case StoreError:
-      return {
-        status: 503,
-        message: 'aircraft store error',
-        detail: err.message
-      };
-    default:
-      return {
-        status: 500,
-        message: 'internal server error',
-        detail: err.message
-      };
-  }
+function getNumInRange (store) {
+  return (req, res, next) => {
+    return store.getNumValidAircraft().then(result => res.status(200).json({ count: result })).catch(next);
+  };
 }

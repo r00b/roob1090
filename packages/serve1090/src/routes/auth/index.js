@@ -1,3 +1,6 @@
+// note: this module is not currently in use
+// needs SERVER_USERNAME and SERVER_PASS env vars and express-basic-auth, and
+
 const express = require('express');
 const logger = require('../../lib/logger')().scope('auth');
 const basicAuth = require('express-basic-auth');

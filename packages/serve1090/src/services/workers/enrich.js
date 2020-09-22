@@ -1,8 +1,8 @@
 const logger = require('../../lib/logger')().scope('worker enrich');
 const _ = require('lodash');
 
-const airspacePath = require('worker_threads').workerData.job.airspacePath;
-const config = require('../../config');
+const { airspacePath, credentials } = require('worker_threads').workerData.job
+
 const RedisService = require('../../services/redis-service');
 const store = require('../../stores/aircraft-store');
 
@@ -44,7 +44,7 @@ async function enrichAircraft (hex) {
   if (await hasEnrichments(hex)) {
     return;
   }
-  const aircraft = await store.getValidatedAircraft(hex);
+  const aircraft = await store.getValidatedAircraftAt(hex);
   if (!aircraft) {
     return;
   }
@@ -86,8 +86,8 @@ async function queryAirframe (hex) {
   try {
     const { body } = await get(
       `https://opensky-network.org/api/metadata/aircraft/icao/${hex}`,
-      config.openSkyUsername,
-      config.openSkyPassword
+      credentials.openSkyUsername,
+      credentials.openSkyPassword
     );
     return body || {};
   } catch (e) {
@@ -108,8 +108,8 @@ async function queryRoute (flight) {
   try {
     const { body } = await get(
       `https://opensky-network.org/api/routes?callsign=${flight}`,
-      config.openSkyUsername,
-      config.openSkyPassword
+      credentials.openSkyUsername,
+      credentials.openSkyPassword
     );
     if (_.get(body, 'route.length') <= 2) {
       return {
@@ -135,8 +135,8 @@ async function queryFa (flight) {
   try {
     const { body } = await get(
       `https://flightxml.flightaware.com/json/FlightXML2/InFlightInfo?ident=${flight}`,
-      config.faUsername,
-      config.faPassword
+      credentials.faUsername,
+      credentials.faPassword
     );
     const res = body.InFlightInfoResult;
     if (res.timeout === 'ok') { // FA can return stale data, marked by timeout = 'timed_out'

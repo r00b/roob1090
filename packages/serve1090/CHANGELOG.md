@@ -12,6 +12,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ## [2.1.0] - 2020-07-31
 ### Added
 ### Changed
+- overhaul routes
+- validate pump payloads
 ### Fixed
 - proper dockerization and setup for `docker-compose`
 - route structure and auth

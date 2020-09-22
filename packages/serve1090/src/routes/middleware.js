@@ -8,8 +8,6 @@ const {
 const _ = require('lodash');
 const safeCompare = require('safe-compare');
 
-// rename to middleware.js?
-
 /**
  * Check a payload for a token; throw AuthError if the token
  * isn't present or doesn't match the specified key
@@ -90,6 +88,11 @@ function parseError (err) {
   }
 }
 
+/**
+ * Close a WebSocket
+ *
+ * @param {WebSocket} ws
+ */
 function close (ws) {
   ws.close();
   setTimeout(() => {

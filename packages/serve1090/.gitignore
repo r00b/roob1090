@@ -103,9 +103,5 @@ dist
 # TernJS port file
 .tern-port
 
-# Certificates
-.ssl/*
-!.ssl/.gitkeep
-
 .idea/
 sync.sh

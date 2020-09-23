@@ -9,7 +9,7 @@ const airspacesRouter = require('./routes/airspaces/index');
 async function startServer (config) {
   const normalizedPort = normalizePort(config.port);
   try {
-    const server = app().listen(normalizedPort);
+    const server = app.listen(normalizedPort);
     require('express-ws')(app, server);
     app.use(cors());
 

@@ -2,9 +2,6 @@ const app = require('express')();
 const logger = require('./lib/logger')().scope('app');
 const cors = require('cors');
 
-const fs = require('fs');
-const path = require('path');
-
 // const authRouter = require('./routes/auth/index');
 const aircraftRouter = require('./routes/aircraft/index');
 const airspacesRouter = require('./routes/airspaces/index');
@@ -12,8 +9,7 @@ const airspacesRouter = require('./routes/airspaces/index');
 async function startServer (config) {
   const normalizedPort = normalizePort(config.port);
   try {
-    const server = getServer().listen(normalizedPort);
-
+    const server = app().listen(normalizedPort);
     require('express-ws')(app, server);
     app.use(cors());
 
@@ -30,10 +26,6 @@ async function startServer (config) {
 
     // kick off the jobs(req, res, next)
     require('./services/worker-service')();
-
-    app.get('/healthz', (req, res, next) => {
-      return res.status(200).end();
-    });
 
     // set up routers
     // app.use('/auth', authRouter(config.auth));
@@ -59,22 +51,6 @@ function normalizePort (port) {
   } catch (_) {
     return fallback;
   }
-}
-
-function getServer () {
-  // try {
-  //   const cert = {
-  //     key: fs.readFileSync(path.resolve(__dirname, '../.ssl/server.key')),
-  //     cert: fs.readFileSync(path.resolve(__dirname, '../.ssl/server.cert'))
-  //   };
-  //   const server = require('https')
-  //     .createServer(cert, app);
-  //   logger.info('certificate found, HTTPS server enabled');
-  //   return server;
-  // } catch (e) {
-    logger.info('no certificate found, HTTPS server not enabled');
-    return app;
-  // }
 }
 
 module.exports = startServer;

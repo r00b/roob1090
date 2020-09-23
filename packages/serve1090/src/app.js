@@ -28,8 +28,12 @@ async function startServer (config) {
 
     const store = require('../src/stores/aircraft-store');
 
-    // kick off the jobs
+    // kick off the jobs(req, res, next)
     require('./services/worker-service')();
+
+    app.get('/healthz', (req, res, next) => {
+      return res.status(200).end();
+    });
 
     // set up routers
     // app.use('/auth', authRouter(config.auth));
@@ -58,19 +62,19 @@ function normalizePort (port) {
 }
 
 function getServer () {
-  try {
-    const cert = {
-      key: fs.readFileSync(path.resolve(__dirname, '../.ssl/server.key')),
-      cert: fs.readFileSync(path.resolve(__dirname, '../.ssl/server.cert'))
-    };
-    const server = require('https')
-      .createServer(cert, app);
-    logger.info('certificate found, HTTPS server enabled');
-    return server;
-  } catch (e) {
+  // try {
+  //   const cert = {
+  //     key: fs.readFileSync(path.resolve(__dirname, '../.ssl/server.key')),
+  //     cert: fs.readFileSync(path.resolve(__dirname, '../.ssl/server.cert'))
+  //   };
+  //   const server = require('https')
+  //     .createServer(cert, app);
+  //   logger.info('certificate found, HTTPS server enabled');
+  //   return server;
+  // } catch (e) {
     logger.info('no certificate found, HTTPS server not enabled');
     return app;
-  }
+  // }
 }
 
 module.exports = startServer;

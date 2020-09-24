@@ -86,7 +86,6 @@ function getWorkerConfig (...jobs) {
   return {
     logger: logger.scope('worker meta'),
     root: path.join(__dirname, 'workers'),
-    closeWorkerAfterMs: 10000, // note: bug in bree -> this cannot be the same as any worker's interval
     jobs
   };
 }

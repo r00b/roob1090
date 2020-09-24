@@ -146,19 +146,13 @@ function sendBoard (store, ws, next) {
  * @param {string} airspace - name of airspace
  */
 async function fetchBoard (store, airspace) {
-  const result = {
-    arriving: [],
-    arrived: [],
-    departing: [],
-    departed: [],
-    onRunway: [],
-    runways: [],
+  const board = await redis.getAsJson(`board:${airspace}`);
+  const numInRange = await store.getNumValidAircraft();
+  return {
+    ...board,
     stats: {
       now: Date.now(),
-      numInRange: await store.getNumValidAircraft() || 0
+      numInRange
     }
   };
-  const board = await redis.getAsJson(`board:${airspace}`) || {};
-  _.merge(result, board);
-  return result;
 }

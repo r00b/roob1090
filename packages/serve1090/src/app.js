@@ -30,7 +30,7 @@ async function startServer (config) {
     // set up routers
     // app.use('/auth', authRouter(config.auth));
     app.use('/aircraft', aircraftRouter(config.pumpKey, store));
-    app.use('/airports', airspacesRouter(config.broadcastKey, store));
+    app.use('/', airspacesRouter(config.broadcastKey, store));
 
     logger.info('started serve1090', { port: normalizedPort });
     return server;

@@ -16,13 +16,17 @@ const AUTH_TIMEOUT = 5000;
 
 module.exports = (broadcastKey, store) => {
   const airports = getFileNames(AIRPORTS_PATH);
+  // const airspaces = getFileNames(AIRSPACES_PATH);
 
   const router = new express.Router()
-    .get('/', getAirports(airports));
+    .get('/airports', getAirports(airports));
+  // .get('airspaces', getAirspaces(airports));
 
   // mount all airports
   airports.forEach((airport) => {
-    router.ws(`/${airport}`, broadcast(broadcastKey, store, airport));
+    router
+      .get(`/boards/${airport}`, getBoard(store, airport))
+      .ws(`/boards/${airport}`, broadcast(broadcastKey, store, airport));
   });
 
   router.use(errorHandler);
@@ -35,6 +39,18 @@ module.exports = (broadcastKey, store) => {
 function getAirports (airports) {
   return (req, res) => {
     return res.status(200).json({ airports });
+  };
+}
+
+/**
+ * GET the board for a specified airspace
+ *
+ * @param store - aircraft store
+ * @param {string} airspace - name of airspace
+ */
+function getBoard (store, airspace) {
+  return (req, res, next) => {
+    return fetchBoard(store, airspace).then(result => res.status(200).json(result)).catch(next);
   };
 }
 
@@ -114,24 +130,35 @@ function sendBoard (store, ws, next) {
   return async () => {
     try {
       if (ws.readyState === 1) {
-        const result = {
-          arriving: [],
-          arrived: [],
-          departing: [],
-          departed: [],
-          onRunway: [],
-          runways: [],
-          stats: {
-            now: Date.now(),
-            numInRange: await store.getNumValidAircraft() || 0
-          }
-        };
-        const board = await redis.getAsJson(`board:${ws.locals.airspace}`) || {};
-        _.merge(result, board);
-        ws.send(JSON.stringify(result));
+        const board = await fetchBoard(store, ws.locals.airspace);
+        ws.send(JSON.stringify(board));
       }
     } catch (e) {
       next(new BroadcastError(e.message));
     }
   };
+}
+
+/**
+ * Fetch the board from redis for a specified airspace
+ *
+ * @param store - aircraft store
+ * @param {string} airspace - name of airspace
+ */
+async function fetchBoard (store, airspace) {
+  const result = {
+    arriving: [],
+    arrived: [],
+    departing: [],
+    departed: [],
+    onRunway: [],
+    runways: [],
+    stats: {
+      now: Date.now(),
+      numInRange: await store.getNumValidAircraft() || 0
+    }
+  };
+  const board = await redis.getAsJson(`board:${airspace}`) || {};
+  _.merge(result, board);
+  return result;
 }

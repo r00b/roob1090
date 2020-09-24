@@ -251,14 +251,14 @@ class RedisService {
   }
 
   /**
-   * Get the number of fields in the hash stored at key;
+   * Get the number of fields in the hash stored at key; ignores any active pipelines;
    * see https://redis.io/commands/hlen
    *
    * @param {string} key - key of hash
    * @returns {Promise|Pipeline}
    */
   hlen (key) {
-    return this.send('hlen', key);
+    return this.redis.hlen(key);
   }
 
   // OTHER OPERATIONS

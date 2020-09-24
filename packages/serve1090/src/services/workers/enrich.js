@@ -89,6 +89,9 @@ async function queryAirframe (hex) {
       credentials.openSkyUsername,
       credentials.openSkyPassword
     );
+    if (!body.typecode.length) { // sometimes typecode is empty, try to use model instead
+      body.typecode = body.model;
+    }
     return body || {};
   } catch (e) {
     logger.warn('failed to fetch airframe metadata from OpenSky', e);

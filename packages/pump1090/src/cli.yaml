@@ -17,12 +17,12 @@ args:
   - device-id:
       short: i
       long: id
-      value_name: string
+      value_name: MyRaspberryPi
       help: unique device id of this machine
       takes_value: true
-  - serve1090-secret:
-      short: s
-      long: secret
-      value_name: uuid
-      help: serve1090 secret
+  - serve1090-token:
+      short: t
+      long: token
+      value_name: ABC123D0
+      help: serve1090 pump token
       takes_value: true

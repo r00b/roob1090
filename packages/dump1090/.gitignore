@@ -4,3 +4,6 @@
 # Dump files
 dumpfiles/*
 !dumpfiles/.gitkeep
+
+.vscode
+.idea

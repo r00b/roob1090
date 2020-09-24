@@ -6,6 +6,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 ### Changed
 ### Fixed
+- `hlen` does not use pipeline since could accidentally return pipeline when in race condition with aircraft write
+- better construction of boards in airspaces router
 ### Removed
 ### Breaking
 

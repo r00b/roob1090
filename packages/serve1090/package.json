@@ -10,7 +10,7 @@
     "start-pm2": "pm2-runtime index.js",
     "debug": "nodemon --inspect=0.0.0.0 index.js",
     "compose": "docker-compose up -d --build",
-    "tail-logs": "docker logs --follow serve1090",
+    "logs": "docker logs --follow serve1090",
     "redis": "docker run -v $PWD/keydb.conf:/etc/keydb/keydb.conf --publish=6379:6379 --name=serve1090_redis -d eqalpha/keydb:latest"
   },
   "dependencies": {

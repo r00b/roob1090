@@ -2,7 +2,7 @@ const express = require('express');
 const logger = require('../../lib/logger')().scope('request');
 const { PUMP_SCHEMA } = require('./schemas');
 const { PumpError } = require('../../lib/errors');
-const { checkToken, errorHandler } = require('../middleware');
+const { checkToken, errorHandler, close } = require('../middleware');
 const { nanoid } = require('nanoid');
 
 module.exports = (pumpKey, store) => {
@@ -44,7 +44,15 @@ function pump (pumpKey, store) {
         next(e);
       }
     });
-    ws.locals.socketLogger.info('established pump pipe', { start: ws.locals.start, url: originalUrl });
+    ws.on('close', async _ => {
+      close(ws);
+      ws.locals.socketLogger.info('terminate pump', {
+        elapsedTime: Date.now() - ws.locals.start,
+        url: ws.locals.originalUrl,
+        airspace: ws.locals.airspace
+      });
+    });
+    ws.locals.socketLogger.info('init pump', { start: ws.locals.start, url: originalUrl });
   };
 }
 

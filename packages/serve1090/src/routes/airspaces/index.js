@@ -1,9 +1,9 @@
 const express = require('express');
 const _ = require('lodash');
 const logger = require('../../lib/logger')().scope('request');
-const { getFileNames, close } = require('../../lib/utils');
+const { getFileNames } = require('../../lib/utils');
 const { AuthError, BroadcastError } = require('../../lib/errors');
-const { checkToken, errorHandler } = require('../middleware');
+const { checkToken, errorHandler, close } = require('../middleware');
 const { nanoid } = require('nanoid');
 
 const AIRSPACES_PATH = '../lib/airspaces';
@@ -81,7 +81,7 @@ function broadcast (pumpKey, store, airspace) {
         const rawPayload = JSON.parse(data);
         // check for a valid token; throws AuthError
         checkToken(pumpKey, rawPayload);
-        ws.locals.socketLogger.info('authenticated broadcast client', {
+        ws.locals.socketLogger.info('authenticate broadcast client', {
           airspace: ws.locals.airspace
         });
         initBroadcast(store, ws, next);
@@ -102,20 +102,20 @@ function broadcast (pumpKey, store, airspace) {
  * @param next
  */
 function initBroadcast (store, ws, next) {
-  ws.locals.socketLogger.info('init board pipe', {
-    start: ws.locals.start,
-    url: ws.locals.originalUrl,
-    airspace: ws.locals.airspace
-  });
   const broadcast = setInterval(sendBoard(store, ws, next), 1000);
   ws.on('close', async _ => {
     clearInterval(broadcast);
     close(ws);
-    ws.locals.socketLogger.info('close board pipe', {
+    ws.locals.socketLogger.info('terminate broadcast', {
       elapsedTime: Date.now() - ws.locals.start,
       url: ws.locals.originalUrl,
       airspace: ws.locals.airspace
     });
+  });
+  ws.locals.socketLogger.info('init broadcast', {
+    start: ws.locals.start,
+    url: ws.locals.originalUrl,
+    airspace: ws.locals.airspace
   });
 }
 

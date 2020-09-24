@@ -5,6 +5,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 ### Added
 ### Changed
+- rename `SERVE1090_SECRET` to `SERVE1090_TOKEN`
 ### Fixed
 ### Removed
 ### Breaking

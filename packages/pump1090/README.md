@@ -12,7 +12,7 @@ This program would probably have been much easier to write in Python or some oth
 
 ### Prerequisites
 1. At least `cargo` and `rustc` `1.42.0-nightly`
-2. Something running `dump1090` and generating the requisite dump JSON files
+2. A running instance `dump1090` and generating the requisite dump JSON files
 
 ### Installation
 1. For a development run, `cargo run` or `cargo run -- -f shortArg --long longArg`

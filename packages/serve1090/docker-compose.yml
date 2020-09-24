@@ -16,7 +16,7 @@ services:
     depends_on:
       - redis
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=${NODE_ENV}
       - PORT=${PORT}
       - KEYDB_HOST=redis
       - KEYDB_PORT=6379

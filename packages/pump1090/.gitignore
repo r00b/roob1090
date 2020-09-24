@@ -4,3 +4,6 @@
 # Rust build
 /target
 **/*.rs.bk
+
+.vscode
+.idea

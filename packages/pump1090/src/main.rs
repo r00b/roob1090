@@ -38,9 +38,9 @@ fn main() -> () {
         "DEVICE_ID",
         matches.value_of("device-id"),
         undefined);
-    let serve1090_secret: String = unwrap_arg(
-        "SERVE1090_SECRET",
-        matches.value_of("serve1090-secret"),
+    let serve1090_token: String = unwrap_arg(
+        "SERVE1090_TOKEN",
+        matches.value_of("serve1090-token"),
         undefined);
     let filename: String = unwrap_arg(
         "DUMPFILE_PATH",
@@ -51,15 +51,15 @@ fn main() -> () {
         matches.value_of("endpoint"),
         "ws://localhost:3000/pump");
 
-    if serve1090_secret == undefined {
-        handle_fatal(String::from("unable to find serve1090_secret").into());
+    if serve1090_token == undefined {
+        handle_fatal(String::from("unable to find serve1090_token").into());
     }
 
     println!("Initializing pump1090...");
     println!("Device id: {}", device_id);
     println!("Dumpfile path: {}", filename);
     println!("Websocket endpoint: {}", endpoint);
-    init_pump(&device_id, &serve1090_secret, &filename, &endpoint);
+    init_pump(&device_id, &serve1090_token, &filename, &endpoint);
     println!("pump1090 terminated.")
 }
 
@@ -84,18 +84,18 @@ fn unwrap_arg(env_var_name: &str, cli_arg: Option<&str>, default_val: &str) -> S
 /// # Arguments
 ///
 /// * `device_id` - unique string identifier of the machine from args
-/// * `serve1090_secret` - serve1090 uuid that the receiving server expects
+/// * `serve1090_token` - serve1090 uuid that the receiving server expects
 /// * `filename` - path to the dumpfile JSON
 /// * `endpoint` - WebSocket endpoint of the server
 fn init_pump(
     device_id: &str,
-    serve1090_secret: &str,
+    serve1090_token: &str,
     filename: &str,
     endpoint: &str,
 ) -> () {
     loop {
         let socket = init_pipe(endpoint);
-        init_dump_timer(device_id, serve1090_secret, filename, socket).unwrap_or_else(handle_fatal);
+        init_dump_timer(device_id, serve1090_token, filename, socket).unwrap_or_else(handle_fatal);
     }
 }
 
@@ -134,12 +134,12 @@ fn init_pipe(endpoint: &str) -> WebSocket<AutoStream> {
 /// # Arguments
 ///
 /// * `device_id` - unique string identifier of the machine from args
-/// * `serve1090_secret` - serve1090 uuid that the receiving server expects
+/// * `serve1090_token` - serve1090 uuid that the receiving server expects
 /// * `filename` - path to the dumpfile JSON
 /// * `socket` - WebSocket created by `init_pipe`
 fn init_dump_timer(
     device_id: &str,
-    serve1090_secret: &str,
+    serve1090_token: &str,
     filename: &str,
     mut socket: WebSocket<AutoStream>,
 ) -> Result<(), Box<dyn Error>> {
@@ -148,7 +148,7 @@ fn init_dump_timer(
     print!("Pump count: {}", run_count);
     io::stdout().flush().unwrap();
     loop {
-        let data = read_json(device_id, serve1090_secret, filename)?;
+        let data = read_json(device_id, serve1090_token, filename)?;
         match pump_data(data, socket) {
             Ok(s) => socket = s, // data send was successful
             Err(_) => {
@@ -169,11 +169,11 @@ fn init_dump_timer(
 /// # Arguments
 ///
 /// * `device_id` - unique string identifier of the machine from args
-/// * `serve1090_secret` - serve1090 uuid that the receiving server expects
+/// * `serve1090_token` - serve1090 token that the receiving server expects
 /// * `filename` - path to the dumpfile JSON
 fn read_json(
     device_id: &str,
-    serve1090_secret: &str,
+    serve1090_token: &str,
     filename: &str,
 ) -> Result<String, Box<dyn Error>> {
     // first, read the input file to string
@@ -184,7 +184,7 @@ fn read_json(
     let mut data: Value = serde_json::from_str(&contents)?;
     // attach metadata
     data["device_id"] = device_id.into();
-    data["token"] = serve1090_secret.into();
+    data["token"] = serve1090_token.into();
     let payload: String = serde_json::to_string(&data)?;
     Ok(payload)
 }

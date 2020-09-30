@@ -30,7 +30,7 @@
     "nanoid": "^3.1.12",
     "p-map": "^4.0.0",
     "pino": "^6.6.1",
-    "pm2": "^4.4.1",
+    "pm2": "^4.5.0",
     "safe-compare": "^1.1.4"
   },
   "devDependencies": {

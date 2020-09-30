@@ -1,7 +1,7 @@
 // this module defines an approach/departure route for runway 01-19 at KDCA
 // polygons generated via https://www.keene.edu/campus/maps/tool/
 // headings generated via https://www.acscdg.com/
-const { compareDistancesToExtremity } = require('../../utils');
+const { compareDistancesToExtremity } = require('../utils');
 
 const airspaceName = 'Washington Reagan National Airport';
 const airspaceKey = 'kdca';

@@ -1,9 +1,8 @@
 const express = require('express');
-const _ = require('lodash');
 const logger = require('../../lib/logger')().scope('request');
 const { getFileNames } = require('../../lib/utils');
 const { AuthError, BroadcastError } = require('../../lib/errors');
-const { checkToken, errorHandler, close } = require('../middleware');
+const { checkToken, errorHandler, close } = require('../../middleware/route');
 const { nanoid } = require('nanoid');
 
 const AIRSPACES_PATH = '../lib/airspaces';

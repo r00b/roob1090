@@ -5,8 +5,7 @@ const { AuthError, BroadcastError } = require('../../lib/errors');
 const { checkToken, errorHandler, close } = require('../../middleware/route');
 const { nanoid } = require('nanoid');
 
-const AIRSPACES_PATH = '../lib/airspaces';
-const AIRPORTS_PATH = `${AIRSPACES_PATH}/airports`;
+const AIRPORTS_PATH = '../lib/airports';
 
 const RedisService = require('../../services/redis-service');
 const redis = new RedisService();
@@ -15,11 +14,9 @@ const AUTH_TIMEOUT = 5000;
 
 module.exports = (broadcastKey, store) => {
   const airports = getFileNames(AIRPORTS_PATH);
-  // const airspaces = getFileNames(AIRSPACES_PATH);
 
   const router = new express.Router()
     .get('/airports', getAirports(airports));
-  // .get('airspaces', getAirspaces(airports));
 
   // mount all airports
   airports.forEach((airport) => {
@@ -42,14 +39,14 @@ function getAirports (airports) {
 }
 
 /**
- * GET the board for a specified airspace
+ * GET the board for a specified airport
  *
  * @param store - aircraft store
- * @param {string} airspace - name of airspace
+ * @param {string} airport - name of airport
  */
-function getBoard (store, airspace) {
+function getBoard (store, airport) {
   return (req, res, next) => {
-    return fetchBoard(store, airspace).then(result => res.status(200).json(result)).catch(next);
+    return fetchBoard(store, airport).then(result => res.status(200).json(result)).catch(next);
   };
 }
 
@@ -59,13 +56,13 @@ function getBoard (store, airspace) {
  * @param {string} broadcastKey - key that token in initial request payload must match
  *                                for broadcast to be started
  * @param store - aircraft store
- * @param {string} airspace - airspace whose store should be broadcast
+ * @param {string} airport - airport whose store should be broadcast
  */
-function broadcast (pumpKey, store, airspace) {
+function broadcast (pumpKey, store, airport) {
   return (ws, { originalUrl }, next) => {
     ws.locals = {
       originalUrl,
-      airspace,
+      airport,
       socketLogger: logger.scope('ws').child({ requestId: nanoid() }),
       start: Date.now()
     };
@@ -80,8 +77,9 @@ function broadcast (pumpKey, store, airspace) {
         const rawPayload = JSON.parse(data);
         // check for a valid token; throws AuthError
         checkToken(pumpKey, rawPayload);
+        redis.incr('broadcastClientCount'); // fire and forget
         ws.locals.socketLogger.info('authenticate broadcast client', {
-          airspace: ws.locals.airspace
+          airport: ws.locals.airport
         });
         initBroadcast(store, ws, next);
       } catch (e) {
@@ -105,21 +103,22 @@ function initBroadcast (store, ws, next) {
   ws.on('close', async _ => {
     clearInterval(broadcast);
     close(ws);
+    redis.decr('broadcastClientCount'); // fire and forget
     ws.locals.socketLogger.info('terminate broadcast', {
       elapsedTime: Date.now() - ws.locals.start,
       url: ws.locals.originalUrl,
-      airspace: ws.locals.airspace
+      airport: ws.locals.airport
     });
   });
   ws.locals.socketLogger.info('init broadcast', {
     start: ws.locals.start,
     url: ws.locals.originalUrl,
-    airspace: ws.locals.airspace
+    airport: ws.locals.airport
   });
 }
 
 /**
- * Send the specified airspace's board over the specified WebSocket
+ * Send the specified airport's board over the specified WebSocket
  *
  * @param store - aircraft store whose board should be sent
  * @param {WebSocket} ws
@@ -129,7 +128,7 @@ function sendBoard (store, ws, next) {
   return async () => {
     try {
       if (ws.readyState === 1) {
-        const board = await fetchBoard(store, ws.locals.airspace);
+        const board = await fetchBoard(store, ws.locals.airport);
         ws.send(JSON.stringify(board));
       }
     } catch (e) {
@@ -139,19 +138,21 @@ function sendBoard (store, ws, next) {
 }
 
 /**
- * Fetch the board from redis for a specified airspace
+ * Fetch the board from redis for a specified airport
  *
  * @param store - aircraft store
- * @param {string} airspace - name of airspace
+ * @param {string} airport - name of airport
  */
-async function fetchBoard (store, airspace) {
-  const board = await redis.getAsJson(`board:${airspace}`);
-  const numInRange = await store.getNumValidAircraft();
+async function fetchBoard (store, airport) {
+  const board = await redis.getAsJson(`board:${airport}`);
+  const totalAircraftCount = await store.getTotalAircraftCount();
+  const validAircraftCount = await store.getValidAircraftCount();
   return {
     ...board,
     stats: {
       now: Date.now(),
-      numInRange
+      totalAircraftCount,
+      validAircraftCount
     }
   };
 }

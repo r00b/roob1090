@@ -17,7 +17,8 @@ module.exports = {
   getValidAircraft,
   getInvalidAircraft,
   getValidatedAircraftAt,
-  getNumValidAircraft
+  getTotalAircraftCount,
+  getValidAircraftCount
 };
 
 /**
@@ -119,7 +120,11 @@ function getValidatedAircraftAt (hex) {
   return redis.hgetJson('store:valid', hex);
 }
 
-function getNumValidAircraft () {
+function getTotalAircraftCount () {
+  return redis.hlen('store:all');
+}
+
+function getValidAircraftCount () {
   return redis.hlen('store:valid');
 }
 

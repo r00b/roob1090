@@ -38,8 +38,8 @@ function getRoot (store) {
         airports: {}
       },
       stats: {
-        dataSourcesCount: getCount('dataSourceCount'),
-        broadcastClientsCount: getCount('broadcastClientCount'),
+        dataSourcesCount: await getCount('dataSourceCount'),
+        broadcastClientsCount: await getCount('broadcastClientCount'),
         totalAircraftCount: await store.getTotalAircraftCount(),
         validAircraftCount: await store.getValidAircraftCount()
       }
@@ -64,10 +64,10 @@ function getRoot (store) {
  */
 async function getCount (key) {
   try {
-    const count = await redis.get(key);
-    return parseInt(count);
+    const count = parseInt(await redis.get(key));
+    return isNaN(count) ? 0 : count;
   } catch (e) {
-    logger.warn('failed to parse count', e);
-    return null;
+    logger.warn('failed to parse root api stats count', e);
+    return 'error';
   }
 }

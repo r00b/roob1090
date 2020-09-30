@@ -4,6 +4,7 @@ const { getFileNames } = require('../../lib/utils');
 const { AuthError, BroadcastError } = require('../../lib/errors');
 const { checkToken, errorHandler, close } = require('../../middleware/route');
 const { nanoid } = require('nanoid');
+const camel = require('camelcase-keys');
 
 const AIRPORTS_PATH = '../lib/airports';
 
@@ -147,12 +148,12 @@ async function fetchBoard (store, airport) {
   const board = await redis.getAsJson(`board:${airport}`);
   const totalAircraftCount = await store.getTotalAircraftCount();
   const validAircraftCount = await store.getValidAircraftCount();
-  return {
+  return camel({
     ...board,
     stats: {
       now: Date.now(),
       totalAircraftCount,
       validAircraftCount
     }
-  };
+  });
 }

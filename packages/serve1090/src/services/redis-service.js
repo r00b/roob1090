@@ -107,6 +107,28 @@ class RedisService {
   }
 
   /**
+   * Increment the value stored at key;
+   * see https://redis.io/commands/incr
+   *
+   * @param key - key of value
+   * @returns {Promise|Pipeline}
+   */
+  async incr (key) {
+    return this.send('incr', key);
+  }
+
+  /**
+   * Decrement the value stored at key;
+   * see https://redis.io/commands/decr
+   *
+   * @param key - key of value
+   * @returns {Promise|Pipeline}
+   */
+  async decr (key) {
+    return this.send('decr', key);
+  }
+
+  /**
    * Delete a value;
    * see https://redis.io/commands/del
    *

@@ -28,7 +28,7 @@ async function startServer (config) {
     require('./services/worker-service')();
 
     // set up routers
-    // app.use('/', rootRouter(store));
+    app.use('/', rootRouter(store));
     app.use('/aircraft', aircraftRouter(config.pumpKey, store));
     app.use('/airports', airportsRouter(config.broadcastKey, store));
 

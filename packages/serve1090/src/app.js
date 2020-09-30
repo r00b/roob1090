@@ -2,9 +2,9 @@ const app = require('express')();
 const logger = require('./lib/logger')().scope('app');
 const cors = require('cors');
 
-// const authRouter = require('./routes/auth/index');
+const rootRouter = require('./routes/root/index');
 const aircraftRouter = require('./routes/aircraft/index');
-const airspacesRouter = require('./routes/airspaces/index');
+const airportsRouter = require('./routes/airports/index');
 
 async function startServer (config) {
   const normalizedPort = normalizePort(config.port);
@@ -28,9 +28,9 @@ async function startServer (config) {
     require('./services/worker-service')();
 
     // set up routers
-    // app.use('/auth', authRouter(config.auth));
+    // app.use('/', rootRouter(store));
     app.use('/aircraft', aircraftRouter(config.pumpKey, store));
-    app.use('/', airspacesRouter(config.broadcastKey, store));
+    app.use('/airports', airportsRouter(config.broadcastKey, store));
 
     logger.info('started serve1090', { port: normalizedPort });
     return server;

@@ -5,7 +5,7 @@ const fs = require('fs');
 const Bree = require('bree');
 
 const AIRSPACES_PATH = '../lib/airspaces';
-const AIRPORTS_PATH = `${AIRSPACES_PATH}/airports`;
+const AIRPORTS_PATH = '../lib/airports';
 
 function init () {
   const airspaceWorkers = generateAirspaceWorkers(AIRSPACES_PATH);

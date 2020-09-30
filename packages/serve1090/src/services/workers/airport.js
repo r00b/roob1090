@@ -42,7 +42,7 @@ async function computeAirportBoard (aircraft, airport) {
     departing: [],
     departed: [],
     onRunway: [],
-    runways: []
+    activeRunways: []
   };
 
   for (const route of routes) {
@@ -108,7 +108,7 @@ async function partitionAndLogRoute (aircraft, route) {
     departing,
     departed,
     onRunway,
-    runways: [activeRunway]
+    activeRunways: [activeRunway]
   };
 }
 

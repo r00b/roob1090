@@ -1,4 +1,5 @@
 const express = require('express');
+const logger = require('../../lib/logger')().scope('request');
 const { getFileNames } = require('../../lib/utils');
 const { errorHandler } = require('../../middleware/route');
 
@@ -37,20 +38,36 @@ function getRoot (store) {
         airports: {}
       },
       stats: {
-        dataSourcesCount: await redis.get('dataSourceCount') || 0,
-        broadcastClientsCount: await redis.get('broadcastClientCount') || 0,
+        dataSourcesCount: getCount('dataSourceCount'),
+        broadcastClientsCount: getCount('broadcastClientCount'),
         totalAircraftCount: await store.getTotalAircraftCount(),
         validAircraftCount: await store.getValidAircraftCount()
       }
     };
     const airspaces = getFileNames(AIRSPACES_PATH);
     airspaces.forEach(airport => {
-      body.routes.airspaces[airport] = `/airspaces/boards/${airport}`;
+      body.routes.airspaces[airport] = `/airspaces/boards/${airport}[/.websocket]`;
     });
     const airports = getFileNames(AIRPORTS_PATH);
     airports.forEach(airport => {
-      body.routes.airports[airport] = `/airports/boards/${airport}`;
+      body.routes.airports[airport] = `/airports/boards/${airport}[/.websocket]`;
     });
     return res.status(200).json(body);
   };
+}
+
+/**
+ * Get integer value form redis, return null if something goes wrong
+ *
+ * @param {string} key - key of value holding the count
+ * @returns {Promise|null}
+ */
+async function getCount (key) {
+  try {
+    const count = await redis.get(key);
+    return parseInt(count);
+  } catch (e) {
+    logger.warn('failed to parse count', e);
+    return null;
+  }
 }

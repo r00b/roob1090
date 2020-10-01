@@ -131,11 +131,11 @@ function getValidAircraftCount () {
 
 async function getStore (store) {
   const aircraft = await redis.hgetAllAsJsonValues(store);
-  return camel({
+  return {
     now: Date.now(),
     count: aircraft.length,
-    aircraft
-  });
+    aircraft: aircraft.map(camel)
+  };
 }
 
 function setUpdated (aircraft) {

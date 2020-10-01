@@ -36,6 +36,7 @@ function getRoot (store) {
         airports: {}
       },
       stats: {
+        now: Date.now(),
         uptime: secondsToDaysHoursSeconds(process.uptime()),
         dataSourcesCount: await getCount('dataSourceCount'),
         broadcastClientsCount: await getCount('broadcastClientCount'),

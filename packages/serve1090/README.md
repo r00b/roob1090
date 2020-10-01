@@ -19,14 +19,14 @@
 | `GET`           | `/airports/boards/[$airport]`            | Get the current board for `$airport`; i.e. `/airports/kdca`                                                                                                           |                                                                                                                                                                                                                                                     |
 | `GET`&rarr;`WS` | `/airports/boards/[$airport]/.websocket` | Make an HTTP/1.1 upgrade request to open a WebSocket connection that will broadcast the board for `$airport` once per second; i.e. `/airports/boards/kdca/.websocket` | Upon opening the WebSocket pipe, the server will listen for 5 seconds for a message containing a stringified JSON hash with a property `token` whose value is equal to `BROADCAST_SECRET`; after this secret is validated, the broadcast will start |
 
-*a validated aircraft conforms to the schema defined by `AIRCRAFT_SCHEMA` in [schemas.js](/src/stores/schemas.js)
+*a validated aircraft conforms to the schema defined by `AIRCRAFT_SCHEMA` in [schemas.js](./src/stores/schemas.js)
 
 ### Development
 
 #### Prerequisites
 
 1. From the repo root, run `chmod +x scripts/setup.sh && ./scripts/setup.sh` and follow prompts
-2. Optionally, add OpenSky and FligtAware FlightXML2 username/password pairs to `.env` 
+2. Optionally, add OpenSky and FlightAware FlightXML2 username/password pairs to `.env` 
 
 Then, if running via Docker only: 
 

@@ -4,7 +4,6 @@ const {
   secondsToMillis,
   millisToSeconds
 } = require('../lib/utils');
-const camel = require('camelcase-keys');
 
 const RedisService = require('../services/redis-service');
 const redis = new RedisService();
@@ -134,7 +133,7 @@ async function getStore (store) {
   return {
     now: Date.now(),
     count: aircraft.length,
-    aircraft: aircraft.map(camel)
+    aircraft
   };
 }
 

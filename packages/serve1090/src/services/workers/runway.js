@@ -68,10 +68,11 @@ async function computeAndWriteActiveRunway (route) {
  * @returns array of aircraft candidates, or false if none are found
  */
 async function findCandidates (route) {
+  const { head, tail } = route.regions;
   // try to check only one route for a sample if possible
-  let candidates = await redis.smembers(`${route.tail.key}:aircraft`);
+  let candidates = await redis.smembers(`${tail.key}:aircraft`);
   if (!candidates.length) {
-    candidates = await redis.smembers(`${route.head.key}:aircraft`);
+    candidates = await redis.smembers(`${head.key}:aircraft`);
   }
   return candidates.length ? candidates : false;
 }

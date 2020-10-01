@@ -61,12 +61,13 @@ async function computeAirportBoard (aircraft, airport) {
 }
 
 async function partitionAndLogRoute (aircraft, route) {
+  const { head, runway, tail } = route.regions;
   // first, compute the aircraft in each of the three regions the comprises an airport route
   // runway worker will consume the resulting redis stores to compute the active runway
   const partition = {
-    [route.head.key]: await reduceAndWriteRegion(aircraft, route.head),
-    [route.runway.key]: await reduceAndWriteRegion(aircraft, route.runway),
-    [route.tail.key]: await reduceAndWriteRegion(aircraft, route.tail)
+    [head.key]: await reduceAndWriteRegion(aircraft, head),
+    [runway.key]: await reduceAndWriteRegion(aircraft, runway),
+    [tail.key]: await reduceAndWriteRegion(aircraft, tail)
   };
 
   // check if the active runway is already known (thus making it possible to determine approach/departure)
@@ -81,7 +82,7 @@ async function partitionAndLogRoute (aircraft, route) {
   // determine the semantic meaning of each region
   const arriving = partition[approachRegionKey];
   const departed = partition[departureRegionKey].reverse(); // sort in order of most recent departure
-  const onRunway = partition[route.runway.key];
+  const onRunway = partition[runway.key];
 
   // partition the aircraft currently on the runway
   const {

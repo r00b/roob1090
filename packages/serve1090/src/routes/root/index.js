@@ -1,9 +1,9 @@
 const express = require('express');
 const logger = require('../../lib/logger')().scope('request');
-const { getFileNames } = require('../../lib/utils');
+const { getFileNames, secondsToDaysHoursSeconds } = require('../../lib/utils');
 const { errorHandler } = require('../../middleware/route');
 
-const AIRSPACES_PATH = '../lib/airspaces';
+// const AIRSPACES_PATH = '../lib/airspaces';
 const AIRPORTS_PATH = '../lib/airports';
 
 const RedisService = require('../../services/redis-service');
@@ -38,6 +38,7 @@ function getRoot (store) {
         airports: {}
       },
       stats: {
+        uptime: secondsToDaysHoursSeconds(process.uptime()),
         dataSourcesCount: await getCount('dataSourceCount'),
         broadcastClientsCount: await getCount('broadcastClientCount'),
         totalAircraftCount: await store.getTotalAircraftCount(),

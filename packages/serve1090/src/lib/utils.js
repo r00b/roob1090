@@ -16,6 +16,17 @@ function millisToSeconds (millis) {
   return millis / 1000;
 }
 
+function secondsToDaysHoursSeconds (s) {
+  let seconds = parseInt(s, 10);
+  const days = Math.floor(seconds / (3600 * 24));
+  seconds -= days * 3600 * 24;
+  const hours = Math.floor(seconds / 3600);
+  seconds -= hours * 3600;
+  const minutes = Math.floor(seconds / 60);
+  seconds -= minutes * 60;
+  return `${days} days, ${hours} hours, ${minutes} mins, ${seconds} secs`;
+}
+
 /**
  * Find the distance from aircraft a to extremity and aircraft b to extremity;
  * compare the distances to sort to ascending distance to extremity
@@ -79,6 +90,7 @@ module.exports = {
   rightPad,
   secondsToMillis,
   millisToSeconds,
+  secondsToDaysHoursSeconds,
   compareDistancesToExtremity,
   computeDistance,
   get,

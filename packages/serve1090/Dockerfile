@@ -6,7 +6,7 @@ WORKDIR $APP_DIR
 
 COPY package.json yarn.lock $APP_DIR/
 
-RUN yarn install
+RUN yarn install --frozen-lockfile
 
 COPY index.js $APP_DIR
 COPY src $APP_DIR/src

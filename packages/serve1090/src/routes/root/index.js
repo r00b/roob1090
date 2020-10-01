@@ -10,11 +10,9 @@ const RedisService = require('../../services/redis-service');
 const redis = new RedisService();
 
 module.exports = (store) => {
-
-  const router = new express.Router()
-    .get('/', getRoot(store));
-  router.use(errorHandler);
-  return router;
+  return new express.Router()
+    .get('/', getRoot(store))
+    .use(errorHandler);
 };
 
 /**

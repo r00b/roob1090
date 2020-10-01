@@ -110,7 +110,7 @@ class RedisService {
    * Increment the value stored at key;
    * see https://redis.io/commands/incr
    *
-   * @param key - key of value
+   * @param {string} key - key of value
    * @returns {Promise|Pipeline}
    */
   async incr (key) {
@@ -121,7 +121,7 @@ class RedisService {
    * Decrement the value stored at key;
    * see https://redis.io/commands/decr
    *
-   * @param key - key of value
+   * @param {string} key - key of value
    * @returns {Promise|Pipeline}
    */
   async decr (key) {

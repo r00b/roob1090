@@ -4,14 +4,14 @@ const path = require('path');
 const fs = require('fs');
 const Bree = require('bree');
 
-const AIRSPACES_PATH = '../lib/airspaces';
+// const AIRSPACES_PATH = '../lib/airspaces';
 const AIRPORTS_PATH = '../lib/airports';
 
 function init () {
-  const airspaceWorkers = generateAirspaceWorkers(AIRSPACES_PATH);
+  // const airspaceWorkers = generateAirspaceWorkers(AIRSPACES_PATH);
   const airportWorkers = generateAirportWorkers(AIRPORTS_PATH);
 
-  const config = getWorkerConfig(...airportWorkers, ...airspaceWorkers);
+  const config = getWorkerConfig(...airportWorkers); // ...airspaceWorkers);
   const jobs = new Bree(config);
   jobs.start();
 

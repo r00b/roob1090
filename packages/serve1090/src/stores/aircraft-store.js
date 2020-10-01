@@ -1,4 +1,3 @@
-const _ = require('lodash');
 const logger = require('../lib/logger')().scope('aircraft store');
 const { AIRCRAFT_SCHEMA } = require('./schemas');
 const {

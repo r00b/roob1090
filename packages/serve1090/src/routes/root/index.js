@@ -44,10 +44,10 @@ function getRoot (store) {
         validAircraftCount: await store.getValidAircraftCount()
       }
     };
-    const airspaces = getFileNames(AIRSPACES_PATH);
-    airspaces.forEach(airport => {
-      body.routes.airspaces[airport] = `/airspaces/boards/${airport}[/.websocket]`;
-    });
+    // const airspaces = getFileNames(AIRSPACES_PATH);
+    // airspaces.forEach(airport => {
+    //   body.routes.airspaces[airport] = `/airspaces/boards/${airport}[/.websocket]`;
+    // });
     const airports = getFileNames(AIRPORTS_PATH);
     airports.forEach(airport => {
       body.routes.airports[airport] = `/airports/boards/${airport}[/.websocket]`;

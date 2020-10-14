@@ -34,7 +34,7 @@
     "safe-compare": "^1.1.4"
   },
   "devDependencies": {
-    "nodemon": "^2.0.2",
+    "nodemon": "^2.0.5",
     "signale": "^1.4.0"
   },
   "volta": {

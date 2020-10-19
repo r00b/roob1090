@@ -17,7 +17,7 @@
     "@turf/boolean-point-in-polygon": "^6.0.1",
     "@turf/distance": "^6.0.1",
     "@turf/helpers": "^6.1.4",
-    "base-64": "^0.1.0",
+    "base-64": "^1.0.0",
     "bree": "^3.3.0",
     "cors": "^2.8.5",
     "dotenv": "^8.2.0",

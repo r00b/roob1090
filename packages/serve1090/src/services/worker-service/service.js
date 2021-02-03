@@ -43,25 +43,25 @@ function generateAirportWorkers (airportDir) {
           airspacePath
         }
       );
-      // check for OpenSky/FlightXML2 keys and add enrich worker if they exist
-      const {
-        openSkyUsername,
-        openSkyPassword,
-        faUsername,
-        faPassword
-      } = config;
+      // // check for OpenSky/FlightXML2 keys and add enrich worker if they exist
+      // const {
+      //   openSkyUsername,
+      //   openSkyPassword,
+      //   faUsername,
+      //   faPassword
+      // } = config;
       // TODO: only require one pair of creds at minimum
       if (openSkyUsername && openSkyPassword && faUsername && faPassword) {
         acc.push({
           name: 'enrich',
           interval: '5s',
           airspacePath,
-          credentials: {
-            openSkyUsername,
-            openSkyPassword,
-            faUsername,
-            faPassword
-          }
+          // credentials: {
+          //   openSkyUsername,
+          //   openSkyPassword,
+          //   faUsername,
+          //   faPassword
+          // }
         });
       }
       return acc;

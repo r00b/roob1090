@@ -95,12 +95,22 @@ async function partitionAndLogRoute (aircraft, route) {
   const pipeline = redis.pipeline();
   const parentKey = route.parent;
   const ex = 2;
-  pipeline.saddEx(`${parentKey}:arrived`, ex, ...arrived.map(hex));
-  pipeline.saddEx(`${parentKey}:departing`, ex, ...departing.map(hex));
+
+  const arrivingHexes = arriving.map(hex);
+  const arrivedHexes = arrived.map(hex);
+  const departingHexes = departing.map(hex);
+  const departedHexes = departed.map(hex);
+
+  pipeline.saddEx(`${parentKey}:arrivals`, 60, [...arrivingHexes, ...arrivedHexes]);
+  pipeline.saddEx(`${parentKey}:arrived`, ex, ...arrivedHexes);
+  pipeline.zaddEx(`${parentKey}:arriving`, ex, ...scoreArray(arrivingHexes));
+
   pipeline.saddEx(`${parentKey}:onRunway`, ex, ...onRunway.map(hex));
-  // arriving and departed are sorted, so a sorted set is used
-  pipeline.zaddEx(`${parentKey}:arriving`, ex, ...scoreArray(arriving.map(hex)));
-  pipeline.zaddEx(`${parentKey}:departed`, ex, ...scoreArray(departed.map(hex)));
+
+  pipeline.saddEx(`${parentKey}:departures`, 60, [...departingHexes, ...departedHexes]);
+  pipeline.saddEx(`${parentKey}:departing`, ex, ...departingHexes);
+  pipeline.zaddEx(`${parentKey}:departed`, ex, ...scoreArray(departedHexes));
+
   await pipeline.exec();
 
   return {

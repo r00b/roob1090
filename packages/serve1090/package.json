@@ -9,6 +9,7 @@
     "start": "node index.js",
     "start-pm2": "pm2-runtime index.js",
     "debug": "nodemon --inspect=0.0.0.0 index.js",
+    "test": "jest",
     "compose": "docker-compose up -d --build",
     "logs": "docker logs --follow serve1090",
     "redis": "docker run -v $PWD/keydb.conf:/etc/keydb/keydb.conf --publish=6379:6379 --name=serve1090_redis -d eqalpha/keydb:latest"
@@ -17,7 +18,6 @@
     "@turf/boolean-point-in-polygon": "^6.0.1",
     "@turf/distance": "^6.0.1",
     "@turf/helpers": "^6.1.4",
-    "base-64": "^0.1.0",
     "bree": "^3.3.0",
     "cors": "^2.8.5",
     "dotenv": "^8.2.0",
@@ -25,7 +25,7 @@
     "express-ws": "^4.0.0",
     "got": "^11.8.0",
     "ioredis": "^4.17.3",
-    "joi": "^17.2.1",
+    "joi": "^17.3.0",
     "lodash": "^4.17.20",
     "nanoid": "^3.1.15",
     "p-map": "^4.0.0",
@@ -34,6 +34,9 @@
     "safe-compare": "^1.1.4"
   },
   "devDependencies": {
+    "chai": "^4.2.0",
+    "jest": "^26.6.3",
+    "nock": "^13.0.7",
     "nodemon": "^2.0.6",
     "signale": "^1.4.0"
   },

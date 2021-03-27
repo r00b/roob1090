@@ -145,4 +145,18 @@ describe('active-runway', () => {
     expect(mockRedis.hgetJson.mock.calls.length).toBe(2);
     expect(mockRedis.setex.mock.calls.length).toBe(0);
   });
+
+  test('handles errors', async () => {
+    mockRedis
+      .smembers
+      .mockImplementation(() => {
+        throw new Error('this should have been caught');
+      });
+
+    const result = await activeRunwayFor(route);
+    expect(result).toBeUndefined();
+    expect(mockRedis.smembers.mock.calls.length).toBe(1);
+    expect(mockRedis.hgetJson.mock.calls.length).toBe(0);
+    expect(mockRedis.setex.mock.calls.length).toBe(0);
+  });
 });

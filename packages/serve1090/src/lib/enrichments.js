@@ -58,7 +58,7 @@ const fetchRoute = function (redis, { openSkyRoutes, flightAwareRoutes }, logger
       // next, fallback to FlightAware if there is a current broadcast client OR if forceFallbackToFA = true
       const shouldQueryFA = (!result && await hasBroadcastClients(redis)) || forceFallbackToFA;
       if (shouldQueryFA) {
-        result = await fetchFlightAwareRoute(aircraft, airport, flightAwareRoutes, logger);
+        result = await fetchFlightAwareRoute(aircraft, flightAwareRoutes, logger);
       }
       // finally, cache the result
       if (result) {
@@ -128,7 +128,7 @@ const hasBroadcastClients = async function (redis) {
   return numClients > 0;
 };
 
-const fetchFlightAwareRoute = async function ({ flight }, airport, flightAwareRoutes, logger) {
+const fetchFlightAwareRoute = async function ({ flight }, flightAwareRoutes, logger) {
   try {
     const { body: { InFlightInfoResult: result } } = await flightAwareRoutes(`?ident=${flight}`);
     if (result.timeout === 'ok') { // FA can return stale data, indicated by timeout = 'timed_out'

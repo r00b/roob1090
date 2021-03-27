@@ -10,6 +10,10 @@ module.exports = (redis, logger) => {
   };
 };
 
+/**
+ * Return a function that intersects all of the given aircraft hashes with a specified
+ * route and write them to the corresponding redis set
+ */
 function getAndWriteAircraftInRegion (redis, logger) {
   return async (aircraftHashes, region) => {
     try {
@@ -22,12 +26,19 @@ function getAndWriteAircraftInRegion (redis, logger) {
   };
 }
 
+/**
+ * Intersect all of the given aircraft hashes with a specified route
+ */
 function getAircraftInRegion (aircraftHashes, region) {
   const boundary = polygon(region.boundary);
-  return aircraftHashes.filter(geofence(boundary, region.ceiling));
+  return aircraftHashes.filter(inRegion(boundary, region.ceiling));
 }
 
-function geofence (boundary, ceiling) {
+/**
+ * Determine if an aircraft is contained within a region by geofencing it to
+ * the region's lateral boundaries and ceiling
+ */
+function inRegion (boundary, ceiling) {
   return aircraft => {
     const loc = point([aircraft.lon, aircraft.lat]);
     const inRegion = pointInPolygon(loc, boundary);

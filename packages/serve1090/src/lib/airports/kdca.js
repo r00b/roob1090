@@ -19,8 +19,9 @@ const airspaceKey = 'kdca';
 const runway01_19 = {
   key: `${airspaceKey}:runway:01-19`,
   name: 'KDCA Runway 01-19',
-  maxAltitude: 500,
-  coordinates: [[
+  ceiling: 500,
+  parentAirspace: airspaceKey,
+  boundary: [[
     [
       -77.0370488,
       38.8410045
@@ -65,12 +66,13 @@ const runway01_19 = {
 const north01_19 = {
   key: `${airspaceKey}:north:01-19`,
   name: 'KDCA North',
-  maxAltitude: 5000,
+  ceiling: 5000,
+  parentAirspace: airspaceKey,
   sort: function (a, b) {
     const extremity = [-77.0386846, 38.861209]; // lon/lat
     return compareDistancesToExtremity(a, b, extremity);
   },
-  coordinates: [[
+  boundary: [[
     [
       -77.0384254,
       38.8617691
@@ -143,12 +145,13 @@ const north01_19 = {
 const south01_19 = {
   key: `${airspaceKey}:south:01-19`,
   name: 'KDCA South',
-  maxAltitude: 5000,
+  ceiling: 5000,
+  parentAirspace: airspaceKey,
   sort: function (a, b) {
     const extremity = [-77.0366997, 38.8416032]; // lon/lat
     return compareDistancesToExtremity(a, b, extremity);
   },
-  coordinates: [[
+  boundary: [[
     [
       -77.0370474,
       38.8410034
@@ -191,11 +194,8 @@ const south01_19 = {
 const route01_19 = {
   key: `${airspaceKey}:route01_19`,
   parent: airspaceKey,
-  regions: {
-    head: north01_19,
-    runway: runway01_19,
-    tail: south01_19
-  },
+  regions: [north01_19, south01_19],
+  runway: runway01_19,
   computeActiveRunway: function (sample) {
     if (!sample) return false;
     return isNorthward(sample.track) ? '1' : '19';

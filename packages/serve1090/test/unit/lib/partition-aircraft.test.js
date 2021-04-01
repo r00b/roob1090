@@ -2,10 +2,8 @@ const mockLogger = require('../../support/mock-logger');
 const partitionAircraft = require('../../../src/lib/partition-aircraft');
 
 describe('partition aircraft', () => {
-  describe('getAndWriteAircraftInRegion', () => {
-    const mockRedis = {
-      saddEx: jest.fn()
-    };
+  describe('partitionAircraftInRegion', () => {
+    const { partitionAircraftInRegion } = partitionAircraft({}, mockLogger);
 
     const region = {
       key: 'kvkx',
@@ -29,7 +27,7 @@ describe('partition aircraft', () => {
     };
     const inRegion2 = {
       hex: 'c12afe',
-        alt_baro: 50,
+      alt_baro: 50,
       lon: 30,
       lat: 30
     };
@@ -44,58 +42,134 @@ describe('partition aircraft', () => {
       alt_baro: 50000,
       lon: 30,
       lat: 30
-    }
-
-    const { getAndWriteAircraftInRegion } = partitionAircraft(mockRedis, mockLogger);
+    };
 
     beforeEach(() => {
       aircraftHashes = [];
     });
 
-    afterEach(() => {
-      mockRedis.saddEx.mockReset();
-    });
-
-    test('gets single aircraft in a region and writes it to redis', async () => {
+    test('gets single aircraft in a region', async () => {
       aircraftHashes.push(inRegion);
-      const result = await getAndWriteAircraftInRegion(aircraftHashes, region);
-
+      const result = await partitionAircraftInRegion(aircraftHashes, region);
       expect(result).toEqual([inRegion]);
-      expect(mockRedis.saddEx.mock.calls.length).toBe(1);
-      expect(mockRedis.saddEx.mock.calls[0][0]).toBe('kvkx:aircraft');
-      expect(mockRedis.saddEx.mock.calls[0].slice(2)).toEqual(['a9bb8b']);
     });
 
-    test('gets multiple aircraft in a region and writes it to redis', async () => {
+    test('gets multiple aircraft in a region', async () => {
       aircraftHashes.push(inRegion, inRegion2);
-      const result = await getAndWriteAircraftInRegion(aircraftHashes, region);
-
+      const result = await partitionAircraftInRegion(aircraftHashes, region);
       expect(result).toEqual([inRegion, inRegion2]);
-      expect(mockRedis.saddEx.mock.calls.length).toBe(1);
-      expect(mockRedis.saddEx.mock.calls[0][0]).toBe('kvkx:aircraft');
-      expect(mockRedis.saddEx.mock.calls[0].slice(2)).toEqual(['a9bb8b', 'c12afe']);
     });
 
-    test('gets multiple aircraft within and outside of a region and writes them to redis', async () => {
+    test('gets multiple aircraft within and outside of a region', async () => {
       aircraftHashes.push(inRegion, inRegion2, outsideRegion, tooHigh);
-
-      const result = await getAndWriteAircraftInRegion(aircraftHashes, region);
+      const result = await partitionAircraftInRegion(aircraftHashes, region);
       expect(result).toEqual([inRegion, inRegion2]);
-      expect(mockRedis.saddEx.mock.calls.length).toBe(1);
-      expect(mockRedis.saddEx.mock.calls[0][0]).toBe('kvkx:aircraft');
-      expect(mockRedis.saddEx.mock.calls[0].slice(2)).toEqual(['a9bb8b', 'c12afe']);
+    });
+
+    test('handles errors', async () => {
+      const result = await partitionAircraftInRegion([null], region);
+      expect(result).toBeUndefined();
+    });
+  });
+
+  describe('partitionAircraftInRunway', () => {
+    const parentKey = 'kvkx';
+    let onRunway;
+
+    const mockRedis = {
+      zmembers: jest.fn()
+    };
+
+    const { partitionAircraftInRunway } = partitionAircraft(mockRedis, mockLogger);
+
+    const arrival = {
+      hex: 'a9bb8b'
+    };
+    const nonArrival1 = {
+      hex: 'c12afe'
+    };
+    const nonArrival2 = {
+      hex: 'bcba89'
+    };
+
+    beforeEach(() => {
+      onRunway = [];
+    });
+
+    afterEach(() => {
+      mockRedis.zmembers.mockReset();
+    });
+
+    test('partitions aircraft into arrivals and departures', async () => {
+      mockRedis
+        .zmembers
+        .mockImplementation((key) => {
+          expect(key).toBe(`${parentKey}:arrivals`);
+          return [arrival.hex];
+        });
+
+      onRunway = [arrival, nonArrival1, nonArrival2];
+      const { arrived, departing } = await partitionAircraftInRunway(onRunway, parentKey);
+
+      expect(arrived).toEqual([arrival]);
+      expect(departing).toEqual([nonArrival1, nonArrival2]);
+    });
+
+    test('handles empty array', async () => {
+      mockRedis
+        .zmembers
+        .mockImplementation((key) => {
+          expect(key).toBe(`${parentKey}:arrivals`);
+          return [];
+        });
+
+      const { arrived, departing } = await partitionAircraftInRunway([], parentKey);
+
+      expect(arrived).toEqual([]);
+      expect(departing).toEqual([]);
+    });
+
+    test('handles no arrivals', async () => {
+      mockRedis
+        .zmembers
+        .mockImplementation((key) => {
+          expect(key).toBe(`${parentKey}:arrivals`);
+          return [];
+        });
+
+      onRunway = [arrival, nonArrival1, nonArrival2];
+      const { arrived, departing } = await partitionAircraftInRunway(onRunway, parentKey);
+
+      expect(arrived).toEqual([]);
+      expect(departing).toEqual([arrival, nonArrival1, nonArrival2]);
+    });
+
+    test('handles empty runway', async () => {
+      const { arrived, departing } = await partitionAircraftInRunway([], parentKey);
+
+      expect(arrived).toEqual([]);
+      expect(departing).toEqual([]);
+      expect(mockRedis.zmembers.mock.calls.length).toBe(0);
     });
 
     test('handles errors', async () => {
       mockRedis
-        .saddEx
+        .zmembers
         .mockImplementation(() => {
           throw new Error('this should have been caught');
         });
 
-      const result = await getAndWriteAircraftInRegion(aircraftHashes, region);
+      const result = await partitionAircraftInRunway([arrival], parentKey);
       expect(result).toBeUndefined();
-      expect(mockRedis.saddEx.mock.calls.length).toBe(1);
+    });
+
+    test('throws error on malformed params', async () => {
+      expect.assertions(1);
+      try {
+        await partitionAircraftInRunway([arrival]);
+      } catch (e) {
+        expect(true).toBeTruthy();
+      }
     });
   });
 

@@ -2,7 +2,7 @@ const { point, polygon } = require('@turf/helpers');
 const pointInPolygon = require('@turf/boolean-point-in-polygon').default;
 
 module.exports = (redis, logger) => {
-  const scopedLogger = logger.scope('partition-aircraft'); // todo scope to airport?
+  const scopedLogger = logger.scope('partition-aircraft');
   return {
     partitionAircraftInRegion: partitionAircraftInRegion(scopedLogger),
     partitionAircraftInRunway: partitionAircraftInRunway(redis, scopedLogger),
@@ -24,6 +24,7 @@ function partitionAircraftInRegion (logger) {
       return aircraftHashes.filter(inRegion(boundary, region.ceiling));
     } catch (e) {
       logger.error(`error partitioning aircraft in region ${region.key}`, e);
+      throw e;
     }
   };
 }
@@ -63,6 +64,7 @@ function partitionAircraftInRunway (redis, logger) {
       }, res);
     } catch (e) {
       logger.error(`error partitioning aircraft in runway for ${parentKey}`, e);
+      throw e;
     }
   };
 }

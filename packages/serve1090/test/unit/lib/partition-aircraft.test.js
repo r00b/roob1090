@@ -48,27 +48,29 @@ describe('partition aircraft', () => {
       aircraftHashes = [];
     });
 
-    test('gets single aircraft in a region', async () => {
+    test('gets single aircraft in a region', () => {
       aircraftHashes.push(inRegion);
-      const result = await partitionAircraftInRegion(aircraftHashes, region);
+      const result = partitionAircraftInRegion(aircraftHashes, region);
       expect(result).toEqual([inRegion]);
     });
 
-    test('gets multiple aircraft in a region', async () => {
+    test('gets multiple aircraft in a region', () => {
       aircraftHashes.push(inRegion, inRegion2);
-      const result = await partitionAircraftInRegion(aircraftHashes, region);
+      const result = partitionAircraftInRegion(aircraftHashes, region);
       expect(result).toEqual([inRegion, inRegion2]);
     });
 
-    test('gets multiple aircraft within and outside of a region', async () => {
+    test('gets multiple aircraft within and outside of a region', () => {
       aircraftHashes.push(inRegion, inRegion2, outsideRegion, tooHigh);
-      const result = await partitionAircraftInRegion(aircraftHashes, region);
+      const result = partitionAircraftInRegion(aircraftHashes, region);
       expect(result).toEqual([inRegion, inRegion2]);
     });
 
-    test('handles errors', async () => {
-      const result = await partitionAircraftInRegion([null], region);
-      expect(result).toBeUndefined();
+    test('throws errors', () => {
+      expect(() => partitionAircraftInRegion([null], region)).toThrowError();
+      expect(() => partitionAircraftInRegion([inRegion], null)).toThrowError();
+      expect(() => partitionAircraftInRegion([inRegion], {})).toThrowError();
+      expect(() => partitionAircraftInRegion([null], {})).toThrowError();
     });
   });
 
@@ -158,9 +160,7 @@ describe('partition aircraft', () => {
         .mockImplementation(() => {
           throw new Error('this should have been caught');
         });
-
-      const result = await partitionAircraftInRunway([arrival], parentKey);
-      expect(result).toBeUndefined();
+      await expect(partitionAircraftInRunway([arrival], parentKey)).rejects.toThrowError();
     });
 
     test('throws error on malformed params', async () => {
@@ -260,11 +260,17 @@ describe('partition aircraft', () => {
           alt_baro: 50,
           lon: 25,
           lat: 50
+        },
+        {
+          hex: 'e',
+          alt_baro: 10000, // at ceiling
+          lon: 25,
+          lat: 50
         }
       ];
 
       const aircraftInRegion = getAircraftInRegion(aircraftHashes, region);
-      expect(aircraftInRegion).toEqual([aircraftHashes[1], aircraftHashes[2], aircraftHashes[3]]);
+      expect(aircraftInRegion).toEqual(aircraftHashes.slice(1));
     });
 
     test('only gets aircraft located under a region\'s ceiling', () => {

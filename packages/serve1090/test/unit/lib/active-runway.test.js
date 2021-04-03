@@ -33,7 +33,7 @@ describe('active-runway', () => {
     mockRedis.smembers.mockReset();
   });
 
-  test.only('computes and stores active runway with candidates from first region', async () => {
+  test('computes and stores active runway with candidates from first region', async () => {
     mockRedis
       .smembers
       .mockReturnValueOnce(['a9bb8b']);
@@ -53,7 +53,7 @@ describe('active-runway', () => {
     expect(mockRedis.setex.mock.calls[0][2]).toEqual('24');
   });
 
-  test.only('computes active runway with other candidates from first region', async () => {
+  test('computes active runway with other candidates from first region', async () => {
     mockRedis
       .smembers
       .mockReturnValueOnce(['a9bb8b', 'b4ab3c']);
@@ -86,8 +86,8 @@ describe('active-runway', () => {
     const result = await activeRunwayFor(route);
     expect(result).toBe('24');
     expect(mockRedis.smembers.mock.calls.length).toBe(2);
-    expect(mockRedis.smembers.mock.calls[0][0]).toBe('kaus:north:01-19:aircraft');
-    expect(mockRedis.smembers.mock.calls[1][0]).toBe('kaus:south:01-19:aircraft');
+    expect(mockRedis.smembers.mock.calls[0][0]).toBe('kdca:route01_19:north01_19:aircraft');
+    expect(mockRedis.smembers.mock.calls[1][0]).toBe('kdca:route01_19:south01_19:aircraft');
     expect(mockRedis.hgetJson.mock.calls.length).toBe(1);
     expect(mockRedis.setex.mock.calls.length).toBe(1);
   });
@@ -101,9 +101,11 @@ describe('active-runway', () => {
   });
 
   test('does not compute active runway when route has no getActiveRunway fn', async () => {
-    const result = await activeRunwayFor(route);
     delete route.getActiveRunway;
+
+    const result = await activeRunwayFor(route);
     expect(result).toBeUndefined();
+
     expect(mockRedis.smembers.mock.calls.length).toBe(0);
     expect(mockRedis.hgetJson.mock.calls.length).toBe(0);
     expect(mockRedis.setex.mock.calls.length).toBe(0);

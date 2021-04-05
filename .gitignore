@@ -4,3 +4,8 @@
 
 .vscode
 .idea
+
+# Debian build files
+*.deb
+*.buildinfo
+*.changes

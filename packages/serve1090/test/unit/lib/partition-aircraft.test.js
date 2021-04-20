@@ -75,11 +75,11 @@ describe('partition aircraft', () => {
   });
 
   describe('partitionAircraftInRunway', () => {
-    const parentKey = 'kvkx';
+    const route = { key: 'kvkx' };
     let onRunway;
 
     const mockRedis = {
-      zmembers: jest.fn()
+      smembers: jest.fn()
     };
 
     const { partitionAircraftInRunway } = partitionAircraft(mockRedis, mockLogger);
@@ -99,19 +99,19 @@ describe('partition aircraft', () => {
     });
 
     afterEach(() => {
-      mockRedis.zmembers.mockReset();
+      mockRedis.smembers.mockReset();
     });
 
     test('partitions aircraft into arrivals and departures', async () => {
       mockRedis
-        .zmembers
+        .smembers
         .mockImplementation((key) => {
-          expect(key).toBe(`${parentKey}:arrivals`);
+          expect(key).toBe(`${route.key}:arrivals`);
           return [arrival.hex];
         });
 
       onRunway = [arrival, nonArrival1, nonArrival2];
-      const { arrived, departing } = await partitionAircraftInRunway(onRunway, parentKey);
+      const { arrived, departing } = await partitionAircraftInRunway(onRunway, route.key);
 
       expect(arrived).toEqual([arrival]);
       expect(departing).toEqual([nonArrival1, nonArrival2]);
@@ -119,13 +119,13 @@ describe('partition aircraft', () => {
 
     test('handles empty array', async () => {
       mockRedis
-        .zmembers
+        .smembers
         .mockImplementation((key) => {
-          expect(key).toBe(`${parentKey}:arrivals`);
+          expect(key).toBe(`${route.key}:arrivals`);
           return [];
         });
 
-      const { arrived, departing } = await partitionAircraftInRunway([], parentKey);
+      const { arrived, departing } = await partitionAircraftInRunway([], route.key);
 
       expect(arrived).toEqual([]);
       expect(departing).toEqual([]);
@@ -133,34 +133,34 @@ describe('partition aircraft', () => {
 
     test('handles no arrivals', async () => {
       mockRedis
-        .zmembers
+        .smembers
         .mockImplementation((key) => {
-          expect(key).toBe(`${parentKey}:arrivals`);
+          expect(key).toBe(`${route.key}:arrivals`);
           return [];
         });
 
       onRunway = [arrival, nonArrival1, nonArrival2];
-      const { arrived, departing } = await partitionAircraftInRunway(onRunway, parentKey);
+      const { arrived, departing } = await partitionAircraftInRunway(onRunway, route.key);
 
       expect(arrived).toEqual([]);
       expect(departing).toEqual([arrival, nonArrival1, nonArrival2]);
     });
 
     test('handles empty runway', async () => {
-      const { arrived, departing } = await partitionAircraftInRunway([], parentKey);
+      const { arrived, departing } = await partitionAircraftInRunway([], route.key);
 
       expect(arrived).toEqual([]);
       expect(departing).toEqual([]);
-      expect(mockRedis.zmembers.mock.calls.length).toBe(0);
+      expect(mockRedis.smembers.mock.calls.length).toBe(0);
     });
 
     test('handles errors', async () => {
       mockRedis
-        .zmembers
+        .smembers
         .mockImplementation(() => {
           throw new Error('this should have been caught');
         });
-      await expect(partitionAircraftInRunway([arrival], parentKey)).rejects.toThrowError();
+      await expect(partitionAircraftInRunway([arrival], undefined)).rejects.toThrowError();
     });
 
     test('throws error on malformed params', async () => {

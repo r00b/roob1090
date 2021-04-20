@@ -5,31 +5,31 @@ const express = require('express');
 const logger = require('../../lib/logger')().scope('auth');
 const basicAuth = require('express-basic-auth');
 const { nanoid } = require('nanoid');
-const RedisService = require('../../services/redis-service');
 
-const redis = new RedisService();
 const TICKET_TTL = 86400; // 1 day
 
-module.exports = (auth) => {
+module.exports = (auth, redis) => {
   return new express.Router()
-    .get('/ticket', basicAuth(auth), generateTicket)
+    .get('/ticket', basicAuth(auth), generateTicket(redis))
     .use(errorHandler);
 };
 
 /**
  * Generate a unique token, store it, and send it back to the client
  */
-async function generateTicket (req, res, next) {
-  try {
-    const ticket = nanoid(64);
-    await redis.saddEx('tickets', TICKET_TTL, ticket);
-    res.status(200).json({
-      ticket,
-      ttl: TICKET_TTL
-    });
-    logger.info('ticket allocated');
-  } catch (e) {
-    next(e);
+async function generateTicket (redis) {
+  return async (req, res, next) => {
+    try {
+      const ticket = nanoid(64);
+      await redis.saddEx('tickets', TICKET_TTL, ticket);
+      res.status(200).json({
+        ticket,
+        ttl: TICKET_TTL
+      });
+      logger.info('ticket allocated');
+    } catch (e) {
+      next(e);
+    }
   }
 }
 

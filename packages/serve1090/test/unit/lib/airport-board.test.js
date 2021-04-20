@@ -8,8 +8,12 @@ describe('airport-board', () => {
 
   const mockRedis = {
     get: jest.fn(),
-    zmembers: jest.fn(),
-    execPipeline: jest.fn()
+    smembers: jest.fn(),
+    pipeline: jest.fn(),
+    exec: jest.fn(),
+    saddEx: jest.fn(),
+    setex: jest.fn(),
+    hgetJson: jest.fn()
   };
 
   const { computeAirportBoard } = airportBoard(mockStore, mockRedis, mockLogger);
@@ -148,18 +152,22 @@ describe('airport-board', () => {
 
     // called by partition-aircraft
     mockRedis
-      .zmembers
+      .smembers
       .mockReturnValue([aircraft.ac4.hex]);
     mockRedis
-      .execPipeline
-      .mockResolvedValue(true);
+      .pipeline
+      .mockReturnValue(mockRedis);
   });
 
   afterEach(() => {
     mockStore.getValidAircraft.mockReset();
     mockRedis.get.mockReset();
-    mockRedis.zmembers.mockReset();
-    mockRedis.execPipeline.mockReset();
+    mockRedis.smembers.mockReset();
+    mockRedis.pipeline.mockReset();
+    mockRedis.exec.mockReset();
+    mockRedis.saddEx.mockReset();
+    mockRedis.setex.mockReset();
+    mockRedis.hgetJson.mockReset();
   });
 
   test('computes aircraft board', async () => {
@@ -206,6 +214,45 @@ describe('airport-board', () => {
     expect(result).toEqual(expectedBoard);
   });
 
+  test('enriches aircraft board', async () => {
+    const { ac1, ac4, ac5, ac6, ac8, ac9 } = aircraft;
+    mockStore
+      .getValidAircraft
+      .mockReturnValueOnce(store([ac1, ac4, ac5, ac6, ac8, ac9]));
+    mockRedis
+      .get
+      .mockReturnValueOnce('24');
+    mockRedis
+      .hgetJson
+      .mockImplementation((key, hex) => {
+        expect(key).toBe('enrichments');
+        switch (hex) {
+          case 'ac1':
+            return {
+              foo: 'bar'
+            };
+          case 'ac5':
+            return {
+              bar: 'baz'
+            };
+          default:
+            return null;
+        }
+      });
+
+    const expectedBoard = {
+      arriving: [{ ...ac1, foo: 'bar' }],
+      arrived: [ac4],
+      departing: [ac5],
+      departed: [ac6],
+      onRunway: [ac4, { ...ac5, bar: 'baz' }],
+      activeRunways: ['24']
+    };
+
+    const result = await computeAirportBoard(airport);
+    expect(result).toEqual(expectedBoard);
+  });
+
   test('makes expected calls to redis and store when computing aircraft board', async () => {
     const { ac1, ac2, ac3, ac4, ac5, ac6, ac7, ac8, ac9 } = aircraft;
     mockStore
@@ -222,33 +269,18 @@ describe('airport-board', () => {
     expect(mockStore.getValidAircraft.mock.calls.length).toBe(1);
     // gets active runway
     expect(mockRedis.get.mock.calls.length).toBe(1);
-    expect(mockRedis.get.mock.calls[0][0]).toBe('airportKey:routeKey:activeRunway');
+    expect(mockRedis.get.mock.calls[0][0]).toBe('routeKey:activeRunway');
 
-    // one pipeline for writing partitions, one pipeline for writing the board
-    const execPipelineCalls = mockRedis.execPipeline.mock.calls;
-    expect(execPipelineCalls.length).toBe(2);
+    // one pipeline for writing partitions (consumed by active-runway),
+    // one pipeline for writing the route (consumed by partition-aircraft for runway),
+    // one pipeline for writing the airport board
+    expect(mockRedis.pipeline.mock.calls.length).toBe(3);
+    expect(mockRedis.exec.mock.calls.length).toBe(3);
 
-    // writing partition
-    const partitionWrites = execPipelineCalls[0][0];
-    expect(partitionWrites.length).toBe(3);
-    expect(partitionWrites.map(c => c.op)).toEqual([
-      'saddEx',
-      'saddEx',
-      'saddEx'
-    ]);
-    expect(partitionWrites.map(c => c.args[0])).toEqual([
-      'airportKey:routeKey:runwayKey:aircraft',
-      'airportKey:routeKey:region1Key:aircraft',
-      'airportKey:routeKey:region2Key:aircraft'
-    ]);
-    expect(partitionWrites.map(c => c.args.slice(2))).toEqual([
-      ['ac4', 'ac5'],
-      ['ac1', 'ac2', 'ac3'],
-      ['ac6', 'ac7']
-    ]);
-
-    const boardWrites = execPipelineCalls[1][0];
-    // writing arrivals, departures, board
+    // expect 1 setex call from board write
+    expect(mockRedis.setex.mock.calls.length).toBe(1);
+    const boardSetex = mockRedis.setex.mock.calls[0];
+    expect(boardSetex[0]).toBe('airportKey:board');
     const expectedBoard = {
       arriving: [ac3, ac2, ac1],
       arrived: [ac4],
@@ -257,21 +289,43 @@ describe('airport-board', () => {
       onRunway: [ac4, ac5],
       activeRunways: ['24']
     };
-    expect(boardWrites.length).toBe(3);
-    expect(boardWrites.map(c => c.op)).toEqual([
-      'saddEx',
-      'saddEx',
-      'setex'
+    expect(boardSetex[2]).toBe(JSON.stringify(expectedBoard));
+
+    // expect 3 saddEx calls from partition write, 2 calls from route
+    // write, and 2 calls from board write -> 7 total calls
+    expect(mockRedis.saddEx.mock.calls.length).toBe(7);
+    // partition write
+    const partitionWrites = mockRedis.saddEx.mock.calls.slice(0, 3);
+    expect(partitionWrites.map(args => args[0])).toEqual([
+      'runwayKey:aircraft',
+      'region1Key:aircraft',
+      'region2Key:aircraft'
     ]);
-    expect(boardWrites.map(c => c.args[0])).toEqual([
+    expect(partitionWrites.map(args => args.slice(2))).toEqual([
+      ['ac4', 'ac5'],
+      ['ac1', 'ac2', 'ac3'],
+      ['ac6', 'ac7']
+    ]);
+    // route write
+    const routeWrites = mockRedis.saddEx.mock.calls.slice(3, 5);
+    expect(routeWrites.map(args => args[0])).toEqual([
+      'routeKey:arrivals',
+      'routeKey:departures'
+    ]);
+    expect(routeWrites.map(args => args.slice(2))).toEqual([
+      ['ac4', 'ac1', 'ac2', 'ac3'],
+      ['ac5', 'ac6', 'ac7']
+    ]);
+
+    // board write
+    const boardSaddExs = mockRedis.saddEx.mock.calls.slice(5);
+    expect(boardSaddExs.map(args => args[0])).toEqual([
       'airportKey:arrivals',
-      'airportKey:departures',
-      'airportKey:board'
+      'airportKey:departures'
     ]);
-    expect(boardWrites.map(c => c.args.slice(2))).toEqual([
+    expect(boardSaddExs.map(args => args.slice(2))).toEqual([
       ['ac4', 'ac3', 'ac2', 'ac1'],
-      ['ac5', 'ac6', 'ac7'],
-      [JSON.stringify(expectedBoard)]
+      ['ac5', 'ac6', 'ac7']
     ]);
   });
 

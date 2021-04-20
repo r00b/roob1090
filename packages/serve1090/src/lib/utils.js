@@ -5,10 +5,18 @@ const path = require('path');
 const got = require('got');
 const distance = require('@turf/distance').default;
 
+/**
+ * @param seconds {number}
+ * @returns {number}
+ */
 function secondsToMillis (seconds) {
   return seconds * 1000;
 }
 
+/**
+ * @param millis {number}
+ * @returns {number}
+ */
 function millisToSeconds (millis) {
   return millis / 1000;
 }
@@ -113,9 +121,9 @@ function getFileNames (relativePathToDir) {
 }
 
 /**
- * Exit and flush stdout for logging
+ * Exit and flush and pending logs or messages to stdout
  *
- * @param {integer} code - exit code
+ * @param {number} code - exit code
  */
 function exit (code) {
   // flush console

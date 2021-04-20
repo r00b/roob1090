@@ -57,8 +57,8 @@ describe('utils', () => {
 
   test('computeDistance', () => {
     expect(computeDistance([0, 25], [150, 120])).toBe(4522.643478516139);
-    expect(computeDistance({}, [1, 1])).toBeUndefined();
-    expect(computeDistance(3, [1, 1])).toBeUndefined();
+    expect(() => computeDistance({}, [1, 1])).toThrowError();
+    expect(() => computeDistance(3, [1, 1])).toThrowError();
     expect(() => computeDistance()).toThrowError();
   });
 

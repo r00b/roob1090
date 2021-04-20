@@ -171,6 +171,8 @@ const canDeriveArrivalLeg = function (route, airport) {
   const timesInRoute = route.filter(a => a === airport).length;
   switch (timesInRoute) {
     case 1:
+      // if airport is only in route once and is the first terminal,
+      // then no way to know where arriving from
       return route[0] !== airport;
     case 2:
       // first terminal in route must be airport and second must not be airport
@@ -193,6 +195,8 @@ const canDeriveDepartureLeg = function (route, airport) {
   const lastIndex = route.length - 1;
   switch (timesInRoute) {
     case 1:
+      // if airport is only in route once and is the last terminal,
+      // then no way to know where departing to
       return route[lastIndex] !== airport;
     case 2:
       // last terminal in route must be airport and second to last must not be airport
@@ -253,6 +257,7 @@ const fetchAirframe = function (redis, { openSkyAirframes }, logger) {
       // next, attempt to fetch airframe from OpenSky
       const fetchedAirframe = await fetchOpenSkyAirframe(hex, openSkyAirframes, logger);
       if (fetchedAirframe) {
+        // cache airframe for later queries
         redis.hsetJson('airframes', hex, fetchedAirframe); // fire and forget
         return fetchedAirframe;
       }

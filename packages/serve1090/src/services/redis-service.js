@@ -28,7 +28,7 @@ class RedisService {
 
   /**
    * Set a value;
-   * https://redisw.io/commands/set
+   * https://redis.io/commands/set
    *
    * @param {string} key - key of variable
    * @param {string} value - value of variable
@@ -82,15 +82,15 @@ class RedisService {
   /**
    * Add a value to a set with an expiration time
    *
-   * @param {string} set - key of set
+   * @param {string} key - key of set
    * @param {string|number} ex - number of seconds until value is deleted
    * @param  values - values to add to set
    * @returns Promise
    */
-  async saddEx (set, ex, ...values) {
+  async saddEx (key, ex, ...values) {
     if (values.length) {
-      const add = this.send('sadd', set, ...values);
-      const expires = values.map(v => this.send('call', 'expiremember', set, v, ex));
+      const add = this.send('sadd', key, ...values);
+      const expires = values.map(v => this.send('call', 'expiremember', key, v, ex));
       return Promise.all([add, ...expires]);
     }
   }
@@ -98,16 +98,16 @@ class RedisService {
   /**
    * Add a value to a sorted set with an expiration time
    *
-   * @param {string} set - key of set
+   * @param {string} key - key of set
    * @param {string|number} ex - number of seconds until value is deleted
    * @param {string} values - values to add to set
    * @returns Promise
    */
-  async zaddEx (set, ex, ...values) {
+  async zaddEx (key, ex, ...values) {
     if (values.length) {
       const pairs = _.chunk(values, 2);
-      const zadds = pairs.map(pair => this.send('zadd', set, pair[0], pair[1]));
-      const expires = pairs.map(pair => this.send('call', 'expiremember', set, pair[1], ex));
+      const zadds = pairs.map(pair => this.send('zadd', key, pair[0], pair[1]));
+      const expires = pairs.map(pair => this.send('call', 'expiremember', key, pair[1], ex));
       return Promise.all([...zadds, ...expires]);
     }
   }
@@ -231,7 +231,7 @@ class RedisService {
    * @returns Promise
    */
   async hgetAllAsJsonValues (key) {
-    const hashWithStringValues = await this.redis.hgetall(hash);
+    const hashWithStringValues = await this.redis.hgetall(key);
     if (hashWithStringValues) {
       return Object.values(hashWithStringValues).reduce((acc, value) => {
         try {
@@ -284,7 +284,7 @@ class RedisService {
    * Get all members of a sorted set via ZRANGE;
    * https://redis.io/commands/zrange
    *
-   * @param {string} set - key of set
+   * @param {string} key - key of set
    * @returns {Promise|Pipeline}
    */
   zmembers (key) {

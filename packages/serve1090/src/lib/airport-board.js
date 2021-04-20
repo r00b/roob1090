@@ -183,7 +183,9 @@ async function computeBoardForRoute (route, aircraftHashes, partitionFns, redis,
 }
 
 /**
- * Merge a route board's aircraft hashes into an airport board's aircraft
+ * Merge a route board's aircraft hashes into an airport board's aircraft;
+ * note: this does not consider sorting, so any sorting should be done after
+ * the merge
  *
  * @param {aircraft[]} airportValues
  * @param {aircraft[]} routeValues

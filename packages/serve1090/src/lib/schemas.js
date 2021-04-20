@@ -1,5 +1,7 @@
 const BaseJoi = require('joi');
 
+// TODO move all schemas to this file
+
 const Joi = BaseJoi.extend(
   joi => {
     return {

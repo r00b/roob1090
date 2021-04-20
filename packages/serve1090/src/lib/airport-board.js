@@ -4,6 +4,8 @@ const {
   hex
 } = require('./utils');
 const partitionAircraft = require('./partition-aircraft');
+const activeRunway = require('./active-runway');
+const pMap = require('p-map');
 
 const BOARD_TTL = 15;
 const STATUS_TTL = 60;
@@ -13,6 +15,8 @@ const FAIL_MESSAGE = 'unable to compute airport board';
 module.exports = (store, redis, logger) => {
   const scopedLogger = logger.scope('airport-board');
   const partitionFns = partitionAircraft(redis, logger);
+  const { getActiveRunway } = activeRunway(redis, store);
+  partitionFns.getActiveRunway = getActiveRunway;
   return {
     computeAirportBoard: computeAirportBoard(partitionFns, store, redis, scopedLogger),
     boardTemplate
@@ -23,6 +27,9 @@ module.exports = (store, redis, logger) => {
  * Return a function that will compute the aircraft board for a specified airport
  */
 function computeAirportBoard (partitionFns, store, redis, logger) {
+  /**
+   * @param airport {object} - airport hash
+   */
   return async (airport) => {
     try {
       const start = Date.now();
@@ -44,6 +51,14 @@ function computeAirportBoard (partitionFns, store, redis, logger) {
 
 /**
  * Build a board for an airport and write it and its associated regions to redis
+ *
+ * @param airport {object}
+ * @param aircraftHashes {aircraft[]}
+ * @param partitionFns {object} - hash containing functions necessary to partition
+ *                                aircraft into regions
+ * @param redis
+ * @param logger
+ * @returns {Promise<{departing: aircraft[], arrived: aircraft[], onRunway: aircraft[], departed: aircraft[], arriving: aircraft[], activeRunways: string[]}|undefined>}
  */
 async function buildAndWriteBoard (airport, aircraftHashes, partitionFns, redis, logger) {
   const routes = airport.routes || [];
@@ -64,42 +79,53 @@ async function buildAndWriteBoard (airport, aircraftHashes, partitionFns, redis,
   const arrivals = [...airportBoard.arrived, ...airportBoard.arriving];
   const departures = [...airportBoard.departing, ...airportBoard.departed];
 
-  await redis.execPipeline([
-    {
-      op: 'saddEx',
-      args: [`${airport.key}:arrivals`, STATUS_TTL, ...arrivals.map(hex)]
-    }, {
-      op: 'saddEx',
-      args: [`${airport.key}:departures`, STATUS_TTL, ...departures.map(hex)]
-    }, {
-      op: 'setex',
-      args: [`${airport.key}:board`, BOARD_TTL, JSON.stringify(airportBoard)]
-    }
-  ]);
+  const pipeline = redis.pipeline();
+  // arrivals and departure sets are not sorted (only the board); this set will be consumed
+  // to generate enrichments, but it does not depend on them being sorted
+  pipeline.saddEx(`${airport.key}:arrivals`, STATUS_TTL, ...arrivals.map(hex));
+  pipeline.saddEx(`${airport.key}:departures`, STATUS_TTL, ...departures.map(hex));
+  pipeline.setex(`${airport.key}:board`, BOARD_TTL, JSON.stringify(airportBoard));
+  await pipeline.exec();
 
   return airportBoard;
 }
 
 /**
- * Compute board for a specified route
+ * Compute board for a specified route; note that an empty board is NOT returned if, for any
+ * reason, it is not possible to compute the board, since an empty board implies there are no
+ * aircraft in the route
+ *
+ * @param route {object}
+ * @param aircraftHashes {aircraft[]}
+ * @param partitionFns {object}
+ * @param redis
+ * @param logger
+ * @returns {Promise<{departing: aircraft[], arrived: aircraft[], onRunway: aircraft[], departed: aircraft[], arriving: aircraft[], activeRunways: string[]}|undefined>}
  */
 async function computeBoardForRoute (route, aircraftHashes, partitionFns, redis, logger) {
   const {
     partitionAircraftInRegion,
-    partitionAircraftInRunway
+    partitionAircraftInRunway,
+    getActiveRunway
   } = partitionFns;
+
+  // first get and enrich aircraft located in the runway
+  const aircraftInRunway = partitionAircraftInRegion(aircraftHashes, route.runway);
   const partition = {
-    [route.runway.key]: partitionAircraftInRegion(aircraftHashes, route.runway)
+    [route.runway.key]: await pMap(aircraftInRunway, enrich(redis))
   };
 
+  // then get and enrich aircraft located in each of the regions
   for (const region of route.regions) {
-    partition[region.key] = partitionAircraftInRegion(aircraftHashes, region);
+    const aircraftInRegion = partitionAircraftInRegion(aircraftHashes, region);
+    partition[region.key] = await pMap(aircraftInRegion, enrich(redis));
   }
 
-  await writePartition(partition, route, redis); // write regions to store so that active runway can be calculated by runway worker
+  // write regions to redis so that active runway can be calculated by runway worker
+  await writePartition(partition, route, redis);
 
   // check if the active runway is already known (thus making it possible to determine approach/departure)
-  const activeRunway = await redis.get(`${route.parentKey}:${route.key}:activeRunway`);
+  const activeRunway = await getActiveRunway(route);
   if (!activeRunway) {
     logger.info(FAIL_MESSAGE, { reason: 'no active runway' });
     return;
@@ -113,14 +139,15 @@ async function computeBoardForRoute (route, aircraftHashes, partitionFns, redis,
     return;
   }
 
-  // TODO - go-arounds
   // determine the semantic meaning of each region
-  const arriving = partition[approachRegionKey]; // these should be sorted from next arrival to last arrival
-  const departed = partition[departureRegionKey]; // .reverse() these come sorted from most recent departure to least recent departure; reverse to sort from least recent to most recent departure
-  const onRunway = partition[route.runway.key]; // these should not be sorted since hopefully there should never be more than one departure or one arrival on the runway at a time
+  const arriving = partition[approachRegionKey];
+  const departed = partition[departureRegionKey];
+  // go-arounds: could intersect routeKey:arrivals with departed to compute aircraft that are going around and exclude them
+  // from this array; however, probably not worth the extra read from memory since go-arounds are rare
+  const onRunway = partition[route.runway.key];
 
   if (!arriving || !departed || !onRunway) {
-    logger.warn(FAIL_MESSAGE, { reason: 'computed approach/departure route, but failed to find all routes in partition' });
+    logger.warn(FAIL_MESSAGE, { reason: 'computed approach/departure keys, but failed to find all respective routes in partition' });
     return;
   }
 
@@ -128,7 +155,17 @@ async function computeBoardForRoute (route, aircraftHashes, partitionFns, redis,
   const {
     arrived,
     departing
-  } = await partitionAircraftInRunway(onRunway, route.parentKey);
+  } = await partitionAircraftInRunway(onRunway, route.key);
+
+  const arrivals = [...arrived, ...arriving];
+  const departures = [...departing, ...departed];
+
+  // store arrivals and departures on the route so that the runway can be partitioned by
+  // partition-aircraft into arrivals and departures
+  const pipeline = redis.pipeline();
+  pipeline.saddEx(`${route.key}:arrivals`, STATUS_TTL, ...arrivals.map(hex));
+  pipeline.saddEx(`${route.key}:departures`, STATUS_TTL, ...departures.map(hex));
+  await pipeline.exec();
 
   if (!arrived || !departing) {
     logger.warn(FAIL_MESSAGE, { reason: 'failed to partition aircraft on runway' });
@@ -161,23 +198,37 @@ function mergeRouteIntoAirport (airportValues, routeValues) {
 
 /**
  * Write a route partition to redis
+ *
+ * @param partition {object} - has of partition arrays containing aircraft
+ * @param route {object}
+ * @param redis
  */
-async function writePartition (partition, route, redis) {
-  const pipeline = Object.entries(partition).reduce((acc, [regionKey, aircraft]) => {
-    acc.push({
-      op: 'saddEx',
-      args: [`${route.parentKey}:${route.key}:${regionKey}:aircraft`, REGION_TTL, ...aircraft.map(hex)]
-    });
-    return acc;
-  }, []);
-  return redis.execPipeline(pipeline);
+function writePartition (partition, route, redis) {
+  const pipeline = redis.pipeline();
+  for (const [regionKey, aircraft] of Object.entries(partition)) {
+    pipeline.saddEx(`${regionKey}:aircraft`, REGION_TTL, ...aircraft.map(hex));
+  }
+  return pipeline.exec();
+}
+
+/**
+ * Augment an aircraft hash with enrichments already generated and stored in redis
+ */
+function enrich (redis) {
+  /**
+   * @param aircraft {object}
+   */
+  return async (aircraft) => {
+    const enrichments = await redis.hgetJson('enrichments', aircraft.hex);
+    return enrichments ? _.merge(aircraft, enrichments) : aircraft;
+  };
 }
 
 /**
  * Sort the arriving and departing arrays in a board according to distance;
  * aircraft located on the runway are not sorted since theoretically/hopefully
  * there should never be more than one departing or arriving aircraft on the
- * runway at a time
+ * runway at a time :)
  */
 function sortBoard (airportBoard, airport) {
   const comparator = (a, b) => compareDistance(a, b, airport.locus);

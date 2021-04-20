@@ -1,6 +1,9 @@
 const express = require('express');
 const logger = require('../../lib/logger')().scope('request');
-const { getFileNames, secondsToDaysHoursSeconds } = require('../../lib/utils');
+const {
+  getFileNames,
+  secondsToTimeString
+} = require('../../lib/utils');
 const { errorHandler } = require('../../middleware/route');
 
 // const AIRSPACES_PATH = '../lib/airspaces';
@@ -37,7 +40,7 @@ function getRoot (store) {
       },
       stats: {
         now: Date.now(),
-        uptime: secondsToDaysHoursSeconds(process.uptime()),
+        uptime: secondsToTimeString(process.uptime()),
         dataSourcesCount: await getCount('dataSourceCount'),
         broadcastClientsCount: await getCount('broadcastClientCount'),
         totalAircraftCount: await store.getTotalAircraftCount(),

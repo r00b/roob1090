@@ -29,6 +29,7 @@ describe('enrichments', () => {
     hgetJson: jest.fn(),
     hsetJson: jest.fn(),
     hsetJsonEx: jest.fn(),
+    smembers: jest.fn(),
     get: jest.fn()
   };
 
@@ -41,10 +42,17 @@ describe('enrichments', () => {
     mockRedis.hgetJson.mockReset();
     mockRedis.hsetJson.mockReset();
     mockRedis.hsetJsonEx.mockReset();
+    mockRedis.smembers.mockReset();
     mockRedis.get.mockReset();
   });
 
   describe('fetch route', () => {
+    test('does not resolve a route when no apis provided', async () => {
+      const { fetchRoute } = enrichments({}, mockRedis, mockLogger);
+      const result = await fetchRoute(aircraft, 'kdca');
+      expect(result).toBeUndefined();
+    });
+
     test('caches a route', async () => {
       const route = {
         origin: 'KVKX',
@@ -99,6 +107,24 @@ describe('enrichments', () => {
       expect(mockFlightAware.isDone()).toBeFalsy();
     });
 
+    test('resolves a cached route even when no apis provided', async () => {
+      const route = {
+        origin: 'KVKX',
+        destination: 'KW00'
+      };
+      mockRedis
+        .hgetJson
+        .mockReturnValueOnce(route);
+
+      const { fetchRoute } = enrichments({}, mockRedis, mockLogger);
+
+      const result = await fetchRoute(aircraft, 'kdca');
+
+      expect(result).toEqual(route);
+      expect(mockRedis.hgetJson.mock.calls.length).toBe(1);
+      expect(mockRedis.hgetJson.mock.calls[0]).toEqual(['routes', 'aal0158']);
+    });
+
     test('passes auth to OpenSky', async () => {
       mockOpenSky
         .get(routes)
@@ -123,66 +149,188 @@ describe('enrichments', () => {
         origin: 'KVKX',
         destination: 'KDCA'
       });
-      expect(mockRedis.get.mock.calls.length).toBe(0);
+      expect(mockRedis.smembers.mock.calls.length).toBe(0);
       expect(mockOpenSky.isDone()).toBeTruthy();
       expect(mockFlightAware.isDone()).toBeFalsy();
     });
 
-    test('resolves a connecting route from OpenSky when origin is current airport', async () => {
+    test('does not resolve a non-connecting route from OpenSky when airport not in route', async () => {
       mockOpenSky
         .get(routes)
-        .reply(200, { route: ['KDCA', 'KVKX', 'KRMN'] });
+        .reply(200, { route: ['KVKX', 'KEZF'] });
       mockFlightAware
         .get(inFlightInfo)
         .replyWithError('should not be called');
-      mockRedis
-        .get
-        .mockReturnValueOnce(['foo'])
-        .mockReturnValueOnce([aircraft.hex, 'bar']);
 
       const result = await fetchRoute(aircraft, 'kdca');
 
-      expect(result).toEqual({
-        origin: 'KDCA',
-        destination: 'KVKX'
-      });
-
-      expect(mockRedis.get.mock.calls.length).toBe(2);
-      expect(mockRedis.get.mock.calls[0][0]).toBe('kdca:arrivals');
-      expect(mockRedis.get.mock.calls[1][0]).toBe('kdca:departures');
+      expect(result).toBeUndefined();
+      expect(mockRedis.smembers.mock.calls.length).toBe(0);
       expect(mockOpenSky.isDone()).toBeTruthy();
       expect(mockFlightAware.isDone()).toBeFalsy();
     });
 
-    test('resolves a connecting route from OpenSky when destination is current airport', async () => {
-      mockOpenSky
-        .get(routes)
-        .reply(200, { route: ['KVKX', 'KDCA', 'KRMN'] })
-        .get(routes)
-        .reply(200, { route: ['KVKX', 'KRMN', 'KDCA'] });
+    test('resolves a connecting route from OpenSky when arriving to the specified airport', async () => {
+      const testComplexArrival = async (route, airport, origin) => {
+        mockFlightAware
+          .get(inFlightInfo)
+          .replyWithError('should not be called');
+        mockOpenSky
+          .get(routes)
+          .reply(200, { route });
+        mockRedis.smembers.mockReset();
+        mockRedis
+          .smembers
+          .mockReturnValueOnce(['foo', aircraft.hex, 'bar']);
+
+        const result = await fetchRoute(aircraft, airport);
+
+        if (origin) {
+          expect(result).toEqual({
+            origin,
+            destination: airport.toUpperCase()
+          });
+          expect(mockRedis.smembers.mock.calls.length).toBe(1);
+        } else {
+          expect(result).toBeUndefined();
+        }
+
+        expect(mockRedis.smembers.mock.calls[0][0]).toBe(`${airport.toLowerCase()}:arrivals`);
+        expect(mockOpenSky.isDone()).toBeTruthy();
+        expect(mockFlightAware.isDone()).toBeFalsy();
+      };
+
+      await testComplexArrival(['KSFO', 'KDCA', 'KSEA'], 'KDCA', 'KSFO');
+      await testComplexArrival(['KSFO', 'KDCA', 'KSEA'], 'kdca', 'KSFO');
+      await testComplexArrival(['ksfo', 'kdca', 'ksea'], 'KDCA', 'KSFO');
+
+      await testComplexArrival(['KSFO', 'KSEA', 'KDCA'], 'KDCA', 'KSEA');
+      await testComplexArrival(['KDCA', 'KSEA', 'KDCA'], 'KDCA', 'KSEA');
+      await testComplexArrival(['KDCA', 'KSEA', 'KADW'], 'KDCA', false);
+      await testComplexArrival(['KSEA', 'KDCA', 'KDCA'], 'KDCA', false);
+      await testComplexArrival(['KDCA', 'KDCA', 'KDCA'], 'KDCA', false);
+
+      await testComplexArrival(['KDCA', 'KBWI', 'KDCA', 'KSEA'], 'KDCA', 'KBWI');
+      await testComplexArrival(['KSEA', 'KDCA', 'KBWI', 'KDCA'], 'KDCA', false);
+      await testComplexArrival(['KDCA', 'KDCA', 'KBWI', 'KDCA'], 'KDCA', false);
+      await testComplexArrival(['KDCA', 'KRDU', 'KDAB', 'KMIA', 'KAUS', 'KDCA', 'KIAH', 'KDEN'], 'KDCA', 'KAUS');
+      await testComplexArrival(['KDCA', 'KRDU', 'KDAB', 'KMIA', 'KAUS', 'KIAH', 'KDEN', 'KDCA'], 'KDCA', 'KDEN');
+      await testComplexArrival(['KNYG', 'KDCA', 'KDAB', 'KMIA', 'KAUS', 'KIAH', 'KDEN', 'KDCA'], 'KDCA', false);
+      await testComplexArrival(['KDCA', 'KDCA', 'KDAB', 'KMIA', 'KAUS', 'KIAH', 'KDEN', 'KSBY'], 'KDCA', false);
+    });
+
+    test('resolves a connecting route from OpenSky when departing from the specified airport', async () => {
+      const testComplexDeparture = async (route, airport, destination) => {
+        mockFlightAware
+          .get(inFlightInfo)
+          .replyWithError('should not be called');
+        mockOpenSky
+          .get(routes)
+          .reply(200, { route });
+        mockRedis.smembers.mockReset();
+        mockRedis
+          .smembers
+          .mockReturnValueOnce(['baz'])
+          .mockReturnValueOnce(['foo', aircraft.hex, 'bar']);
+
+        const result = await fetchRoute(aircraft, airport);
+
+        if (destination) {
+          expect(result).toEqual({
+            origin: airport.toUpperCase(),
+            destination
+          });
+          expect(mockRedis.smembers.mock.calls.length).toBe(2);
+        } else {
+          expect(result).toBeUndefined();
+        }
+
+        expect(mockRedis.smembers.mock.calls[0][0]).toBe(`${airport.toLowerCase()}:arrivals`);
+        expect(mockRedis.smembers.mock.calls[1][0]).toBe(`${airport.toLowerCase()}:departures`);
+        expect(mockOpenSky.isDone()).toBeTruthy();
+        expect(mockFlightAware.isDone()).toBeFalsy();
+      };
+
+      await testComplexDeparture(['KSFO', 'KDCA', 'KSEA'], 'KDCA', 'KSEA');
+      await testComplexDeparture(['KSFO', 'KDCA', 'KSEA'], 'kdca', 'KSEA');
+      await testComplexDeparture(['ksfo', 'kdca', 'ksea'], 'KDCA', 'KSEA');
+
+      await testComplexDeparture(['KDCA', 'KSEA', 'KDCA'], 'KDCA', 'KSEA');
+      await testComplexDeparture(['KSEA', 'KDCA', 'KVKX'], 'KDCA', 'KVKX');
+      await testComplexDeparture(['KSFO', 'KSEA', 'KDCA'], 'KDCA', false);
+      await testComplexDeparture(['KSEA', 'KDCA', 'KDCA'], 'KDCA', false);
+      await testComplexDeparture(['KDCA', 'KDCA', 'KDCA'], 'KDCA', false);
+
+      await testComplexDeparture(['KSEA', 'KDCA', 'KBWI', 'KDCA'], 'KDCA', 'KBWI');
+      await testComplexDeparture(['KSEA', 'KDCA', 'KBWI', 'KAUS'], 'KDCA', 'KBWI');
+      await testComplexDeparture(['KDCA', 'KBWI', 'KDCA', 'KSEA'], 'KDCA', false);
+      await testComplexDeparture(['KDCA', 'KDCA', 'KBWI', 'KDCA'], 'KDCA', false);
+
+      await testComplexDeparture(['KDCA', 'KRDU', 'KDAB', 'KMIA', 'KAUS', 'KIAH', 'KDEN', 'KDCA'], 'KDCA', 'KRDU');
+      await testComplexDeparture(['KNYG', 'KDCA', 'KDAB', 'KMIA', 'KAUS', 'KIAH', 'KDEN', 'KDCA'], 'KDCA', 'KDAB');
+      await testComplexDeparture(['KDCA', 'KRDU', 'KDAB', 'KMIA', 'KAUS', 'KDCA', 'KIAH', 'KDEN'], 'KDCA', false);
+      await testComplexDeparture(['KDCA', 'KDCA', 'KDAB', 'KMIA', 'KAUS', 'KIAH', 'KDEN', 'KSBY'], 'KDCA', false);
+    });
+
+    test('does not resolve a connecting route from OpenSky when airport not in route', async () => {
       mockFlightAware
         .get(inFlightInfo)
         .replyWithError('should not be called');
+      mockOpenSky
+        .get(routes)
+        .reply(200, { route: ['KAUS', 'KBWI', 'KRDU'] });
+      mockRedis.smembers.mockReset();
+      mockRedis
+        .smembers
+        .mockReturnValueOnce(['baz', aircraft.hex])
+        .mockReturnValueOnce(['foo', 'bar']);
+
+      const result = await fetchRoute(aircraft, 'KDCA');
+      expect(result).toBeUndefined();
+    });
+
+    test('does not resolve a connecting route from OpenSky when aircraft is not in arrivals or departures', async () => {
+      mockFlightAware
+        .get(inFlightInfo)
+        .replyWithError('should not be called');
+      mockOpenSky
+        .get(routes)
+        .reply(200, { route: ['KDCA', 'KBWI', 'KRDU'] });
+      mockRedis.smembers.mockReset();
+      mockRedis
+        .smembers
+        .mockReturnValueOnce(['baz'])
+        .mockReturnValueOnce(['foo', 'bar']);
+
+      const result = await fetchRoute(aircraft, 'KDCA');
+
+      expect(result).toBeUndefined();
+      expect(mockRedis.smembers.mock.calls[0][0]).toBe('kdca:arrivals');
+      expect(mockRedis.smembers.mock.calls[1][0]).toBe('kdca:departures');
+      expect(mockOpenSky.isDone()).toBeTruthy();
+      expect(mockFlightAware.isDone()).toBeFalsy();
+    });
+
+    test('does not call FlightAware API when no FlightAware auth', async () => {
+      mockFlightAware
+        .get(inFlightInfo)
+        .replyWithError('should not be called');
+      mockOpenSky
+        .get(routes)
+        .reply(404);
+      const { fetchRoute } = enrichments({
+        openSkyApi: config.openSkyApi,
+        openSkyUsername: config.openSkyUsername,
+        openSkyPassword: config.openSkyPassword
+      }, mockRedis, mockLogger);
       mockRedis
         .get
-        .mockReturnValueOnce([aircraft.hex, 'bar'])
-        .mockReturnValueOnce(['foo', aircraft.hex]);
+        .mockReturnValueOnce(1);
 
-      let result = await fetchRoute(aircraft, 'kdca');
-      expect(result).toEqual({
-        origin: 'KVKX',
-        destination: 'KDCA'
-      });
+      const result = await fetchRoute(aircraft, 'kdca');
 
-      result = await fetchRoute(aircraft, 'KdCa');
-      expect(result).toEqual({
-        origin: 'KRMN',
-        destination: 'KDCA'
-      });
-
-      expect(mockRedis.get.mock.calls.length).toBe(2);
-      expect(mockRedis.get.mock.calls[0][0]).toBe('kdca:arrivals');
-      expect(mockRedis.get.mock.calls[1][0]).toBe('kdca:arrivals');
+      expect(result).toBeUndefined();
+      expect(mockRedis.get.mock.calls.length).toBe(0);
       expect(mockOpenSky.isDone()).toBeTruthy();
       expect(mockFlightAware.isDone()).toBeFalsy();
     });
@@ -200,6 +348,8 @@ describe('enrichments', () => {
         .mockReturnValueOnce(1);
 
       await fetchRoute(aircraft, 'kdca');
+      expect(mockRedis.get.mock.calls.length).toBe(1);
+      expect(mockRedis.get.mock.calls[0][0]).toBe('broadcastClientCount');
       expect(mockOpenSky.isDone()).toBeTruthy();
       expect(mockFlightAware.isDone()).toBeTruthy();
     });
@@ -217,7 +367,7 @@ describe('enrichments', () => {
 
       const result = await fetchRoute(aircraft, 'kdca');
 
-      expect(result).toEqual({});
+      expect(result).toBeUndefined();
       expect(mockRedis.get.mock.calls.length).toBe(1);
       expect(mockRedis.get.mock.calls[0][0]).toBe('broadcastClientCount');
       expect(mockOpenSky.isDone()).toBeTruthy();
@@ -257,6 +407,7 @@ describe('enrichments', () => {
 
       expect(mockOpenSky.isDone()).toBeTruthy();
       expect(mockFlightAware.isDone()).toBeTruthy();
+      expect(mockRedis.get.mock.calls.length).toBe(2);
     });
 
     test('calls FlightAware API when zero broadcast clients if force flag passed', async () => {
@@ -287,42 +438,6 @@ describe('enrichments', () => {
       expect(mockFlightAware.isDone()).toBeTruthy();
     });
 
-    test('does not resolve route when 404 from OpenSky and FlightAware', async () => {
-      mockOpenSky
-        .get(routes)
-        .reply(404);
-      mockFlightAware
-        .get(inFlightInfo)
-        .reply(404);
-      mockRedis
-        .get
-        .mockReturnValue(1);
-
-      const result = await fetchRoute(aircraft, 'kdca');
-
-      expect(result).toEqual({});
-      expect(mockOpenSky.isDone()).toBeTruthy();
-      expect(mockFlightAware.isDone()).toBeTruthy();
-    });
-
-    test('does not resolve route when errors fetching from OpenSky and FlightAware', async () => {
-      mockOpenSky
-        .get(routes)
-        .replyWithError('error');
-      mockFlightAware
-        .get(inFlightInfo)
-        .replyWithError('error');
-      mockRedis
-        .get
-        .mockReturnValue(1);
-
-      const result = await fetchRoute(aircraft, 'kdca');
-
-      expect(result).toEqual({});
-      expect(mockOpenSky.isDone()).toBeTruthy();
-      expect(mockFlightAware.isDone()).toBeTruthy();
-    });
-
     test('does not resolve route when 404 from OpenSky and timed out response from FlightAware', async () => {
       mockOpenSky
         .get(routes)
@@ -342,7 +457,43 @@ describe('enrichments', () => {
 
       const result = await fetchRoute(aircraft, 'kdca');
 
-      expect(result).toEqual({});
+      expect(result).toBeUndefined();
+      expect(mockOpenSky.isDone()).toBeTruthy();
+      expect(mockFlightAware.isDone()).toBeTruthy();
+    });
+
+    test('does not resolve route when 404 from OpenSky and FlightAware', async () => {
+      mockOpenSky
+        .get(routes)
+        .reply(404);
+      mockFlightAware
+        .get(inFlightInfo)
+        .reply(404);
+      mockRedis
+        .get
+        .mockReturnValue(1);
+
+      const result = await fetchRoute(aircraft, 'kdca');
+
+      expect(result).toBeUndefined();
+      expect(mockOpenSky.isDone()).toBeTruthy();
+      expect(mockFlightAware.isDone()).toBeTruthy();
+    });
+
+    test('does not resolve route when errors fetching from OpenSky and FlightAware', async () => {
+      mockOpenSky
+        .get(routes)
+        .replyWithError('error');
+      mockFlightAware
+        .get(inFlightInfo)
+        .replyWithError('error');
+      mockRedis
+        .get
+        .mockReturnValue(1);
+
+      const result = await fetchRoute(aircraft, 'kdca');
+
+      expect(result).toBeUndefined();
       expect(mockOpenSky.isDone()).toBeTruthy();
       expect(mockFlightAware.isDone()).toBeTruthy();
     });
@@ -443,7 +594,7 @@ describe('enrichments', () => {
         .reply(404);
 
       const result = await fetchAirframe(aircraft);
-      expect(result).toEqual({});
+      expect(result).toBeUndefined();
     });
 
     test('does not resolve airframe on error', async () => {
@@ -452,7 +603,7 @@ describe('enrichments', () => {
         .replyWithError('error');
 
       const result = await fetchAirframe(aircraft);
-      expect(result).toEqual({});
+      expect(result).toBeUndefined();
     });
 
     describe('validation', () => {

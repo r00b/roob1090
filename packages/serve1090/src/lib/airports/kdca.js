@@ -1,8 +1,6 @@
 // this module defines an approach/departure route for runway 01-19 at KDCA
 // polygons generated via https://www.keene.edu/campus/maps/tool/
 // headings generated via https://www.acscdg.com/
-const airspaceName = 'Washington Reagan National Airport';
-const airspaceKey = 'kdca';
 
 /**
  * Runway 01/19
@@ -14,11 +12,10 @@ const airspaceKey = 'kdca';
  -77.0391355, 38.8617211
  -77.0370488, 38.8410045
  */
-const runway01_19 = {
-  key: `${airspaceKey}:route01_19:runway:01-19`,
+const runway0119 = {
+  key: 'kdca:route0119:runway',
   name: 'KDCA Runway 01-19',
-  ceiling: 500,
-  parentAirspace: airspaceKey, // todo don't really need
+  ceiling: 200,
   boundary: [[
     [
       -77.0370488,
@@ -61,11 +58,10 @@ const runway01_19 = {
  -77.0391315, 38.8617221
  -77.0384254, 38.8617691
  */
-const north01_19 = {
-  key: `${airspaceKey}:route01_19:north:01-19`,
+const north0119 = {
+  key: 'kdca:route0119:north',
   name: 'KDCA North',
   ceiling: 5000,
-  parentAirspace: airspaceKey,
   boundary: [[
     [
       -77.0384254,
@@ -136,11 +132,10 @@ const north01_19 = {
  -77.0363420, 38.8410421
  -77.0370474, 38.8410034
  */
-const south01_19 = {
-  key: `${airspaceKey}:route01_19:south:01-19`,
+const south0119 = {
+  key: 'kdca:route0119:south',
   name: 'KDCA South',
   ceiling: 5000,
-  parentAirspace: airspaceKey,
   boundary: [[
     [
       -77.0370474,
@@ -181,11 +176,10 @@ const south01_19 = {
   ]]
 };
 
-const route01_19 = {
-  key: `${airspaceKey}:route01_19`,
-  parentKey: airspaceKey,
-  regions: [north01_19, south01_19],
-  runway: runway01_19,
+const route0119 = {
+  key: 'kdca:route0119',
+  regions: [north0119, south0119],
+  runway: runway0119,
   // TODO this really shouldn't live in here
   getActiveRunway: function (sample) {
     if (!sample) return false;
@@ -194,9 +188,9 @@ const route01_19 = {
   getApproachRouteKey (runway) {
     switch (runway) {
       case '1':
-        return south01_19.key;
+        return south0119.key;
       case '19':
-        return north01_19.key;
+        return north0119.key;
       default:
         return false;
     }
@@ -204,9 +198,9 @@ const route01_19 = {
   getDepartureRouteKey (runway) {
     switch (runway) {
       case '1':
-        return north01_19.key;
+        return north0119.key;
       case '19':
-        return south01_19.key;
+        return south0119.key;
       default:
         return false;
     }
@@ -220,8 +214,8 @@ function isNorthward (track) {
 }
 
 module.exports = {
-  key: airspaceKey,
-  name: airspaceName,
+  key: 'kdca',
+  name: 'Ronald Reagan Washington National Airport',
   locus: [-77.037799, 38.852051],
-  routes: [route01_19]
+  routes: [route0119]
 };

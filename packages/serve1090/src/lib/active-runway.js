@@ -2,9 +2,15 @@ const _ = require('lodash');
 const RUNWAY_TTL = 28800; // 8 hours
 const FAIL_MESSAGE = 'unable to compute active runway';
 
-module.exports = (redis, logger) => {
-  const scopedLogger = logger.scope('active-runway');
-  return activeRunway(redis, scopedLogger);
+module.exports = (redis, store, logger) => {
+  const exports = {
+    getActiveRunway: getActiveRunway(redis)
+  };
+  if (store && logger) {
+    const scopedLogger = logger.scope('active-runway');
+    exports.computeActiveRunway = computeActiveRunway(redis, store, scopedLogger);
+  }
+  return exports;
 };
 
 /**
@@ -12,9 +18,10 @@ module.exports = (redis, logger) => {
  * picks candidates in the non-runway sections of the route and uses the logic defined
  * in each route object to compute the active runway
  */
-function activeRunway (redis, logger) {
+function computeActiveRunway (redis, store, logger) {
   /**
-   * @param {Object} airportRoute - child route object from an airport module
+   * @param {Object} route - child route object from an airport module
+   * @return {string} the active runway
    */
   return async (route) => {
     try {
@@ -23,13 +30,43 @@ function activeRunway (redis, logger) {
       if (!hasRegions || !hasComputeFn) {
         logger.error(FAIL_MESSAGE, {
           reason: 'malformed route',
-          airport: route.parentKey,
           route: route.key,
           hasRegions,
           hasComputeFn
         });
       } else {
-        return await computeActiveRunway(route, redis, logger);
+        const candidates = await findCandidates(route, redis);
+
+        if (candidates.length) {
+
+          for (const hex of candidates) {
+            const sample = await store.getAircraftWithHex(hex);
+            if (sample) {
+              // use logic defined in the route module to compute the active runway
+              const activeRunway = route.getActiveRunway(sample);
+              if (activeRunway) {
+                await redis.setex(`${route.key}:activeRunway`, RUNWAY_TTL, activeRunway);
+                logger.info('set active runway', {
+                  route: route.key,
+                  runway: activeRunway,
+                  usingHex: hex,
+                  usingFlight: (sample.flight || '').trim()
+                });
+                return activeRunway;
+              }
+            }
+          }
+
+          logger.warn(FAIL_MESSAGE, {
+            reason: 'found candidates but none could be used to compute route',
+            route: route.key
+          });
+        } else {
+          logger.warn(FAIL_MESSAGE, {
+            reason: 'unable to find any candidates to compute active runway',
+            route: route.key
+          });
+        }
       }
     } catch (e) {
       logger.error('error computing active runway', e);
@@ -37,51 +74,40 @@ function activeRunway (redis, logger) {
   };
 }
 
-async function computeActiveRunway (route, redis, logger) {
-  const candidates = await findCandidates(route, redis, logger);
-  for (const hex of candidates) {
-    const sample = await redis.hgetJson('store:valid', hex); // todo use store
-    if (sample) {
-      // use logic defined in the route module to compute the active runway
-      const activeRunway = route.getActiveRunway(sample);
-      if (activeRunway) {
-        await redis.setex(`${route.key}:activeRunway`, RUNWAY_TTL, activeRunway);
-        logger.info('set active runway', {
-          airport: route.parentKey,
-          route: route.key,
-          runway: activeRunway,
-          usingHex: hex,
-          usingFlight: sample.flight
-        });
-        return activeRunway;
-      }
-    }
-  }
-  logger.warn(FAIL_MESSAGE, {
-    reason: 'found candidates but none could be used to compute route',
-    airport: route.parentKey,
-    route: route.key
-  });
-}
-
 /**
  * Find candidate aircraft to use for computing the active runway; do this lazily, returning
  * the first candidates found (i.e. if we find candidates in a region, immediately return and
  * don't check other regions)
+ *
+ * @param route {object} - route object
+ * @param redis
+ * @returns {Promise<aircraft[]>}
  */
-async function findCandidates (route, redis, logger) {
+async function findCandidates (route, redis) {
   const regions = route.regions; // this was previously checked for length > 0
-  for (const { key: regionKey } of regions) {
-    if (regionKey) {
-      const candidates = await redis.smembers(`${regionKey}:aircraft`) || [];
+  for (const region of regions) {
+    if (_.has(region, 'key')) {
+      const candidates = await redis.smembers(`${region.key}:aircraft`) || [];
       if (candidates.length) {
         return candidates;
       }
     }
   }
-  logger.warn(FAIL_MESSAGE, {
-    reason: 'unable to find any candidates to compute active runway',
-    airport: route.parentKey,
-    route: route.key
-  });
+  return [];
+}
+
+/**
+ * Return a function that fetches a route's already computed active
+ * runway from redis
+ *
+ * @param redis
+ */
+function getActiveRunway (redis) {
+  /**
+   * @param {object} - route object
+   * @returns {string} active runway
+   */
+  return async ({ key: routeKey }) => {
+    return redis.get(`${routeKey}:activeRunway`);
+  };
 }

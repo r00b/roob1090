@@ -14,6 +14,7 @@ module.exports = (pumpKey, store) => {
     .get('/all', getAll(store))
     .get('/valid', getValid(store))
     .get('/invalid', getInvalid(store))
+    .get('/enrichments', getEnrichments())
     .get('/totalCount', getTotalAircraftCount(store))
     .get('/validCount', getValidAircraftCount(store))
     .use(errorHandler);
@@ -87,6 +88,15 @@ function getInvalid (store) {
   return (req, res, next) => {
     return store.getInvalidAircraft().then(result => res.status(200).json(result)).catch(next);
   };
+}
+
+/**
+ * GET enrichments store
+ */
+function getEnrichments () {
+  return async (req, res, next) => {
+    return redis.hgetAllAsJson('enrichments').then(result => res.status(200).json(result)).catch(next);
+  }
 }
 
 /**

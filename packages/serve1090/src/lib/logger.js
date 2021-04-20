@@ -7,7 +7,7 @@ const DEV_EXCLUDED = [
   'redis-connection',
   'airport-board',
   'worker-service',
-  // 'airport-board-worker',
+  'airport-board-worker',
   'active-runway-worker',
   'enrichments-worker'
 ];

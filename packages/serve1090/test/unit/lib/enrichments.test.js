@@ -203,6 +203,7 @@ describe('enrichments', () => {
       await testComplexArrival(['KSFO', 'KDCA', 'KSEA'], 'KDCA', 'KSFO');
       await testComplexArrival(['KSFO', 'KDCA', 'KSEA'], 'kdca', 'KSFO');
       await testComplexArrival(['ksfo', 'kdca', 'ksea'], 'KDCA', 'KSFO');
+      await testComplexArrival(['KDCA', 'KMCO', 'KSEA'], 'KDCA', false);
 
       await testComplexArrival(['KSFO', 'KSEA', 'KDCA'], 'KDCA', 'KSEA');
       await testComplexArrival(['KDCA', 'KSEA', 'KDCA'], 'KDCA', 'KSEA');
@@ -254,6 +255,7 @@ describe('enrichments', () => {
       await testComplexDeparture(['KSFO', 'KDCA', 'KSEA'], 'KDCA', 'KSEA');
       await testComplexDeparture(['KSFO', 'KDCA', 'KSEA'], 'kdca', 'KSEA');
       await testComplexDeparture(['ksfo', 'kdca', 'ksea'], 'KDCA', 'KSEA');
+      await testComplexDeparture(['KSFO', 'KSEA', 'KDCA'], 'KDCA', false);
 
       await testComplexDeparture(['KDCA', 'KSEA', 'KDCA'], 'KDCA', 'KSEA');
       await testComplexDeparture(['KSEA', 'KDCA', 'KVKX'], 'KDCA', 'KVKX');

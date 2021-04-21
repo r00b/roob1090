@@ -4,9 +4,9 @@ ENV APP_DIR /app/serve1090
 
 WORKDIR $APP_DIR
 
-COPY package.json yarn.lock $APP_DIR/
+COPY package.json package-lock.json $APP_DIR/
 
-RUN yarn install --immutable
+RUN npm ci
 
 COPY index.js $APP_DIR
 COPY src $APP_DIR/src

@@ -84,11 +84,11 @@ function getInvalidAircraft () {
 }
 
 function getAircraftWithHex (hex) {
-  return redis.hgetJson('store:all', hex);
+  return redis.hgetAsJson('store:all', hex);
 }
 
 function getValidAircraftWithHex (hex) {
-  return redis.hgetJson('store:valid', hex);
+  return redis.hgetAsJson('store:valid', hex);
 }
 
 function getTotalAircraftCount () {

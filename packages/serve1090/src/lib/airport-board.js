@@ -221,7 +221,7 @@ function enrich (redis) {
    * @param aircraft {object}
    */
   return async (aircraft) => {
-    const enrichments = await redis.hgetJson('enrichments', aircraft.hex);
+    const enrichments = await redis.hgetAsJson('enrichments', aircraft.hex);
     return enrichments ? _.merge(aircraft, enrichments) : aircraft;
   };
 }

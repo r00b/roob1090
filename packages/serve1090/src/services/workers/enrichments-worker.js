@@ -42,7 +42,7 @@ const {
 async function computeAndStoreEnrichments (board) {
   const aircraftHashes = getAircraftHashes(board);
   for (const aircraft of aircraftHashes) {
-    const hasEnrichment = await redis.hgetJson('enrichments', aircraft.hex);
+    const hasEnrichment = await redis.hgetAsJson('enrichments', aircraft.hex);
     if (!hasEnrichment) {
       const enrichPromises = await Promise.allSettled([
         fetchAirframe(aircraft),

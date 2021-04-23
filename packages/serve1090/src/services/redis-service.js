@@ -79,7 +79,7 @@ class RedisService {
   }
 
   /**
-   * Add a value to a set with an expiration time
+   * Add a value to a set with a TTL
    *
    * @param {string} key - key of set
    * @param {string|number} ex - number of seconds until value is deleted
@@ -312,9 +312,9 @@ class RedisService {
    */
   async send (fn, ...params) {
     if (this._pipeline) {
-      return this._pipeline[fn](...params, this.errHandler);
+      return this._pipeline[fn](...params, this._errHandler);
     } else {
-      return this.redis[fn](...params, this.errHandler);
+      return this.redis[fn](...params, this._errHandler);
     }
   }
 
@@ -324,7 +324,7 @@ class RedisService {
    * @param {ReplyError} e - error object from redis
    * @param result - result of redis command
    */
-  errHandler (e, result) {
+  _errHandler (e, result) {
     if (e) {
       logger.error('redis op error', { detail: e.message, ...e.command });
     }

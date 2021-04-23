@@ -13,7 +13,7 @@ describe('airport-board', () => {
     exec: jest.fn(),
     saddEx: jest.fn(),
     setex: jest.fn(),
-    hgetJson: jest.fn()
+    hgetAsJson: jest.fn()
   };
 
   const { computeAirportBoard } = airportBoard(mockStore, mockRedis, mockLogger);
@@ -167,7 +167,7 @@ describe('airport-board', () => {
     mockRedis.exec.mockReset();
     mockRedis.saddEx.mockReset();
     mockRedis.setex.mockReset();
-    mockRedis.hgetJson.mockReset();
+    mockRedis.hgetAsJson.mockReset();
   });
 
   test('computes aircraft board', async () => {
@@ -223,7 +223,7 @@ describe('airport-board', () => {
       .get
       .mockReturnValueOnce('24');
     mockRedis
-      .hgetJson
+      .hgetAsJson
       .mockImplementation((key, hex) => {
         expect(key).toBe('enrichments');
         switch (hex) {

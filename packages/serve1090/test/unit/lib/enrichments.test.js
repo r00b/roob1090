@@ -26,7 +26,7 @@ describe('enrichments', () => {
   const inFlightInfo = `/json/FlightXML2/InFlightInfo/?ident=${aircraft.flight}`;
 
   const mockRedis = {
-    hgetJson: jest.fn(),
+    hgetAsJson: jest.fn(),
     hsetJson: jest.fn(),
     hsetJsonEx: jest.fn(),
     smembers: jest.fn(),
@@ -37,9 +37,9 @@ describe('enrichments', () => {
 
   afterEach(() => {
     // should always make a cache check
-    expect(mockRedis.hgetJson.mock.calls.length).toBeGreaterThan(0);
+    expect(mockRedis.hgetAsJson.mock.calls.length).toBeGreaterThan(0);
     nock.cleanAll();
-    mockRedis.hgetJson.mockReset();
+    mockRedis.hgetAsJson.mockReset();
     mockRedis.hsetJson.mockReset();
     mockRedis.hsetJsonEx.mockReset();
     mockRedis.smembers.mockReset();
@@ -95,14 +95,14 @@ describe('enrichments', () => {
         .get(inFlightInfo)
         .replyWithError('should not be called');
       mockRedis
-        .hgetJson
+        .hgetAsJson
         .mockReturnValueOnce(route);
 
       const result = await fetchRoute(aircraft, 'kdca');
 
       expect(result).toEqual(route);
-      expect(mockRedis.hgetJson.mock.calls.length).toBe(1);
-      expect(mockRedis.hgetJson.mock.calls[0]).toEqual(['routes', 'aal0158']);
+      expect(mockRedis.hgetAsJson.mock.calls.length).toBe(1);
+      expect(mockRedis.hgetAsJson.mock.calls[0]).toEqual(['routes', 'aal0158']);
       expect(mockOpenSky.isDone()).toBeFalsy();
       expect(mockFlightAware.isDone()).toBeFalsy();
     });
@@ -113,7 +113,7 @@ describe('enrichments', () => {
         destination: 'KW00'
       };
       mockRedis
-        .hgetJson
+        .hgetAsJson
         .mockReturnValueOnce(route);
 
       const { fetchRoute } = enrichments({}, mockRedis, mockLogger);
@@ -121,8 +121,8 @@ describe('enrichments', () => {
       const result = await fetchRoute(aircraft, 'kdca');
 
       expect(result).toEqual(route);
-      expect(mockRedis.hgetJson.mock.calls.length).toBe(1);
-      expect(mockRedis.hgetJson.mock.calls[0]).toEqual(['routes', 'aal0158']);
+      expect(mockRedis.hgetAsJson.mock.calls.length).toBe(1);
+      expect(mockRedis.hgetAsJson.mock.calls[0]).toEqual(['routes', 'aal0158']);
     });
 
     test('passes auth to OpenSky', async () => {
@@ -554,14 +554,14 @@ describe('enrichments', () => {
         .get(metadata)
         .replyWithError('should not be called');
       mockRedis
-        .hgetJson
+        .hgetAsJson
         .mockReturnValueOnce(expected);
 
       const result = await fetchAirframe(aircraft);
 
       expect(result).toEqual(expected);
-      expect(mockRedis.hgetJson.mock.calls.length).toBe(1);
-      expect(mockRedis.hgetJson.mock.calls[0]).toEqual(['airframes', 'a9bb8b']);
+      expect(mockRedis.hgetAsJson.mock.calls.length).toBe(1);
+      expect(mockRedis.hgetAsJson.mock.calls[0]).toEqual(['airframes', 'a9bb8b']);
       expect(mockOpenSky.isDone()).toBeFalsy();
     });
 

@@ -69,7 +69,7 @@ const fetchRoute = function (redis, { openSkyRoutes, flightAwareRoutes }, logger
     const flight = aircraft.flight.toLowerCase();
     try {
       // first, see if the route is cached
-      let result = await redis.hgetJson('routes', flight);
+      let result = await redis.hgetAsJson('routes', flight);
       // next, check OpenSky
       if (!result && openSkyRoutes) {
         result = await fetchOpenSkyRoute(aircraft, airportKey, openSkyRoutes, redis, logger);
@@ -250,7 +250,7 @@ const fetchAirframe = function (redis, { openSkyAirframes }, logger) {
     const hex = aircraft.hex.toLowerCase();
     try {
       // first, see if the airframe is cached
-      const cachedAirframe = await redis.hgetJson('airframes', hex);
+      const cachedAirframe = await redis.hgetAsJson('airframes', hex);
       if (cachedAirframe) {
         return cachedAirframe;
       }

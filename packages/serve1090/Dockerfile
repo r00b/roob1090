@@ -1,12 +1,12 @@
-FROM node:14.5.0-alpine3.11
+FROM node:15.14.0-alpine3.10
 
 ENV APP_DIR /app/serve1090
 
 WORKDIR $APP_DIR
 
-COPY package.json yarn.lock $APP_DIR/
+COPY package.json package-lock.json $APP_DIR/
 
-RUN yarn install --frozen-lockfile
+RUN npm ci
 
 COPY index.js $APP_DIR
 COPY src $APP_DIR/src

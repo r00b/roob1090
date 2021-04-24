@@ -6,7 +6,7 @@ const rootRouter = require('./routes/root/index');
 const aircraftRouter = require('./routes/aircraft/index');
 const airportsRouter = require('./routes/airports/index');
 
-async function startServer (config) {
+async function init (config) {
   const normalizedPort = normalizePort(config.port);
   try {
     const server = app.listen(normalizedPort);
@@ -24,7 +24,7 @@ async function startServer (config) {
 
     const store = require('../src/stores/aircraft-store');
 
-    // kick off the jobs(req, res, next)
+    // kick off the jobs
     require('./services/worker-service')();
 
     // set up routers
@@ -53,4 +53,4 @@ function normalizePort (port) {
   }
 }
 
-module.exports = startServer;
+module.exports = init;

@@ -8,6 +8,8 @@ class Signal extends Signale {
 
   /**
    * Allow for scoped loggers to be disabled via an exclude list
+   *
+   * @param name {string} - name of logger scope
    */
   scope (name) {
     const excluded = this._options.excluded || [];
@@ -47,6 +49,8 @@ class Signal extends Signale {
 
   /**
    * Create a child logger, attaching meta to every log it creates
+   *
+   * @param meta {object}
    */
   child (meta) {
     return new Signal({

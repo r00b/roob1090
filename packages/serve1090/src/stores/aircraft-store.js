@@ -11,16 +11,6 @@ const redis = new RedisService();
 // maximum age of new data that will be accepted into the store
 const MAX_DATA_AGE = 10000;
 
-module.exports = {
-  addAircraft,
-  getAllAircraft,
-  getValidAircraft,
-  getInvalidAircraft,
-  getValidatedAircraftAt,
-  getTotalAircraftCount,
-  getValidAircraftCount
-};
-
 /**
  * Accept new dump1090 aircraft data to merge into the store
  *
@@ -32,7 +22,7 @@ async function addAircraft (data) {
   const now = Date.now();
   const age = now - clientNowMillis;
   if (age > MAX_DATA_AGE) {
-    logger.warn('reject stale dump data', {
+    logger.warn('rejected stale dump data', {
       clientTimestamp: new Date(clientNowMillis).toISOString(),
       age: millisToSeconds(age).toFixed(2)
     });
@@ -40,7 +30,7 @@ async function addAircraft (data) {
   // first, update and filter the data to generate a hash
   const newAircraft = createAircraftStore(data.aircraft.map(setUpdated));
   await validateAndWrite(newAircraft);
-  logger.info('accept dump data', {
+  logger.info('accepted dump data', {
     messages: data.messages,
     clientTimestamp: new Date(clientNowMillis).toISOString()
   });
@@ -81,43 +71,24 @@ async function validateAndWrite (store) {
   await pipeline.exec();
 }
 
-/**
- * Get entire store of all aircraft
- */
 function getAllAircraft () {
   return getStore('store:all');
 }
 
-/**
- * Get store of valid aircraft
- */
 function getValidAircraft () {
   return getStore('store:valid');
 }
 
-/**
- * Get store of invalid aircraft
- */
 function getInvalidAircraft () {
   return getStore('store:invalid');
 }
 
-/**
- * Get a specific aircraft
- *
- * @param {string} hex - hex of the aircraft to get
- */
-function getAircraftAt (hex) {
-  return redis.hgetJson('store:all', hex);
+function getAircraftWithHex (hex) {
+  return redis.hgetAsJson('store:all', hex);
 }
 
-/**
- * Get a specific aircraft that has been validated
- *
- * @param {string} hex - hex of the aircraft to get
- */
-function getValidatedAircraftAt (hex) {
-  return redis.hgetJson('store:valid', hex);
+function getValidAircraftWithHex (hex) {
+  return redis.hgetAsJson('store:valid', hex);
 }
 
 function getTotalAircraftCount () {
@@ -141,3 +112,14 @@ function setUpdated (aircraft) {
   aircraft.updated = Date.now();
   return aircraft;
 }
+
+module.exports = {
+  addAircraft,
+  getAllAircraft,
+  getValidAircraft,
+  getInvalidAircraft,
+  getAircraftWithHex,
+  getValidAircraftWithHex,
+  getTotalAircraftCount,
+  getValidAircraftCount
+};

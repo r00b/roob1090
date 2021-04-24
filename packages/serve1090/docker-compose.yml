@@ -1,15 +1,16 @@
-version: '3.8'
+version: '3.9'
 services:
   redis:
     image: eqalpha/keydb:latest
-    container_name: serve1090_redis
+    container_name: redis
     ports:
       - 6379:6379
+      - 6380:6379 # for local access, in case host machine is running a separate redis
     volumes:
       - $PWD/keydb.conf:/etc/keydb/keydb.conf
   express:
     build: .
-    container_name: serve1090
+    container_name: express
     volumes:
       - .:/app/serve1090
       - /app/serve1090/node_modules

@@ -142,9 +142,11 @@ function sendBoard (store, ws, next) {
  *
  * @param store - aircraft store
  * @param {string} airport - name of airport
+ *
+ * TODO: forceFallbackFA for manual GETs
  */
 async function fetchBoard (store, airport) {
-  const board = await redis.getAsJson(`board:${airport}`);
+  const board = await redis.getAsJson(`${airport}:board`);
   const totalAircraftCount = await store.getTotalAircraftCount();
   const validAircraftCount = await store.getValidAircraftCount();
   return {

@@ -1,13 +1,15 @@
+const _ = require('lodash');
+
 const DEV_EXCLUDED = [
-  // 'app',
   // 'request',
+  // 'ws',
   'aircraft store',
-  // 'worker service',
-  'worker meta'
-  // 'worker airport',
-  // 'worker runway',
-  // 'worker enrich',
-  // 'ws'
+  'redis-connection',
+  'airport-board',
+  'worker-service',
+  'airport-board-worker',
+  'active-runway-worker',
+  'enrichments-worker'
 ];
 
 function pino (secrets) {
@@ -43,8 +45,16 @@ function signale (secrets) {
 
 module.exports = () => {
   const config = require('../config');
-  const { port, dbHost, dbPort, nodeEnv, auth, ...secrets } = config;
-  if (nodeEnv === 'production') {
+  const secrets = _.pick(config, [
+    'pumpKey',
+    'broadcastKey',
+    'redisPass',
+    'openSkyUsername',
+    'openSkyPassword',
+    'faUsername',
+    'faPassword'
+  ]);
+  if (config.nodeEnv === 'production') {
     return pino(secrets);
   } else {
     return signale(secrets);

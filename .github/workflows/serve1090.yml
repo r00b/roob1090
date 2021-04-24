@@ -6,8 +6,12 @@ on:
  pull_request:
   branches: [ "**" ]
 
+defaults:
+ run:
+  working-directory: packages/serve1090
+
 jobs:
- build:
+ test:
 
   runs-on: ubuntu-latest
 

@@ -81,14 +81,14 @@ describe('schemas', () => {
       const expected = {
         ...base,
         registered: new Date('2020-02-02T00:00:00.000Z'),
-        regUntil: new Date('1996-01-01T05:00:00.000Z'),
+        regUntil: new Date('1996-01-01T00:00:00.000Z'),
         built: new Date('2010-10-02T00:10:00.009Z'),
         timestamp: new Date('2020-06-01T19:00:00.000Z')
       };
       const input = {
         hex: 'a9bb8b',
-        registered: '2020-02-02',
-        regUntil: '01-01-1996',
+        registered: '2020-02-02T00:00:00.000Z',
+        regUntil: '1996-01-01T00:00:00.000Z',
         built: '2010-10-02T00:10:00.009Z',
         timestamp: 1591038000000
       };

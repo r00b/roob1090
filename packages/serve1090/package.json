@@ -1,7 +1,7 @@
 {
   "name": "serve1090",
-  "version": "2.2.0",
-  "description": "WebSocket server for receiving, aggregating, and exposing dump1090 data.",
+  "version": "3.0.0",
+  "description": "WebSocket server for receiving, aggregating, and exposing dump1090 data",
   "repository": "https://github.com/robertsteilberg/serve1090/",
   "license": "AGPL-3.0-only",
   "author": "Robert Steilberg <rsteilberg@gmail.com>",
@@ -9,36 +9,41 @@
     "start": "node index.js",
     "start-pm2": "pm2-runtime index.js",
     "debug": "nodemon --inspect=0.0.0.0 index.js",
+    "d": "yarn debug",
+    "test": "jest",
+    "t": "yarn test",
     "compose": "docker-compose up -d --build",
     "logs": "docker logs --follow serve1090",
     "redis": "docker run -v $PWD/keydb.conf:/etc/keydb/keydb.conf --publish=6379:6379 --name=serve1090_redis -d eqalpha/keydb:latest"
   },
   "dependencies": {
-    "@turf/boolean-point-in-polygon": "^6.0.1",
-    "@turf/distance": "^6.0.1",
-    "@turf/helpers": "^6.1.4",
-    "base-64": "^0.1.0",
-    "bree": "^3.3.0",
+    "@turf/boolean-point-in-polygon": "^6.3.0",
+    "@turf/distance": "^6.3.0",
+    "@turf/helpers": "^6.3.0",
+    "bree": "^6.2.0",
     "cors": "^2.8.5",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "express-ws": "^4.0.0",
-    "got": "^11.8.0",
-    "ioredis": "^4.17.3",
-    "joi": "^17.2.1",
-    "lodash": "^4.17.20",
-    "nanoid": "^3.1.15",
+    "got": "^11.8.2",
+    "ioredis": "^4.26.0",
+    "joi": "^17.4.0",
+    "lodash": "^4.17.21",
+    "nanoid": "^3.1.22",
     "p-map": "^4.0.0",
-    "pino": "^6.7.0",
-    "pm2": "^4.5.0",
+    "pino": "^6.11.3",
+    "pm2": "^4.5.6",
     "safe-compare": "^1.1.4"
   },
   "devDependencies": {
-    "nodemon": "^2.0.6",
+    "ioredis-mock": "^5.5.4",
+    "jest": "^26.6.3",
+    "nock": "^13.0.11",
+    "nodemon": "^2.0.7",
     "signale": "^1.4.0"
   },
   "volta": {
-    "node": "14.5.0",
-    "yarn": "1.22.5"
+    "node": "15.14.0",
+    "npm": "7.10.0"
   }
 }

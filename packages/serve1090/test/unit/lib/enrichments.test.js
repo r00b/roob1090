@@ -283,7 +283,6 @@ describe('enrichments', () => {
       mockOpenSky
         .get(routes)
         .reply(200, { route: ['KAUS', 'KBWI', 'KRDU'] });
-      mockRedis.smembers.mockReset();
       mockRedis
         .smembers
         .mockReturnValueOnce(['baz', aircraft.hex])
@@ -300,7 +299,6 @@ describe('enrichments', () => {
       mockOpenSky
         .get(routes)
         .reply(200, { route: ['KDCA', 'KBWI', 'KRDU'] });
-      mockRedis.smembers.mockReset();
       mockRedis
         .smembers
         .mockReturnValueOnce(['baz'])

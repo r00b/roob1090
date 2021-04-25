@@ -1,4 +1,9 @@
 const mockLogger = require('../../support/mock-logger');
+const {
+  REGION_AIRCRAFT,
+  ACTIVE_RUNWAY
+} = require('../../../src/lib/redis-keys');
+
 const activeRunway = require('../../../src/lib/active-runway');
 
 describe('active-runway', () => {
@@ -36,10 +41,8 @@ describe('active-runway', () => {
   });
 
   afterEach(() => {
-    mockRedis.setex.mockReset();
-    mockRedis.smembers.mockReset();
-    mockRedis.get.mockReset();
-    mockStore.getAircraftWithHex.mockReset();
+    Object.values(mockStore).forEach(m => m.mockReset());
+    Object.values(mockRedis).forEach(m => m.mockReset());
   });
 
   describe('computeActiveRunway', () => {
@@ -55,11 +58,11 @@ describe('active-runway', () => {
       const result = await computeActiveRunway(route);
       expect(result).toBe('24');
       expect(mockRedis.smembers.mock.calls.length).toBe(1);
-      expect(mockRedis.smembers.mock.calls[0][0]).toBe('kvkx:route0624:north:aircraft');
+      expect(mockRedis.smembers.mock.calls[0][0]).toBe(REGION_AIRCRAFT('kvkx:route0624:north'));
       expect(mockStore.getAircraftWithHex.mock.calls.length).toBe(1);
       expect(mockStore.getAircraftWithHex.mock.calls[0][0]).toEqual('a9bb8b');
       expect(mockRedis.setex.mock.calls.length).toBe(1);
-      expect(mockRedis.setex.mock.calls[0][0]).toEqual('kvkx:route0624:activeRunway');
+      expect(mockRedis.setex.mock.calls[0][0]).toEqual(ACTIVE_RUNWAY('kvkx:route0624'));
       expect(mockRedis.setex.mock.calls[0][2]).toEqual('24');
     });
 
@@ -96,8 +99,8 @@ describe('active-runway', () => {
       const result = await computeActiveRunway(route);
       expect(result).toBe('24');
       expect(mockRedis.smembers.mock.calls.length).toBe(2);
-      expect(mockRedis.smembers.mock.calls[0][0]).toBe('kvkx:route0624:north:aircraft');
-      expect(mockRedis.smembers.mock.calls[1][0]).toBe('kvkx:route0624:south:aircraft');
+      expect(mockRedis.smembers.mock.calls[0][0]).toBe(REGION_AIRCRAFT('kvkx:route0624:north'));
+      expect(mockRedis.smembers.mock.calls[1][0]).toBe(REGION_AIRCRAFT('kvkx:route0624:south'));
       expect(mockStore.getAircraftWithHex.mock.calls.length).toBe(1);
       expect(mockRedis.setex.mock.calls.length).toBe(1);
     });
@@ -203,7 +206,7 @@ describe('active-runway', () => {
       const runway = await getActiveRunway({ key: 'kvkx:route0624' });
       expect(runway).toBe('06');
       expect(mockRedis.get.mock.calls.length).toBe(1);
-      expect(mockRedis.get.mock.calls[0][0]).toBe('kvkx:route0624:activeRunway');
+      expect(mockRedis.get.mock.calls[0][0]).toBe(ACTIVE_RUNWAY('kvkx:route0624'));
     });
 
     test('handles no active runway set', async () => {
@@ -214,7 +217,7 @@ describe('active-runway', () => {
       const runway = await getActiveRunway({ key: 'kvkx:route0624' });
       expect(runway).toBeNull();
       expect(mockRedis.get.mock.calls.length).toBe(1);
-      expect(mockRedis.get.mock.calls[0][0]).toBe('kvkx:route0624:activeRunway');
+      expect(mockRedis.get.mock.calls[0][0]).toBe(ACTIVE_RUNWAY('kvkx:route0624'));
     });
   });
 });

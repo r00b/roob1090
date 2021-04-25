@@ -9,6 +9,10 @@ const AIRPORTS_PATH = '../lib/airports';
 
 const RedisService = require('../../services/redis-service');
 const redis = new RedisService();
+const {
+  BOARD,
+  BROADCAST_CLIENT_COUNT
+} = require('../../lib/redis-keys');
 
 const AUTH_TIMEOUT = 5000;
 
@@ -77,7 +81,7 @@ function broadcast (pumpKey, store, airport) {
         const rawPayload = JSON.parse(data);
         // check for a valid token; throws AuthError
         checkToken(pumpKey, rawPayload);
-        redis.incr('broadcastClientCount'); // fire and forget
+        redis.incr(BROADCAST_CLIENT_COUNT); // fire and forget
         ws.locals.socketLogger.info('authenticate broadcast client', {
           airport: ws.locals.airport
         });
@@ -103,7 +107,7 @@ function initBroadcast (store, ws, next) {
   ws.on('close', async _ => {
     clearInterval(broadcast);
     close(ws);
-    redis.decr('broadcastClientCount'); // fire and forget
+    redis.decr(BROADCAST_CLIENT_COUNT); // fire and forget
     ws.locals.socketLogger.info('terminate broadcast', {
       elapsedTime: Date.now() - ws.locals.start,
       url: ws.locals.originalUrl,
@@ -146,7 +150,7 @@ function sendBoard (store, ws, next) {
  * TODO: forceFallbackFA for manual GETs
  */
 async function fetchBoard (store, airport) {
-  const board = await redis.getAsJson(`${airport}:board`);
+  const board = await redis.getAsJson(BOARD(airport));
   const totalAircraftCount = await store.getTotalAircraftCount();
   const validAircraftCount = await store.getValidAircraftCount();
   return {

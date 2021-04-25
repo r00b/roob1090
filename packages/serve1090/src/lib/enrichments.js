@@ -1,6 +1,14 @@
 const got = require('got');
 const { airframe: airframeSchema } = require('./schemas');
+
 const ROUTE_TTL = 900; // 15 min
+const {
+  ARRIVALS,
+  DEPARTURES,
+  ROUTES,
+  AIRFRAMES,
+  BROADCAST_CLIENT_COUNT
+} = require('../lib/redis-keys');
 
 module.exports = (config, redis, logger) => {
   const apis = generateApis(config, logger);
@@ -69,7 +77,7 @@ const fetchRoute = function (redis, { openSkyRoutes, flightAwareRoutes }, logger
     const flight = aircraft.flight.toLowerCase();
     try {
       // first, see if the route is cached
-      let result = await redis.hgetAsJson('routes', flight);
+      let result = await redis.hgetAsJson(ROUTES, flight);
       // next, check OpenSky
       if (!result && openSkyRoutes) {
         result = await fetchOpenSkyRoute(aircraft, airportKey, openSkyRoutes, redis, logger);
@@ -81,7 +89,7 @@ const fetchRoute = function (redis, { openSkyRoutes, flightAwareRoutes }, logger
       }
       // finally, cache the result
       if (result) {
-        redis.hsetJsonEx('routes', flight, result, ROUTE_TTL); // fire and forget
+        redis.hsetJsonEx(ROUTES, flight, result, ROUTE_TTL); // fire and forget
         return result;
       }
       logger.warn(`failed to resolve route for ${flight}`);
@@ -136,7 +144,7 @@ const fetchOpenSkyRoute = async function ({ flight, hex }, airport, openSkyRoute
  */
 const findCurrentLeg = async function (hex, route, airport, redis) {
   const airportKey = airport.toUpperCase();
-  const arrivals = await redis.smembers(`${airportKey.toLowerCase()}:arrivals`) || [];
+  const arrivals = await redis.smembers(ARRIVALS(airportKey.toLowerCase())) || [];
   if (arrivals.includes(hex) && canDeriveArrivalLeg(route, airport)) {
     const arrivalIdx = route.lastIndexOf(airportKey.toUpperCase());
     if (arrivalIdx > 0) { // > 0 to prevent index out of range error on origin
@@ -146,7 +154,7 @@ const findCurrentLeg = async function (hex, route, airport, redis) {
       };
     }
   } else {
-    const departures = await redis.smembers(`${airportKey.toLowerCase()}:departures`) || [];
+    const departures = await redis.smembers(DEPARTURES(airportKey.toLowerCase())) || [];
     if (departures.includes(hex) && canDeriveDepartureLeg(route, airport)) {
       const departureIdx = route.indexOf(airportKey.toUpperCase());
       if (departureIdx >= 0) {
@@ -210,7 +218,7 @@ const canDeriveDepartureLeg = function (route, airport) {
  * Determine if there are currently any clients receiving data from the server
  */
 const hasBroadcastClients = async function (redis) {
-  const numClients = await redis.get('broadcastClientCount');
+  const numClients = await redis.get(BROADCAST_CLIENT_COUNT);
   return numClients > 0;
 };
 
@@ -250,7 +258,7 @@ const fetchAirframe = function (redis, { openSkyAirframes }, logger) {
     const hex = aircraft.hex.toLowerCase();
     try {
       // first, see if the airframe is cached
-      const cachedAirframe = await redis.hgetAsJson('airframes', hex);
+      const cachedAirframe = await redis.hgetAsJson(AIRFRAMES, hex);
       if (cachedAirframe) {
         return cachedAirframe;
       }
@@ -258,7 +266,7 @@ const fetchAirframe = function (redis, { openSkyAirframes }, logger) {
       const fetchedAirframe = await fetchOpenSkyAirframe(hex, openSkyAirframes, logger);
       if (fetchedAirframe) {
         // cache airframe for later queries
-        redis.hsetJson('airframes', hex, fetchedAirframe); // fire and forget
+        redis.hsetJson(AIRFRAMES, hex, fetchedAirframe); // fire and forget
         return fetchedAirframe;
       }
       logger.warn(`failed to resolve airframe for ${aircraft.hex}`);

@@ -11,6 +11,10 @@ const AIRPORTS_PATH = '../lib/airports';
 
 const RedisService = require('../../services/redis-service');
 const redis = new RedisService();
+const {
+  BROADCAST_CLIENT_COUNT,
+  DATA_SOURCE_COUNT
+} = require('../../lib/redis-keys');
 
 module.exports = (store) => {
   return new express.Router()
@@ -41,8 +45,8 @@ function getRoot (store) {
       stats: {
         now: Date.now(),
         uptime: secondsToTimeString(process.uptime()),
-        dataSourcesCount: await getCount('dataSourceCount'),
-        broadcastClientsCount: await getCount('broadcastClientCount'),
+        dataSourcesCount: await getCount(DATA_SOURCE_COUNT),
+        broadcastClientsCount: await getCount(BROADCAST_CLIENT_COUNT),
         totalAircraftCount: await store.getTotalAircraftCount(),
         validAircraftCount: await store.getValidAircraftCount()
       }

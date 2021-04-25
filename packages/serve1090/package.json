@@ -9,9 +9,9 @@
     "start": "node index.js",
     "start-pm2": "pm2-runtime index.js",
     "debug": "nodemon --inspect=0.0.0.0 index.js",
-    "d": "yarn debug",
+    "d": "npm run debug",
     "test": "jest",
-    "t": "yarn test",
+    "t": "npm run test",
     "compose": "docker-compose up -d --build",
     "logs": "docker logs --follow serve1090",
     "redis": "docker run -v $PWD/keydb.conf:/etc/keydb/keydb.conf --publish=6379:6379 --name=serve1090_redis -d eqalpha/keydb:latest"

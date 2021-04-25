@@ -1,4 +1,6 @@
 const mockLogger = require('../../support/mock-logger');
+const { ARRIVALS } = require('../../../src/lib/redis-keys');
+
 const partitionAircraft = require('../../../src/lib/partition-aircraft');
 
 describe('partition aircraft', () => {
@@ -99,51 +101,41 @@ describe('partition aircraft', () => {
     });
 
     afterEach(() => {
-      mockRedis.smembers.mockReset();
+      Object.values(mockRedis).forEach(m => m.mockReset());
     });
 
     test('partitions aircraft into arrivals and departures', async () => {
       mockRedis
         .smembers
-        .mockImplementation((key) => {
-          expect(key).toBe(`${route.key}:arrivals`);
-          return [arrival.hex];
-        });
+        .mockImplementation((key) => [arrival.hex]);
 
       onRunway = [arrival, nonArrival1, nonArrival2];
       const { arrived, departing } = await partitionAircraftInRunway(onRunway, route.key);
 
       expect(arrived).toEqual([arrival]);
       expect(departing).toEqual([nonArrival1, nonArrival2]);
+      expect(mockRedis.smembers.mock.calls[0][0]).toBe(ARRIVALS(route.key));
     });
 
     test('handles empty array', async () => {
-      mockRedis
-        .smembers
-        .mockImplementation((key) => {
-          expect(key).toBe(`${route.key}:arrivals`);
-          return [];
-        });
-
       const { arrived, departing } = await partitionAircraftInRunway([], route.key);
 
       expect(arrived).toEqual([]);
       expect(departing).toEqual([]);
+      expect(mockRedis.smembers.mock.calls.length).toBeFalsy();
     });
 
     test('handles no arrivals', async () => {
       mockRedis
         .smembers
-        .mockImplementation((key) => {
-          expect(key).toBe(`${route.key}:arrivals`);
-          return [];
-        });
+        .mockImplementation((key) => []);
 
       onRunway = [arrival, nonArrival1, nonArrival2];
       const { arrived, departing } = await partitionAircraftInRunway(onRunway, route.key);
 
       expect(arrived).toEqual([]);
       expect(departing).toEqual([arrival, nonArrival1, nonArrival2]);
+      expect(mockRedis.smembers.mock.calls[0][0]).toBe(ARRIVALS(route.key));
     });
 
     test('handles empty runway', async () => {
@@ -160,16 +152,12 @@ describe('partition aircraft', () => {
         .mockImplementation(() => {
           throw new Error('this should have been caught');
         });
+
       await expect(partitionAircraftInRunway([arrival], undefined)).rejects.toThrowError();
     });
 
     test('throws error on malformed params', async () => {
-      expect.assertions(1);
-      try {
-        await partitionAircraftInRunway([arrival]);
-      } catch (e) {
-        expect(true).toBeTruthy();
-      }
+      await expect(partitionAircraftInRunway([arrival])).rejects.toThrowError();
     });
   });
 

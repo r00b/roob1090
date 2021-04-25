@@ -1,7 +1,7 @@
 const _ = require('lodash');
 const {
-  ACTIVE_RUNWAY,
-  REGION_AIRCRAFT
+  REGION_AIRCRAFT,
+  ACTIVE_RUNWAY
 } = require('../lib/redis-keys');
 const RUNWAY_TTL = 28800; // 8 hours
 const FAIL_MESSAGE = 'unable to compute active runway';

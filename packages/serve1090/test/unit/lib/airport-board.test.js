@@ -1,4 +1,13 @@
 const mockLogger = require('../../support/mock-logger');
+const {
+  BOARD,
+  ARRIVALS,
+  DEPARTURES,
+  REGION_AIRCRAFT,
+  ACTIVE_RUNWAY,
+  ENRICHMENTS
+} = require('../../../src/lib/redis-keys');
+
 const airportBoard = require('../../../src/lib/airport-board');
 
 describe('airport-board', () => {
@@ -160,14 +169,8 @@ describe('airport-board', () => {
   });
 
   afterEach(() => {
-    mockStore.getValidAircraft.mockReset();
-    mockRedis.get.mockReset();
-    mockRedis.smembers.mockReset();
-    mockRedis.pipeline.mockReset();
-    mockRedis.exec.mockReset();
-    mockRedis.saddEx.mockReset();
-    mockRedis.setex.mockReset();
-    mockRedis.hgetAsJson.mockReset();
+    Object.values(mockStore).forEach(m => m.mockReset());
+    Object.values(mockRedis).forEach(m => m.mockReset());
   });
 
   test('computes aircraft board', async () => {
@@ -225,7 +228,6 @@ describe('airport-board', () => {
     mockRedis
       .hgetAsJson
       .mockImplementation((key, hex) => {
-        expect(key).toBe('enrichments');
         switch (hex) {
           case 'ac1':
             return {
@@ -251,6 +253,7 @@ describe('airport-board', () => {
 
     const result = await computeAirportBoard(airport);
     expect(result).toEqual(expectedBoard);
+    expect(mockRedis.hgetAsJson.mock.calls[0][0]).toBe(ENRICHMENTS);
   });
 
   test('makes expected calls to redis and store when computing aircraft board', async () => {
@@ -269,7 +272,7 @@ describe('airport-board', () => {
     expect(mockStore.getValidAircraft.mock.calls.length).toBe(1);
     // gets active runway
     expect(mockRedis.get.mock.calls.length).toBe(1);
-    expect(mockRedis.get.mock.calls[0][0]).toBe('routeKey:activeRunway');
+    expect(mockRedis.get.mock.calls[0][0]).toBe(ACTIVE_RUNWAY(route.key));
 
     // one pipeline for writing partitions (consumed by active-runway),
     // one pipeline for writing the route (consumed by partition-aircraft for runway),
@@ -280,7 +283,7 @@ describe('airport-board', () => {
     // expect 1 setex call from board write
     expect(mockRedis.setex.mock.calls.length).toBe(1);
     const boardSetex = mockRedis.setex.mock.calls[0];
-    expect(boardSetex[0]).toBe('airportKey:board');
+    expect(boardSetex[0]).toBe(BOARD(airport.key));
     const expectedBoard = {
       arriving: [ac3, ac2, ac1],
       arrived: [ac4],
@@ -297,9 +300,9 @@ describe('airport-board', () => {
     // partition write
     const partitionWrites = mockRedis.saddEx.mock.calls.slice(0, 3);
     expect(partitionWrites.map(args => args[0])).toEqual([
-      'runwayKey:aircraft',
-      'region1Key:aircraft',
-      'region2Key:aircraft'
+      REGION_AIRCRAFT(runway.key),
+      REGION_AIRCRAFT(region1.key),
+      REGION_AIRCRAFT(region2.key)
     ]);
     expect(partitionWrites.map(args => args.slice(2))).toEqual([
       ['ac4', 'ac5'],
@@ -309,8 +312,8 @@ describe('airport-board', () => {
     // route write
     const routeWrites = mockRedis.saddEx.mock.calls.slice(3, 5);
     expect(routeWrites.map(args => args[0])).toEqual([
-      'routeKey:arrivals',
-      'routeKey:departures'
+      ARRIVALS(route.key),
+      DEPARTURES(route.key)
     ]);
     expect(routeWrites.map(args => args.slice(2))).toEqual([
       ['ac4', 'ac1', 'ac2', 'ac3'],
@@ -320,8 +323,8 @@ describe('airport-board', () => {
     // board write
     const boardSaddExs = mockRedis.saddEx.mock.calls.slice(5);
     expect(boardSaddExs.map(args => args[0])).toEqual([
-      'airportKey:arrivals',
-      'airportKey:departures'
+      ARRIVALS(airport.key),
+      DEPARTURES(airport.key)
     ]);
     expect(boardSaddExs.map(args => args.slice(2))).toEqual([
       ['ac4', 'ac3', 'ac2', 'ac1'],

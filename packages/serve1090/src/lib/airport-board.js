@@ -8,9 +8,9 @@ const activeRunway = require('./active-runway');
 const pMap = require('p-map');
 
 const {
+  BOARD,
   ARRIVALS,
   DEPARTURES,
-  BOARD,
   REGION_AIRCRAFT,
   ENRICHMENTS
 } = require('../lib/redis-keys');

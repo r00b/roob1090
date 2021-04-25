@@ -1,6 +1,12 @@
 const mockLogger = require('../../support/mock-logger');
 const nock = require('nock');
-const _ = require('lodash');
+const {
+  ARRIVALS,
+  DEPARTURES,
+  BROADCAST_CLIENT_COUNT,
+  AIRFRAMES
+} = require('../../../src/lib/redis-keys');
+
 const enrichments = require('../../../src/lib/enrichments');
 
 describe('enrichments', () => {
@@ -39,11 +45,7 @@ describe('enrichments', () => {
     // should always make a cache check
     expect(mockRedis.hgetAsJson.mock.calls.length).toBeGreaterThan(0);
     nock.cleanAll();
-    mockRedis.hgetAsJson.mockReset();
-    mockRedis.hsetJson.mockReset();
-    mockRedis.hsetJsonEx.mockReset();
-    mockRedis.smembers.mockReset();
-    mockRedis.get.mockReset();
+    Object.values(mockRedis).forEach(m => m.mockReset());
   });
 
   describe('fetch route', () => {
@@ -195,7 +197,7 @@ describe('enrichments', () => {
           expect(result).toBeUndefined();
         }
 
-        expect(mockRedis.smembers.mock.calls[0][0]).toBe(`${airport.toLowerCase()}:arrivals`);
+        expect(mockRedis.smembers.mock.calls[0][0]).toBe(ARRIVALS(airport.toLowerCase()));
         expect(mockOpenSky.isDone()).toBeTruthy();
         expect(mockFlightAware.isDone()).toBeFalsy();
       };
@@ -246,8 +248,8 @@ describe('enrichments', () => {
           expect(result).toBeUndefined();
         }
 
-        expect(mockRedis.smembers.mock.calls[0][0]).toBe(`${airport.toLowerCase()}:arrivals`);
-        expect(mockRedis.smembers.mock.calls[1][0]).toBe(`${airport.toLowerCase()}:departures`);
+        expect(mockRedis.smembers.mock.calls[0][0]).toBe(ARRIVALS(airport.toLowerCase()));
+        expect(mockRedis.smembers.mock.calls[1][0]).toBe(DEPARTURES(airport.toLowerCase()));
         expect(mockOpenSky.isDone()).toBeTruthy();
         expect(mockFlightAware.isDone()).toBeFalsy();
       };
@@ -281,7 +283,6 @@ describe('enrichments', () => {
       mockOpenSky
         .get(routes)
         .reply(200, { route: ['KAUS', 'KBWI', 'KRDU'] });
-      mockRedis.smembers.mockReset();
       mockRedis
         .smembers
         .mockReturnValueOnce(['baz', aircraft.hex])
@@ -298,7 +299,6 @@ describe('enrichments', () => {
       mockOpenSky
         .get(routes)
         .reply(200, { route: ['KDCA', 'KBWI', 'KRDU'] });
-      mockRedis.smembers.mockReset();
       mockRedis
         .smembers
         .mockReturnValueOnce(['baz'])
@@ -307,8 +307,8 @@ describe('enrichments', () => {
       const result = await fetchRoute(aircraft, 'KDCA');
 
       expect(result).toBeUndefined();
-      expect(mockRedis.smembers.mock.calls[0][0]).toBe('kdca:arrivals');
-      expect(mockRedis.smembers.mock.calls[1][0]).toBe('kdca:departures');
+      expect(mockRedis.smembers.mock.calls[0][0]).toBe(ARRIVALS('kdca'));
+      expect(mockRedis.smembers.mock.calls[1][0]).toBe(DEPARTURES('kdca'));
       expect(mockOpenSky.isDone()).toBeTruthy();
       expect(mockFlightAware.isDone()).toBeFalsy();
     });
@@ -351,7 +351,7 @@ describe('enrichments', () => {
 
       await fetchRoute(aircraft, 'kdca');
       expect(mockRedis.get.mock.calls.length).toBe(1);
-      expect(mockRedis.get.mock.calls[0][0]).toBe('broadcastClientCount');
+      expect(mockRedis.get.mock.calls[0][0]).toBe(BROADCAST_CLIENT_COUNT);
       expect(mockOpenSky.isDone()).toBeTruthy();
       expect(mockFlightAware.isDone()).toBeTruthy();
     });
@@ -371,7 +371,7 @@ describe('enrichments', () => {
 
       expect(result).toBeUndefined();
       expect(mockRedis.get.mock.calls.length).toBe(1);
-      expect(mockRedis.get.mock.calls[0][0]).toBe('broadcastClientCount');
+      expect(mockRedis.get.mock.calls[0][0]).toBe(BROADCAST_CLIENT_COUNT);
       expect(mockOpenSky.isDone()).toBeTruthy();
       expect(mockFlightAware.isDone()).toBeFalsy();
     });
@@ -536,7 +536,7 @@ describe('enrichments', () => {
       mockRedis
         .hsetJson
         .mockImplementation((key, field, value) => {
-          expect(key).toBe('airframes');
+          expect(key).toBe(AIRFRAMES);
           expect(field).toBe(aircraft.hex.toLowerCase());
           expect(value).toEqual(expected);
           cachedValue = value;
@@ -561,7 +561,7 @@ describe('enrichments', () => {
 
       expect(result).toEqual(expected);
       expect(mockRedis.hgetAsJson.mock.calls.length).toBe(1);
-      expect(mockRedis.hgetAsJson.mock.calls[0]).toEqual(['airframes', 'a9bb8b']);
+      expect(mockRedis.hgetAsJson.mock.calls[0]).toEqual([AIRFRAMES, 'a9bb8b']);
       expect(mockOpenSky.isDone()).toBeFalsy();
     });
 

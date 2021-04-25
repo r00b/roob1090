@@ -7,6 +7,10 @@ const { nanoid } = require('nanoid');
 
 const RedisService = require('../../services/redis-service');
 const redis = new RedisService();
+const {
+  ENRICHMENTS,
+  DATA_SOURCE_COUNT
+} = require('../../lib/redis-keys');
 
 module.exports = (pumpKey, store) => {
   return new express.Router()
@@ -28,7 +32,7 @@ module.exports = (pumpKey, store) => {
  */
 function pump (pumpKey, store) {
   return (ws, { originalUrl }, next) => {
-    redis.incr('dataSourceCount'); // fire and forget
+    redis.incr(DATA_SOURCE_COUNT); // fire and forget
     ws.locals = {
       originalUrl,
       socketLogger: logger.scope('ws').child({ requestId: nanoid() }),
@@ -52,7 +56,7 @@ function pump (pumpKey, store) {
     });
     ws.on('close', _ => {
       close(ws);
-      redis.decr('dataSourceCount'); // fire and forget
+      redis.decr(DATA_SOURCE_COUNT); // fire and forget
       ws.locals.socketLogger.info('terminate pump', {
         elapsedTime: Date.now() - ws.locals.start,
         url: ws.locals.originalUrl,
@@ -95,8 +99,8 @@ function getInvalid (store) {
  */
 function getEnrichments () {
   return async (req, res, next) => {
-    return redis.hgetAllAsJson('enrichments').then(result => res.status(200).json(result)).catch(next);
-  }
+    return redis.hgetAllAsJson(ENRICHMENTS).then(result => res.status(200).json(result)).catch(next);
+  };
 }
 
 /**

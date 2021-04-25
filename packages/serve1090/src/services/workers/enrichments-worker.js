@@ -7,6 +7,10 @@ const enrichments = require('../../lib/enrichments');
 
 const RedisService = require('../redis-service');
 const redis = new RedisService();
+const {
+  BOARD,
+  ENRICHMENTS
+} = require('../../lib/redis-keys');
 
 const {
   fetchRoute,
@@ -16,7 +20,7 @@ const {
 (async () => {
   try {
     const start = Date.now();
-    const board = await redis.getAsJson(`${airportKey}:board`);
+    const board = await redis.getAsJson(BOARD(airportKey));
 
     if (board) {
       await computeAndStoreEnrichments(board);
@@ -42,7 +46,7 @@ const {
 async function computeAndStoreEnrichments (board) {
   const aircraftHashes = getAircraftHashes(board);
   for (const aircraft of aircraftHashes) {
-    const hasEnrichment = await redis.hgetAsJson('enrichments', aircraft.hex);
+    const hasEnrichment = await redis.hgetAsJson(ENRICHMENTS, aircraft.hex);
     if (!hasEnrichment) {
       const enrichPromises = await Promise.allSettled([
         fetchAirframe(aircraft),
@@ -52,7 +56,7 @@ async function computeAndStoreEnrichments (board) {
       // TODO: store airframe separately from route in persistent storage
       if (!_.isEmpty(enrichments)) {
         await redis.hsetJsonEx(
-          'enrichments',
+          ENRICHMENTS,
           aircraft.hex,
           enrichments,
           900 // 15 min

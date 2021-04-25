@@ -1,4 +1,8 @@
 const _ = require('lodash');
+const {
+  ACTIVE_RUNWAY,
+  REGION_AIRCRAFT
+} = require('../lib/redis-keys');
 const RUNWAY_TTL = 28800; // 8 hours
 const FAIL_MESSAGE = 'unable to compute active runway';
 
@@ -45,7 +49,7 @@ function computeActiveRunway (redis, store, logger) {
               // use logic defined in the route module to compute the active runway
               const activeRunway = route.getActiveRunway(sample);
               if (activeRunway) {
-                await redis.setex(`${route.key}:activeRunway`, RUNWAY_TTL, activeRunway);
+                await redis.setex(ACTIVE_RUNWAY(route.key), RUNWAY_TTL, activeRunway);
                 logger.info('set active runway', {
                   route: route.key,
                   runway: activeRunway,
@@ -87,7 +91,7 @@ async function findCandidates (route, redis) {
   const regions = route.regions; // this was previously checked for length > 0
   for (const region of regions) {
     if (_.has(region, 'key')) {
-      const candidates = await redis.smembers(`${region.key}:aircraft`) || [];
+      const candidates = await redis.smembers(REGION_AIRCRAFT(region.key)) || [];
       if (candidates.length) {
         return candidates;
       }
@@ -108,6 +112,6 @@ function getActiveRunway (redis) {
    * @returns {string} active runway
    */
   return async ({ key: routeKey }) => {
-    return redis.get(`${routeKey}:activeRunway`);
+    return redis.get(ACTIVE_RUNWAY(routeKey));
   };
 }

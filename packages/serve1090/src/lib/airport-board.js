@@ -7,6 +7,13 @@ const partitionAircraft = require('./partition-aircraft');
 const activeRunway = require('./active-runway');
 const pMap = require('p-map');
 
+const {
+  ARRIVALS,
+  DEPARTURES,
+  BOARD,
+  REGION_AIRCRAFT,
+  ENRICHMENTS
+} = require('../lib/redis-keys');
 const BOARD_TTL = 15;
 const STATUS_TTL = 60;
 const REGION_TTL = 2;
@@ -82,9 +89,9 @@ async function buildAndWriteBoard (airport, aircraftHashes, partitionFns, redis,
   const pipeline = redis.pipeline();
   // arrivals and departure sets are not sorted (only the board); this set will be consumed
   // to generate enrichments, but it does not depend on them being sorted
-  pipeline.saddEx(`${airport.key}:arrivals`, STATUS_TTL, ...arrivals.map(hex));
-  pipeline.saddEx(`${airport.key}:departures`, STATUS_TTL, ...departures.map(hex));
-  pipeline.setex(`${airport.key}:board`, BOARD_TTL, JSON.stringify(airportBoard));
+  pipeline.saddEx(ARRIVALS(airport.key), STATUS_TTL, ...arrivals.map(hex));
+  pipeline.saddEx(DEPARTURES(airport.key), STATUS_TTL, ...departures.map(hex));
+  pipeline.setex(BOARD(airport.key), BOARD_TTL, JSON.stringify(airportBoard));
   await pipeline.exec();
 
   return airportBoard;
@@ -163,8 +170,8 @@ async function computeBoardForRoute (route, aircraftHashes, partitionFns, redis,
   // store arrivals and departures on the route so that the runway can be partitioned by
   // partition-aircraft into arrivals and departures
   const pipeline = redis.pipeline();
-  pipeline.saddEx(`${route.key}:arrivals`, STATUS_TTL, ...arrivals.map(hex));
-  pipeline.saddEx(`${route.key}:departures`, STATUS_TTL, ...departures.map(hex));
+  pipeline.saddEx(ARRIVALS(route.key), STATUS_TTL, ...arrivals.map(hex));
+  pipeline.saddEx(DEPARTURES(route.key), STATUS_TTL, ...departures.map(hex));
   await pipeline.exec();
 
   if (!arrived || !departing) {
@@ -208,7 +215,7 @@ function mergeRouteIntoAirport (airportValues, routeValues) {
 function writePartition (partition, route, redis) {
   const pipeline = redis.pipeline();
   for (const [regionKey, aircraft] of Object.entries(partition)) {
-    pipeline.saddEx(`${regionKey}:aircraft`, REGION_TTL, ...aircraft.map(hex));
+    pipeline.saddEx(REGION_AIRCRAFT(regionKey), REGION_TTL, ...aircraft.map(hex));
   }
   return pipeline.exec();
 }
@@ -221,7 +228,7 @@ function enrich (redis) {
    * @param aircraft {object}
    */
   return async (aircraft) => {
-    const enrichments = await redis.hgetAsJson('enrichments', aircraft.hex);
+    const enrichments = await redis.hgetAsJson(ENRICHMENTS, aircraft.hex);
     return enrichments ? _.merge(aircraft, enrichments) : aircraft;
   };
 }

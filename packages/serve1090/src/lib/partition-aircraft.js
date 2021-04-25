@@ -1,5 +1,6 @@
 const { point, polygon } = require('@turf/helpers');
 const pointInPolygon = require('@turf/boolean-point-in-polygon').default;
+const { ARRIVALS } = require('../lib/redis-keys');
 
 module.exports = (redis, logger) => {
   const scopedLogger = logger.scope('partition-aircraft');
@@ -56,7 +57,7 @@ function partitionAircraftInRunway (redis, logger) {
     }
     try {
       // get all aircraft that we know are arriving on the route
-      const arrivalHexes = await redis.smembers(`${routeKey}:arrivals`) || [];
+      const arrivalHexes = await redis.smembers(ARRIVALS(routeKey)) || [];
       // for an aircraft to be on the runway and arriving, it must have previously
       // been in the approach route; if it is on the runway and departing, it will
       // not be in any route

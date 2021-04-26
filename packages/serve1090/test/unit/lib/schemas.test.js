@@ -1,8 +1,167 @@
 const {
+  aircraft,
   airframe
 } = require('../../../src/lib/schemas');
 
 describe('schemas', () => {
+  describe('aircraft', () => {
+    const baseValidated = {
+      hex: '3ef',
+      flight: 'AAL1',
+      lat: 0.0,
+      lon: 10.0,
+      altBaro: 100,
+      baroRate: 20,
+      track: 180,
+      seen: 1,
+      error: false
+    };
+
+    test('it camelcases keys', () => {
+      const input = {
+        hex: '3ef',
+        flight: 'AAL1',
+        lat: 0.0,
+        lon: 10.0,
+        alt_baro: 100,
+        baro_rate: 20,
+        track: 180,
+        seen: 1
+      };
+
+      const { value, error } = aircraft.validate(input);
+      delete value.updated;
+
+      expect(value).toEqual(baseValidated);
+      expect(value.error).toBe(false);
+      expect(error).toBeUndefined();
+    });
+
+    test('it strips unknown keys', () => {
+      const input = {
+        hex: '3ef',
+        flight: 'AAL1',
+        lat: 0.0,
+        lon: 10.0,
+        alt_baro: 100,
+        baro_rate: 20,
+        track: 180,
+        seen: 1,
+        foo: 'bar',
+        bar: 'baz'
+      };
+
+      const { value, error } = aircraft.validate(input);
+
+      expect(value.foo).toBeUndefined();
+      expect(value.bar).toBeUndefined();
+      expect(value.error).toBe(false);
+      expect(error).toBeUndefined();
+    });
+
+    test('it strips expected keys', () => {
+      const input = {
+        hex: '3ef',
+        flight: 'AAL1',
+        lat: 0.0,
+        lon: 10.0,
+        alt_baro: 100,
+        baro_rate: 20,
+        track: 180,
+        seen: 1,
+
+        category: 'foo',
+        nic: 1,
+        nic_baro: 1,
+        rc: 1,
+        version: 0,
+        nac_p: 1,
+        nac_v: 1,
+        sil: 1,
+        sil_type: 'foo',
+        gva: 1,
+        sda: 1,
+        mlat: [
+          'foo'
+        ],
+        tisb: [
+          'foo'
+        ],
+        type: 'foo'
+      };
+
+      const { value, error } = aircraft.validate(input);
+      delete value.updated;
+
+      expect(value).toEqual(baseValidated);
+      expect(value.error).toBe(false);
+      expect(error).toBeUndefined();
+    });
+
+    test('it renames expected keys', () => {
+      const input = {
+        hex: '3ef',
+        flight: 'AAL1',
+        lat: 0.0,
+        lon: 10.0,
+        alt_baro: 100,
+        baro_rate: 20,
+        track: 180,
+        seen: 1,
+        nav_qnh: 1010.6
+      }
+
+      const { value, error } = aircraft.validate(input);
+      delete value.updated;
+
+      expect(value).toEqual({
+        ...baseValidated,
+        altimeter: 29.84
+      })
+      expect(value.error).toBe(false);
+      expect(error).toBeUndefined();
+    })
+
+    test('it sets updated to Date.now()', () => {
+      const baseline = Date.now() - 300000;
+
+      const input = {
+        hex: '3ef',
+        flight: 'AAL1',
+        lat: 0.0,
+        lon: 10.0,
+        alt_baro: 100,
+        baro_rate: 20,
+        track: 180,
+        seen: 1
+      };
+
+      const { value, error } = aircraft.validate(input);
+
+      expect(value.updated).toBeGreaterThan(baseline);
+      expect(value.error).toBe(false);
+      expect(error).toBeUndefined();
+    });
+
+    test('it forbids updated to be set prior to validation', () => {
+      const input = {
+        hex: '3ef',
+        flight: 'AAL1',
+        lat: 0.0,
+        lon: 10.0,
+        alt_baro: 100,
+        baro_rate: 20,
+        track: 180,
+        seen: 1,
+        updated: 1
+      };
+
+      const { error } = aircraft.validate(input);
+
+      expect(error).toBeDefined();
+    });
+  });
+
   describe('airframe', () => {
     const baseValidated = {
       registration: null,
@@ -36,7 +195,7 @@ describe('schemas', () => {
       expect(error).toBeUndefined();
     });
 
-    test('it renames expected properties', () => {
+    test('it renames expected keys', () => {
       const input = {
         icao24: '3ef',
         typecode: 'B788',
@@ -54,7 +213,7 @@ describe('schemas', () => {
       expect(error).toBeUndefined();
     });
 
-    test('it nulls and strips expected properties', () => {
+    test('it strips expected keys and nulls expected values', () => {
       const input = {
         registration: '',
         manufacturerName: '',
@@ -113,7 +272,7 @@ describe('schemas', () => {
       expect(error).toBeUndefined();
     });
 
-    test('it strips unknown properties', () => {
+    test('it strips unknown keys', () => {
       const input = {
         icao24: '3ef',
         foo: 'bar',
@@ -122,7 +281,7 @@ describe('schemas', () => {
 
       const expected = {
         ...baseValidated,
-        hex: input.icao24,
+        hex: input.icao24
       };
 
       const { value, error } = airframe.validate(input);

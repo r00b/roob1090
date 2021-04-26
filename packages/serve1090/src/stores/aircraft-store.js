@@ -1,5 +1,5 @@
 const logger = require('../lib/logger')().scope('aircraft store');
-const { AIRCRAFT_SCHEMA } = require('./schemas');
+const { aircraft: aircraftSchema } = require('../lib/schemas');
 const {
   secondsToMillis,
   millisToSeconds
@@ -33,8 +33,8 @@ async function addAircraft (data) {
       age: millisToSeconds(age).toFixed(2)
     });
   } else {
-    // first, update and filter the data to generate a hash
-    const newAircraft = createAircraftStore(data.aircraft.map(setUpdated));
+    // map each aircraft hex to the aircraft
+    const newAircraft = createAircraftStore(data.aircraft);
     await validateAndWrite(newAircraft);
     logger.info('accept dump data', {
       messages: data.messages,
@@ -65,15 +65,15 @@ function createAircraftStore (aircraftArray = []) {
 async function validateAndWrite (store) {
   const pipeline = redis.pipeline();
   Object.entries(store).forEach(([hex, aircraft]) => {
-    const { value: validatedBody, error } = AIRCRAFT_SCHEMA.validate(aircraft);
-    if (!error) {
-      validatedBody.error = false;
-      pipeline.hsetJsonEx(VALID_AIRCRAFT_STORE, hex, validatedBody, VALID_AIRCRAFT_TTL);
-    } else {
+    const { value, error } = aircraftSchema.validate(aircraft);
+    // value will still be truthy even if validation returns an error
+    if (error) {
       aircraft.error = error.message.replace(/"/g, '\'');
-      pipeline.hsetJsonEx(INVALID_AIRCRAFT_STORE, hex, aircraft, INVALID_AIRCRAFT_TTL);
+      pipeline.hsetJsonEx(INVALID_AIRCRAFT_STORE, hex, value, INVALID_AIRCRAFT_TTL);
+    } else {
+      pipeline.hsetJsonEx(VALID_AIRCRAFT_STORE, hex, value, VALID_AIRCRAFT_TTL);
     }
-    redis.hsetJsonEx(ALL_AIRCRAFT_STORE, hex, aircraft, ALL_AIRCRAFT_TTL);
+    redis.hsetJsonEx(ALL_AIRCRAFT_STORE, hex, value, ALL_AIRCRAFT_TTL);
   });
   await pipeline.exec();
 }
@@ -119,11 +119,6 @@ async function getStore (key) {
     count: aircraft.length,
     aircraft
   };
-}
-
-function setUpdated (aircraft) {
-  aircraft.updated = Date.now();
-  return aircraft;
 }
 
 module.exports = {

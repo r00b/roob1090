@@ -1,6 +1,7 @@
 const {
   millisToSeconds
 } = require('../../../src/lib/utils');
+const camelcaseKeys = require('camelcase-keys');
 const {
   ALL_AIRCRAFT_STORE,
   VALID_AIRCRAFT_STORE,
@@ -42,7 +43,8 @@ describe('aircraft-store', () => {
       seen: 1
     },
     {
-      hex: '5ef'
+      hex: '5ef',
+      alt_baro: 5000
     }
   ];
 
@@ -93,6 +95,25 @@ describe('aircraft-store', () => {
     verifyHsetJsonEx(5, ALL_AIRCRAFT_STORE, aircraft[2]);
 
     expect(mocks.exec.mock.calls.length).toBe(1);
+  });
+
+  test('it camelCases keys on all aircraft', async () => {
+    const data = {
+      now: Date.now(),
+      aircraft
+    };
+
+    await store.addAircraft(data);
+
+    // valid store set
+    expect(mocks.hsetJsonEx.mock.calls[0][2].altBaro).toBe(1000);
+    expect(mocks.hsetJsonEx.mock.calls[0][2].alt_baro).toBeUndefined();
+    // all store set
+    expect(mocks.hsetJsonEx.mock.calls[1][2].altBaro).toBe(1000);
+    expect(mocks.hsetJsonEx.mock.calls[1][2].alt_baro).toBeUndefined();
+    // invalid store set
+    expect(mocks.hsetJsonEx.mock.calls[4][2].altBaro).toBe(5000);
+    expect(mocks.hsetJsonEx.mock.calls[4][2].alt_baro).toBeUndefined();
   });
 
   test('it rejects stale data', async () => {

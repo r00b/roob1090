@@ -18,6 +18,7 @@ async function init (config) {
       const RedisService = require('./services/redis-service');
       const redis = new RedisService();
       await redis.flushall();
+      logger.info('flushed redis');
     }
 
     app.use(require('./middleware/http-request-logger'));

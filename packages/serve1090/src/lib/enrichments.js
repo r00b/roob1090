@@ -293,9 +293,9 @@ const fetchOpenSkyAirframe = async function (hex, openSkyAirframes, logger) {
       logger.warn(`error validating airframe data from OpenSky for ${hex}`, error);
       return {};
     }
-    if (!airframe.typecode) {
+    if (!airframe.type) {
       // sometimes type is empty, so try to replace it with model
-      airframe.typecode = airframe.model;
+      airframe.type = airframe.model;
     }
     return airframe;
   } catch (e) {

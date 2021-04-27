@@ -66,9 +66,10 @@ async function validateAndWrite (store) {
   const pipeline = redis.pipeline();
   Object.entries(store).forEach(([hex, aircraft]) => {
     const { value, error } = aircraftSchema.validate(aircraft);
-    // value will still be truthy even if validation returns an error
     if (error) {
       aircraft.error = error.message.replace(/"/g, '\'');
+      // value will still be truthy even if validation returns an error, and its
+      // keys will be camelCased
       pipeline.hsetJsonEx(INVALID_AIRCRAFT_STORE, hex, value, INVALID_AIRCRAFT_TTL);
     } else {
       pipeline.hsetJsonEx(VALID_AIRCRAFT_STORE, hex, value, VALID_AIRCRAFT_TTL);

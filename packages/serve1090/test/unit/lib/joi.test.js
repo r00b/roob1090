@@ -6,17 +6,26 @@ describe('joi', () => {
       a: Joi.altitude()
     });
 
-    expect(schema.validate({
-      a: 2000
-    }).value).toEqual({
+    let res = schema.validate({
       a: 2000
     });
+    expect(res.value).toEqual({
+      a: 2000
+    });
+    expect(res.error).toBeUndefined();
 
-    expect(schema.validate({
+    res = schema.validate({
       a: 'ground'
-    }).value).toEqual({
+    });
+    expect(res.value).toEqual({
       a: 0
     });
+    expect(res.error).toBeUndefined();
+
+    res = schema.validate({
+      a: 'a'
+    });
+    expect(res.error).toBeDefined();
   });
 
   test('it validates a string or sets it to null', () => {
@@ -24,17 +33,21 @@ describe('joi', () => {
       a: Joi.stringOrNull()
     });
 
-    expect(schema.validate({
+    let res = schema.validate({
       a: ''
-    }).value).toEqual({
+    });
+    expect(res.value).toEqual({
       a: null
     });
+    expect(res.error).toBeUndefined();
 
-    expect(schema.validate({
-      a: 'a'
-    }).value).toEqual({
+    res = schema.validate({
       a: 'a'
     });
+    expect(res.value).toEqual({
+      a: 'a'
+    });
+    expect(res.error).toBeUndefined();
   });
 
   test('it validates a number or sets it to null', () => {
@@ -42,29 +55,37 @@ describe('joi', () => {
       a: Joi.numberOrNull()
     });
 
-    expect(schema.validate({
-      a: 0
-    }).value).toEqual({
+    let res = schema.validate({
       a: 0
     });
+    expect(res.value).toEqual({
+      a: 0
+    });
+    expect(res.error).toBeUndefined();
 
-    expect(schema.validate({
-      a: 1
-    }).value).toEqual({
+    res = schema.validate({
       a: 1
     });
+    expect(res.value).toEqual({
+      a: 1
+    });
+    expect(res.error).toBeUndefined();
 
-    expect(schema.validate({
-      a: -1
-    }).value).toEqual({
+    res = schema.validate({
       a: -1
     });
+    expect(res.value).toEqual({
+      a: -1
+    });
+    expect(res.error).toBeUndefined();
 
-    expect(schema.validate({
+    res = schema.validate({
       a: 'a'
-    }).value).toEqual({
+    });
+    expect(res.value).toEqual({
       a: null
     });
+    expect(res.error).toBeUndefined();
   });
 
   test('it validates a date or sets it to null', () => {
@@ -72,29 +93,36 @@ describe('joi', () => {
       a: Joi.dateOrNull()
     });
 
-    expect(schema.validate({
+    let res = schema.validate({
       a: '1996-04-04'
-    }).value).toEqual({
+    });
+    expect(res.value).toEqual({
       a: new Date('1996-04-04')
     });
+    expect(res.error).toBeUndefined();
 
-    expect(schema.validate({
+    res = schema.validate({
       a: 1619398787623
-    }).value).toEqual({
+    });
+    expect(res.value).toEqual({
       a: new Date(1619398787623)
     });
+    expect(res.error).toBeUndefined();
 
-    expect(schema.validate({
+    res = schema.validate({
       a: null
-    }).value).toEqual({
+    });
+    expect(res.value).toEqual({
       a: null
     });
 
-    expect(schema.validate({
+    res = schema.validate({
       a: 'a'
-    }).value).toEqual({
+    });
+    expect(res.value).toEqual({
       a: null
     });
+    expect(res.error).toBeUndefined();
   });
 
   test('it converts hPa to inHg', () => {
@@ -102,15 +130,17 @@ describe('joi', () => {
       a: Joi.altimeter()
     });
 
-    expect(schema.validate({
+    let res = schema.validate({
       a: 1013.6
-    }).value).toEqual({
+    });
+    expect(res.value).toEqual({
       a: 29.93
     });
+    expect(res.error).toBeUndefined();
 
-    const { error } = schema.validate({
+    res = schema.validate({
       a: 'foo'
     });
-    expect(error).toBeDefined();
+    expect(res.error).toBeDefined();
   });
 });

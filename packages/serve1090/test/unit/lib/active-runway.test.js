@@ -14,7 +14,7 @@ describe('active-runway', () => {
   };
 
   const mockStore = {
-    getAircraftWithHex: jest.fn()
+    getValidAircraftWithHex: jest.fn()
   };
 
   const {
@@ -51,7 +51,7 @@ describe('active-runway', () => {
         .smembers
         .mockReturnValueOnce(['a9bb8b']);
       mockStore
-        .getAircraftWithHex
+        .getValidAircraftWithHex
         .mockReturnValueOnce({ hex: 'a9bb8b' });
       route.getActiveRunway = sample => '24';
 
@@ -59,8 +59,8 @@ describe('active-runway', () => {
       expect(result).toBe('24');
       expect(mockRedis.smembers.mock.calls.length).toBe(1);
       expect(mockRedis.smembers.mock.calls[0][0]).toBe(REGION_AIRCRAFT('kvkx:route0624:north'));
-      expect(mockStore.getAircraftWithHex.mock.calls.length).toBe(1);
-      expect(mockStore.getAircraftWithHex.mock.calls[0][0]).toEqual('a9bb8b');
+      expect(mockStore.getValidAircraftWithHex.mock.calls.length).toBe(1);
+      expect(mockStore.getValidAircraftWithHex.mock.calls[0][0]).toEqual('a9bb8b');
       expect(mockRedis.setex.mock.calls.length).toBe(1);
       expect(mockRedis.setex.mock.calls[0][0]).toEqual(ACTIVE_RUNWAY('kvkx:route0624'));
       expect(mockRedis.setex.mock.calls[0][2]).toEqual('24');
@@ -71,7 +71,7 @@ describe('active-runway', () => {
         .smembers
         .mockReturnValueOnce(['a9bb8b', 'b4ab3c']);
       mockStore
-        .getAircraftWithHex
+        .getValidAircraftWithHex
         .mockReturnValueOnce({ hex: 'a9bb8b' })
         .mockReturnValueOnce({ hex: 'b4ab3c' });
       route.getActiveRunway = sample => {
@@ -81,8 +81,8 @@ describe('active-runway', () => {
       const result = await computeActiveRunway(route);
       expect(result).toBe('24');
       expect(mockRedis.smembers.mock.calls.length).toBe(1);
-      expect(mockStore.getAircraftWithHex.mock.calls.length).toBe(2);
-      expect(mockStore.getAircraftWithHex.mock.calls[1][0]).toEqual('b4ab3c');
+      expect(mockStore.getValidAircraftWithHex.mock.calls.length).toBe(2);
+      expect(mockStore.getValidAircraftWithHex.mock.calls[1][0]).toEqual('b4ab3c');
       expect(mockRedis.setex.mock.calls.length).toBe(1);
     });
 
@@ -92,7 +92,7 @@ describe('active-runway', () => {
         .mockReturnValueOnce([])
         .mockReturnValueOnce(['c1de9c']);
       mockStore
-        .getAircraftWithHex
+        .getValidAircraftWithHex
         .mockReturnValueOnce({ hex: 'c1de9c' });
       route.getActiveRunway = sample => '24';
 
@@ -101,7 +101,7 @@ describe('active-runway', () => {
       expect(mockRedis.smembers.mock.calls.length).toBe(2);
       expect(mockRedis.smembers.mock.calls[0][0]).toBe(REGION_AIRCRAFT('kvkx:route0624:north'));
       expect(mockRedis.smembers.mock.calls[1][0]).toBe(REGION_AIRCRAFT('kvkx:route0624:south'));
-      expect(mockStore.getAircraftWithHex.mock.calls.length).toBe(1);
+      expect(mockStore.getValidAircraftWithHex.mock.calls.length).toBe(1);
       expect(mockRedis.setex.mock.calls.length).toBe(1);
     });
 
@@ -109,7 +109,7 @@ describe('active-runway', () => {
       const result = await computeActiveRunway({});
       expect(result).toBeUndefined();
       expect(mockRedis.smembers.mock.calls.length).toBe(0);
-      expect(mockStore.getAircraftWithHex.mock.calls.length).toBe(0);
+      expect(mockStore.getValidAircraftWithHex.mock.calls.length).toBe(0);
       expect(mockRedis.setex.mock.calls.length).toBe(0);
     });
 
@@ -120,7 +120,7 @@ describe('active-runway', () => {
       expect(result).toBeUndefined();
 
       expect(mockRedis.smembers.mock.calls.length).toBe(0);
-      expect(mockStore.getAircraftWithHex.mock.calls.length).toBe(0);
+      expect(mockStore.getValidAircraftWithHex.mock.calls.length).toBe(0);
       expect(mockRedis.setex.mock.calls.length).toBe(0);
     });
 
@@ -133,7 +133,7 @@ describe('active-runway', () => {
       const result = await computeActiveRunway(route);
       expect(result).toBeUndefined();
       expect(mockRedis.smembers.mock.calls.length).toBe(2);
-      expect(mockStore.getAircraftWithHex.mock.calls.length).toBe(0);
+      expect(mockStore.getValidAircraftWithHex.mock.calls.length).toBe(0);
       expect(mockRedis.setex.mock.calls.length).toBe(0);
     });
 
@@ -142,14 +142,14 @@ describe('active-runway', () => {
         .smembers
         .mockReturnValueOnce(['a9bb8b', 'b4ab3c']);
       mockStore
-        .getAircraftWithHex
+        .getValidAircraftWithHex
         .mockReturnValueOnce(undefined)
         .mockReturnValueOnce(undefined);
 
       const result = await computeActiveRunway(route);
       expect(result).toBeUndefined();
       expect(mockRedis.smembers.mock.calls.length).toBe(1);
-      expect(mockStore.getAircraftWithHex.mock.calls.length).toBe(2);
+      expect(mockStore.getValidAircraftWithHex.mock.calls.length).toBe(2);
       expect(mockRedis.setex.mock.calls.length).toBe(0);
     });
 
@@ -158,7 +158,7 @@ describe('active-runway', () => {
         .smembers
         .mockReturnValueOnce(['a9bb8b', 'b4ab3c']);
       mockStore
-        .getAircraftWithHex
+        .getValidAircraftWithHex
         .mockReturnValueOnce({ hex: 'a9bb8b' })
         .mockReturnValueOnce({ hex: 'b4ab3c' });
       route.getActiveRunway = sample => false;
@@ -166,7 +166,7 @@ describe('active-runway', () => {
       const result = await computeActiveRunway(route);
       expect(result).toBeUndefined();
       expect(mockRedis.smembers.mock.calls.length).toBe(1);
-      expect(mockStore.getAircraftWithHex.mock.calls.length).toBe(2);
+      expect(mockStore.getValidAircraftWithHex.mock.calls.length).toBe(2);
       expect(mockRedis.setex.mock.calls.length).toBe(0);
     });
 
@@ -178,7 +178,7 @@ describe('active-runway', () => {
         })
         .mockReturnValue(['a9bb8b']);
       mockStore
-        .getAircraftWithHex
+        .getValidAircraftWithHex
         .mockImplementation(() => {
           throw new Error('this should have been caught too');
         });
@@ -186,13 +186,13 @@ describe('active-runway', () => {
       let result = await computeActiveRunway(route);
       expect(result).toBeUndefined();
       expect(mockRedis.smembers.mock.calls.length).toBe(1);
-      expect(mockStore.getAircraftWithHex.mock.calls.length).toBe(0);
+      expect(mockStore.getValidAircraftWithHex.mock.calls.length).toBe(0);
       expect(mockRedis.setex.mock.calls.length).toBe(0);
 
       result = await computeActiveRunway(route);
       expect(result).toBeUndefined();
       expect(mockRedis.smembers.mock.calls.length).toBe(2);
-      expect(mockStore.getAircraftWithHex.mock.calls.length).toBe(1);
+      expect(mockStore.getValidAircraftWithHex.mock.calls.length).toBe(1);
       expect(mockRedis.setex.mock.calls.length).toBe(0);
     });
   });

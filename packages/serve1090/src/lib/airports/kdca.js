@@ -1,3 +1,5 @@
+const _ = require('lodash');
+
 // this module defines an approach/departure route for runway 01-19 at KDCA
 // polygons generated via https://www.keene.edu/campus/maps/tool/
 // headings generated via https://www.acscdg.com/
@@ -182,7 +184,7 @@ const route0119 = {
   runway: runway0119,
   // TODO this really shouldn't live in here
   getActiveRunway: function (sample) {
-    if (!sample) return false;
+    if (!_.has(sample, 'track')) return false;
     return isNorthward(sample.track) ? '1' : '19';
   },
   getApproachRouteKey (runway) {

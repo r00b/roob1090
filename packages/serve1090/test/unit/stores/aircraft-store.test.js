@@ -1,6 +1,7 @@
 const {
   millisToSeconds
 } = require('../../../src/lib/utils');
+const camelcaseKeys = require('camelcase-keys');
 const {
   ALL_AIRCRAFT_STORE,
   VALID_AIRCRAFT_STORE,
@@ -42,7 +43,8 @@ describe('aircraft-store', () => {
       seen: 1
     },
     {
-      hex: '5ef'
+      hex: '5ef',
+      alt_baro: 5000
     }
   ];
 
@@ -95,6 +97,25 @@ describe('aircraft-store', () => {
     expect(mocks.exec.mock.calls.length).toBe(1);
   });
 
+  test('it camelCases keys on all aircraft', async () => {
+    const data = {
+      now: Date.now(),
+      aircraft
+    };
+
+    await store.addAircraft(data);
+
+    // valid store set
+    expect(mocks.hsetJsonEx.mock.calls[0][2].altBaro).toBe(1000);
+    expect(mocks.hsetJsonEx.mock.calls[0][2].alt_baro).toBeUndefined();
+    // all store set
+    expect(mocks.hsetJsonEx.mock.calls[1][2].altBaro).toBe(1000);
+    expect(mocks.hsetJsonEx.mock.calls[1][2].alt_baro).toBeUndefined();
+    // invalid store set
+    expect(mocks.hsetJsonEx.mock.calls[4][2].altBaro).toBe(5000);
+    expect(mocks.hsetJsonEx.mock.calls[4][2].alt_baro).toBeUndefined();
+  });
+
   test('it rejects stale data', async () => {
     const staleData = {
       now: millisToSeconds(Date.now() - store.MAX_DATA_AGE_MILLIS - 1),
@@ -107,7 +128,7 @@ describe('aircraft-store', () => {
     expect(mocks.exec.mock.calls.length).toBe(0);
   });
 
-  test('it gets all aircraft store', async () => {
+  test('it gets the all aircraft store', async () => {
     const res = await store.getAllAircraft();
     expect(res.aircraft).toEqual(aircraft);
     expect(res.count).toEqual(aircraft.length);
@@ -117,7 +138,7 @@ describe('aircraft-store', () => {
     expect(mocks.hgetAllAsJsonValues.mock.calls[0][0]).toBe(ALL_AIRCRAFT_STORE);
   });
 
-  test('it gets valid aircraft store', async () => {
+  test('it gets the valid aircraft store', async () => {
     const res = await store.getValidAircraft();
     expect(res.aircraft).toEqual(aircraft);
     expect(res.count).toEqual(aircraft.length);
@@ -127,7 +148,7 @@ describe('aircraft-store', () => {
     expect(mocks.hgetAllAsJsonValues.mock.calls[0][0]).toBe(VALID_AIRCRAFT_STORE);
   });
 
-  test('it gets invalid aircraft store', async () => {
+  test('it gets the invalid aircraft store', async () => {
     const res = await store.getInvalidAircraft();
     expect(res.aircraft).toEqual(aircraft);
     expect(res.count).toEqual(aircraft.length);

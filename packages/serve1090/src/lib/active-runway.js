@@ -44,7 +44,7 @@ function computeActiveRunway (redis, store, logger) {
         if (candidates.length) {
 
           for (const hex of candidates) {
-            const sample = await store.getAircraftWithHex(hex);
+            const sample = await store.getValidAircraftWithHex(hex);
             if (sample) {
               // use logic defined in the route module to compute the active runway
               const activeRunway = route.getActiveRunway(sample);
@@ -53,8 +53,8 @@ function computeActiveRunway (redis, store, logger) {
                 logger.info('set active runway', {
                   route: route.key,
                   runway: activeRunway,
-                  usingHex: hex,
-                  usingFlight: (sample.flight || '').trim()
+                  sampleHex: hex,
+                  sampleFlight: (sample.flight || '').trim()
                 });
                 return activeRunway;
               }

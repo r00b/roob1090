@@ -506,7 +506,7 @@ describe('enrichments', () => {
       registration: 'N66198',
       manufacturerName: null,
       model: null,
-      typecode: 'C172',
+      type: 'C172',
       serialNumber: null,
       icaoAircraftClass: null,
       operator: null,
@@ -515,13 +515,12 @@ describe('enrichments', () => {
       operatorIata: null,
       owner: null,
       categoryDescription: null,
-      registered: null,
       regUntil: null,
       built: null,
       engines: null,
       country: null,
       hex: aircraft.hex,
-      timestamp: null
+      lastUpdated: null
     };
 
     test('caches an airframe', async () => {
@@ -622,7 +621,7 @@ describe('enrichments', () => {
         expect(result).toEqual({
           ...expected,
           model: 'Cessna 172',
-          typecode: 'Cessna 172'
+          type: 'Cessna 172'
         });
       });
     });

@@ -18,7 +18,7 @@ const Joi = {
         type: 'altimeter',
         base: joi.number(),
         coerce (value, helpers) {
-          const inHg = value * 0.0295300;
+          const inHg = value * 0.02953;
           return { value: Number.parseFloat(inHg.toFixed(2)) };
         }
       };

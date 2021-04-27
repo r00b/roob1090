@@ -128,7 +128,7 @@ describe('aircraft-store', () => {
     expect(mocks.exec.mock.calls.length).toBe(0);
   });
 
-  test('it gets all aircraft store', async () => {
+  test('it gets the all aircraft store', async () => {
     const res = await store.getAllAircraft();
     expect(res.aircraft).toEqual(aircraft);
     expect(res.count).toEqual(aircraft.length);
@@ -138,7 +138,7 @@ describe('aircraft-store', () => {
     expect(mocks.hgetAllAsJsonValues.mock.calls[0][0]).toBe(ALL_AIRCRAFT_STORE);
   });
 
-  test('it gets valid aircraft store', async () => {
+  test('it gets the valid aircraft store', async () => {
     const res = await store.getValidAircraft();
     expect(res.aircraft).toEqual(aircraft);
     expect(res.count).toEqual(aircraft.length);
@@ -148,7 +148,7 @@ describe('aircraft-store', () => {
     expect(mocks.hgetAllAsJsonValues.mock.calls[0][0]).toBe(VALID_AIRCRAFT_STORE);
   });
 
-  test('it gets invalid aircraft store', async () => {
+  test('it gets the invalid aircraft store', async () => {
     const res = await store.getInvalidAircraft();
     expect(res.aircraft).toEqual(aircraft);
     expect(res.count).toEqual(aircraft.length);

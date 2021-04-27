@@ -23,25 +23,25 @@ describe('partition aircraft', () => {
 
     const inRegion = {
       hex: 'a9bb8b',
-      alt_baro: 50,
+      altBaro: 50,
       lon: 25,
       lat: 25
     };
     const inRegion2 = {
       hex: 'c12afe',
-      alt_baro: 50,
+      altBaro: 50,
       lon: 30,
       lat: 30
     };
     const outsideRegion = {
       hex: 'bcba89',
-      alt_baro: 50,
+      altBaro: 50,
       lon: 170,
       lat: 170
     };
     const tooHigh = {
       hex: 'abf901',
-      alt_baro: 50000,
+      altBaro: 50000,
       lon: 30,
       lat: 30
     };
@@ -179,19 +179,19 @@ describe('partition aircraft', () => {
       const aircraftHashes = [
         {
           hex: 'a',
-          alt_baro: 50,
+          altBaro: 50,
           lon: -45,
           lat: 65
         },
         {
           hex: 'b',
-          alt_baro: 50,
+          altBaro: 50,
           lon: 0,
           lat: 25
         },
         {
           hex: 'c',
-          alt_baro: 50,
+          altBaro: 50,
           lon: 25,
           lat: 99
         }
@@ -227,31 +227,31 @@ describe('partition aircraft', () => {
       const aircraftHashes = [
         {
           hex: 'a',
-          alt_baro: 50,
+          altBaro: 50,
           lon: -45,
           lat: 65
         },
         {
           hex: 'b',
-          alt_baro: 50,
+          altBaro: 50,
           lon: 0,
           lat: 0
         },
         {
           hex: 'c',
-          alt_baro: 50,
+          altBaro: 50,
           lon: 50,
           lat: 50
         },
         {
           hex: 'd',
-          alt_baro: 50,
+          altBaro: 50,
           lon: 25,
           lat: 50
         },
         {
           hex: 'e',
-          alt_baro: 10000, // at ceiling
+          altBaro: 10000, // at ceiling
           lon: 25,
           lat: 50
         }
@@ -276,19 +276,19 @@ describe('partition aircraft', () => {
       const aircraftHashes = [
         {
           hex: 'a',
-          alt_baro: 50,
+          altBaro: 50,
           lon: -45,
           lat: 65
         },
         {
           hex: 'b',
-          alt_baro: 50,
+          altBaro: 50,
           lon: 0,
           lat: 25
         },
         {
           hex: 'c',
-          alt_baro: 50000,
+          altBaro: 50000,
           lon: 25,
           lat: 99
         }
@@ -313,13 +313,13 @@ describe('partition aircraft', () => {
       const aircraftHashes = [
         {
           hex: 'a',
-          alt_baro: 50,
+          altBaro: 50,
           lon: -65,
           lat: 65
         },
         {
           hex: 'b',
-          alt_baro: 50,
+          altBaro: 50,
           lon: 0,
           lat: 110
         }

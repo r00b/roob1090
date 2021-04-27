@@ -45,55 +45,55 @@ describe('airport-board', () => {
   const aircraft = {
     ac1: {
       hex: 'ac1',
-      alt_baro: 500,
+      altBaro: 500,
       lon: 0,
       lat: 0
     },
     ac2: {
       hex: 'ac2',
-      alt_baro: 500,
+      altBaro: 500,
       lon: 25,
       lat: 25
     },
     ac3: {
       hex: 'ac3',
-      alt_baro: 250,
+      altBaro: 250,
       lon: 45,
       lat: 45
     },
     ac4: {
       hex: 'ac4',
-      alt_baro: 250,
+      altBaro: 250,
       lon: 75,
       lat: 25
     },
     ac5: {
       hex: 'ac5',
-      alt_baro: 250,
+      altBaro: 250,
       lon: 75,
       lat: 25
     },
     ac6: {
       hex: 'ac6',
-      alt_baro: 500,
+      altBaro: 500,
       lon: 125,
       lat: 25
     },
     ac7: {
       hex: 'ac7',
-      alt_baro: 500,
+      altBaro: 500,
       lon: 145,
       lat: 20
     },
     ac8: {
       hex: 'ac8',
-      alt_baro: 50000,
+      altBaro: 50000,
       lon: 125,
       lat: 25
     },
     ac9: {
       hex: 'ac9',
-      alt_baro: 500,
+      altBaro: 500,
       lon: 200,
       lat: 25
     }

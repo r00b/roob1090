@@ -101,7 +101,7 @@ function inRegion (boundary, ceiling) {
   return aircraft => {
     const loc = point([aircraft.lon, aircraft.lat]);
     const inRegion = pointInPolygon(loc, boundary);
-    const belowCeiling = aircraft.alt_baro <= ceiling;
+    const belowCeiling = aircraft.altBaro <= ceiling;
     return inRegion && belowCeiling;
   };
 }

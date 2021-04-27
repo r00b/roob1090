@@ -1,14 +1,173 @@
 const {
+  aircraft,
   airframe
 } = require('../../../src/lib/schemas');
 
 describe('schemas', () => {
+  describe('aircraft', () => {
+    const baseValidated = {
+      hex: '3ef',
+      flight: 'AAL1',
+      lat: 0.0,
+      lon: 10.0,
+      altBaro: 100,
+      baroRate: 20,
+      track: 180,
+      seen: 1,
+      error: false
+    };
+
+    test('it camelcases keys', () => {
+      const input = {
+        hex: '3ef',
+        flight: 'AAL1',
+        lat: 0.0,
+        lon: 10.0,
+        alt_baro: 100,
+        baro_rate: 20,
+        track: 180,
+        seen: 1
+      };
+
+      const { value, error } = aircraft.validate(input);
+      delete value.updated;
+
+      expect(value).toEqual(baseValidated);
+      expect(value.error).toBe(false);
+      expect(error).toBeUndefined();
+    });
+
+    test('it strips unknown keys', () => {
+      const input = {
+        hex: '3ef',
+        flight: 'AAL1',
+        lat: 0.0,
+        lon: 10.0,
+        alt_baro: 100,
+        baro_rate: 20,
+        track: 180,
+        seen: 1,
+        foo: 'bar',
+        bar: 'baz'
+      };
+
+      const { value, error } = aircraft.validate(input);
+
+      expect(value.foo).toBeUndefined();
+      expect(value.bar).toBeUndefined();
+      expect(value.error).toBe(false);
+      expect(error).toBeUndefined();
+    });
+
+    test('it strips expected keys', () => {
+      const input = {
+        hex: '3ef',
+        flight: 'AAL1',
+        lat: 0.0,
+        lon: 10.0,
+        alt_baro: 100,
+        baro_rate: 20,
+        track: 180,
+        seen: 1,
+
+        category: 'foo',
+        nic: 1,
+        nic_baro: 1,
+        rc: 1,
+        version: 0,
+        nac_p: 1,
+        nac_v: 1,
+        sil: 1,
+        sil_type: 'foo',
+        gva: 1,
+        sda: 1,
+        mlat: [
+          'foo'
+        ],
+        tisb: [
+          'foo'
+        ],
+        type: 'foo'
+      };
+
+      const { value, error } = aircraft.validate(input);
+      delete value.updated;
+
+      expect(value).toEqual(baseValidated);
+      expect(value.error).toBe(false);
+      expect(error).toBeUndefined();
+    });
+
+    test('it renames expected keys', () => {
+      const input = {
+        hex: '3ef',
+        flight: 'AAL1',
+        lat: 0.0,
+        lon: 10.0,
+        alt_baro: 100,
+        baro_rate: 20,
+        track: 180,
+        seen: 1,
+        nav_qnh: 1010.6
+      }
+
+      const { value, error } = aircraft.validate(input);
+      delete value.updated;
+
+      expect(value).toEqual({
+        ...baseValidated,
+        altimeter: 29.84
+      })
+      expect(value.error).toBe(false);
+      expect(error).toBeUndefined();
+    })
+
+    test('it sets updated to Date.now()', () => {
+      const baseline = Date.now() - 300000;
+
+      const input = {
+        hex: '3ef',
+        flight: 'AAL1',
+        lat: 0.0,
+        lon: 10.0,
+        alt_baro: 100,
+        baro_rate: 20,
+        track: 180,
+        seen: 1
+      };
+
+      const { value, error } = aircraft.validate(input);
+
+      expect(value.updated).toBeGreaterThan(baseline);
+      expect(value.error).toBe(false);
+      expect(error).toBeUndefined();
+    });
+
+    test('it forbids updated to be set prior to validation', () => {
+      const input = {
+        hex: '3ef',
+        flight: 'AAL1',
+        lat: 0.0,
+        lon: 10.0,
+        alt_baro: 100,
+        baro_rate: 20,
+        track: 180,
+        seen: 1,
+        updated: 1
+      };
+
+      const { error } = aircraft.validate(input);
+
+      expect(error).toBeDefined();
+    });
+  });
+
   describe('airframe', () => {
-    const base = {
+    const baseValidated = {
       registration: null,
       manufacturerName: null,
       model: null,
-      typecode: null,
+      type: null,
       serialNumber: null,
       icaoAircraftClass: null,
       operator: null,
@@ -17,13 +176,12 @@ describe('schemas', () => {
       operatorIata: null,
       owner: null,
       categoryDescription: null,
-      registered: null,
       regUntil: null,
       built: null,
       engines: null,
       country: null,
       hex: 'a9bb8b',
-      timestamp: null
+      lastUpdated: null
     };
 
     test('it capitalizes registration', () => {
@@ -37,7 +195,25 @@ describe('schemas', () => {
       expect(error).toBeUndefined();
     });
 
-    test('it strips or nullifies expected properties', () => {
+    test('it renames expected keys', () => {
+      const input = {
+        icao24: '3ef',
+        typecode: 'B788',
+        timestamp: 1578942000000
+      };
+      const expected = {
+        ...baseValidated,
+        hex: input.icao24,
+        type: input.typecode,
+        lastUpdated: new Date(input.timestamp)
+      };
+
+      const { value, error } = airframe.validate(input);
+      expect(value).toEqual(expected);
+      expect(error).toBeUndefined();
+    });
+
+    test('it strips expected keys and nulls expected values', () => {
       const input = {
         registration: '',
         manufacturerName: '',
@@ -54,7 +230,7 @@ describe('schemas', () => {
         operatorIata: '',
         owner: '',
         categoryDescription: '',
-        registered: null,
+        registered: 'foo',
         regUntil: '',
         status: 'foo',
         built: null,
@@ -73,23 +249,21 @@ describe('schemas', () => {
       };
 
       const { value, error } = airframe.validate(input);
-      expect(value).toEqual(base);
+      expect(value).toEqual(baseValidated);
       expect(error).toBeUndefined();
     });
 
     test('it parses dates', () => {
       const expected = {
-        ...base,
-        registered: new Date('2020-02-02T00:00:00.000Z'),
-        regUntil: new Date('1996-01-01T00:00:00.000Z'),
-        built: new Date('2010-10-02T00:10:00.009Z'),
-        timestamp: new Date('2020-06-01T19:00:00.000Z')
+        ...baseValidated,
+        regUntil: new Date('2023-01-01'),
+        built: new Date('1996-01-01'),
+        lastUpdated: new Date('2020-06-01T19:00:00.000Z')
       };
       const input = {
         hex: 'a9bb8b',
-        registered: '2020-02-02T00:00:00.000Z',
-        regUntil: '1996-01-01T00:00:00.000Z',
-        built: '2010-10-02T00:10:00.009Z',
+        regUntil: '2023-01-01',
+        built: '1996-01-01',
         timestamp: 1591038000000
       };
 
@@ -98,28 +272,16 @@ describe('schemas', () => {
       expect(error).toBeUndefined();
     });
 
-    test('it validates an airframe', () => {
+    test('it strips unknown keys', () => {
       const input = {
-        registration: 'N1977E',
-        manufacturerName: 'Boeing',
-        model: 'Boeing 787',
-        typecode: 'B78X',
-        serialNumber: '12445',
-        icaoAircraftClass: 'L2J',
-        operator: 'GobbleTech LLC',
-        operatorCallsign: 'Gobbles',
-        operatorIcao: 'GT',
-        operatorIata: 'GT',
-        owner: 'Wells Fargo Inc.',
-        categoryDescription: 'Large (75000 to 300000 lbs)',
-        engines: 'Trent Rolls Royce',
-        country: 'Honduras',
-        hex: 'a9bb8b'
+        icao24: '3ef',
+        foo: 'bar',
+        bar: 'baz'
       };
 
       const expected = {
-        ...base,
-        ...input
+        ...baseValidated,
+        hex: input.icao24
       };
 
       const { value, error } = airframe.validate(input);

@@ -5,7 +5,6 @@ const logger = require('../lib/logger')().scope('redis');
 const pMap = require('p-map');
 
 class RedisService {
-
   constructor () {
     const {
       redisHost: host,
@@ -209,7 +208,7 @@ class RedisService {
    * Get an entire hash as an array of values parsed into JSON when able
    *
    * @param {string} key - key of hash
-   * @returns "Promise"
+   * @returns {Promise}
    */
   async hgetAllAsJsonValues (key) {
     const hashWithStringValues = await this.redis.hgetall(key, this._errHandler);
@@ -301,7 +300,6 @@ class RedisService {
  * and https://github.com/luin/ioredis#Pipelining
  */
 class Pipeline {
-
   constructor (pipeline) {
     this._pipeline = pipeline;
   }

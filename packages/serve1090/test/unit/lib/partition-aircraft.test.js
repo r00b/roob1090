@@ -3,7 +3,7 @@ const { ARRIVALS } = require('../../../src/lib/redis-keys');
 
 const partitionAircraft = require('../../../src/lib/partition-aircraft');
 
-describe('partition aircraft', () => {
+describe('partition-aircraft', () => {
   describe('partitionAircraftInRegion', () => {
     const { partitionAircraftInRegion } = partitionAircraft({}, mockLogger);
 

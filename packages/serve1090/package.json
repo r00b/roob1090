@@ -23,7 +23,7 @@
     "bree": "^6.2.0",
     "camelcase-keys": "^6.2.2",
     "cors": "^2.8.5",
-    "dotenv": "^8.2.0",
+    "dotenv": "^8.4.0",
     "express": "^4.17.1",
     "express-ws": "^4.0.0",
     "got": "^11.8.2",

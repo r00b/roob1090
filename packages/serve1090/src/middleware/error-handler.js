@@ -1,34 +1,14 @@
-const logger = require('../lib/logger')().scope('request');
 const {
   AuthError,
   StaleDataError,
   PumpError,
   BroadcastError
 } = require('../lib/errors');
-const _ = require('lodash');
-const safeCompare = require('safe-compare');
-
-/**
- * Check a payload for a token; throw AuthError if the token
- * isn't present or doesn't match the specified key
- *
- * @param {string} key - string that the payload's token should match
- * @param payload - parsed payload object to check for valid token
- */
-function checkToken (key, payload) {
-  const token = _.get(payload, 'token', null);
-  if (!token) {
-    throw new AuthError('missing token', 401);
-  }
-  if (!safeCompare(key, token)) {
-    throw new AuthError('bad token', 403);
-  }
-}
 
 /**
  * Handle errors thrown at any point in a request
  */
-function errorHandler (err, req, res, next) {
+module.exports = (err, req, res, next) => {
   try {
     const { status, message, detail } = parseError(err);
     // send over both ws and HTTP
@@ -49,9 +29,10 @@ function errorHandler (err, req, res, next) {
       detail
     });
   } catch (e) {
+    const logger = req.ws ? req.ws.local.socketLogger : res.locals.requestLogger;
     logger.error('unhandled router error', e);
   }
-}
+};
 
 function parseError (err) {
   switch (err.constructor) {
@@ -87,21 +68,3 @@ function parseError (err) {
       };
   }
 }
-
-/**
- * Close a WebSocket
- *
- * @param {WebSocket} ws
- */
-function close (ws) {
-  ws.close();
-  setTimeout(() => {
-    ws.terminate();
-  }, 1000);
-}
-
-module.exports = {
-  checkToken,
-  errorHandler,
-  close
-};

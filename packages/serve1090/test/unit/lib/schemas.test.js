@@ -292,7 +292,7 @@ describe('schemas', () => {
   });
 
   describe('pump body', () => {
-    test('validates', () => {
+    test('validates payload', () => {
       const input = {
         aircraft: [],
         token: '3ef',

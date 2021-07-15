@@ -28,7 +28,7 @@ async function addAircraft (data) {
   const now = Date.now();
   const age = now - clientNowMillis;
   if (age > MAX_DATA_AGE_MILLIS) {
-    logger.warn('reject stale dump data', {
+    logger.warn('rejected stale dump data', {
       clientTimestamp: new Date(clientNowMillis).toISOString(),
       age: millisToSeconds(age).toFixed(2)
     });
@@ -36,7 +36,7 @@ async function addAircraft (data) {
     // map each aircraft hex to the aircraft
     const newAircraft = createAircraftStore(data.aircraft);
     await validateAndWrite(newAircraft);
-    logger.info('accept dump data', {
+    logger.info('accepted dump data', {
       messages: data.messages,
       clientTimestamp: new Date(clientNowMillis).toISOString()
     });

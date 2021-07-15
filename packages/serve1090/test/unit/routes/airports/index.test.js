@@ -166,7 +166,7 @@ describe('airports router', () => {
           .expectClosed(1011);
       });
 
-      test('ignores multiple broadcast requests', async () => {
+      test('ignores multiple broadcast requests on same ws', async () => {
         await requestWs(wss)
           .ws('/boards/kdca')
           .sendText(JSON.stringify(payload))
@@ -179,6 +179,17 @@ describe('airports router', () => {
         // these would equal 2 if multiple broadcasts were initialized
         expect(redis.incr.mock.calls.length).toBe(1);
         expect(redis.decr.mock.calls.length).toBe(1);
+
+        await requestWs(wss)
+          .ws('/boards/kdca')
+          .sendText(JSON.stringify(payload))
+          .wait(WS_WAIT)
+          .close(1000)
+          .wait(WS_WAIT)
+          .expectClosed(1000);
+        // a subsequent, separate ws request is fulfilled
+        expect(redis.incr.mock.calls.length).toBe(2);
+        expect(redis.decr.mock.calls.length).toBe(2);
       });
     });
   });

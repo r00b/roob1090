@@ -11,7 +11,7 @@ module.exports = (err, req, res, next) => {
     // send over both ws and HTTP
     if (req.ws) {
       req.ws.locals.socketLogger.error(message, { detail });
-      // test to make sure it's open
+      // send regardless of readyState
       req.ws.send(JSON.stringify({
         message,
         detail

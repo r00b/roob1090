@@ -18,7 +18,7 @@ function normalizePort (port) {
   try {
     const normalizedPort = parseInt(port);
     const floatTest = parseFloat(port);
-    if (isNaN(normalizedPort) || !Number.isSafeInteger(floatTest) || normalizedPort < 0) {
+    if (!Number.isSafeInteger(floatTest) || normalizedPort < 0) {
       return fallback;
     }
     return normalizedPort;

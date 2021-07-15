@@ -1,7 +1,7 @@
 const Joi = require('../../../src/lib/joi');
 
 describe('joi', () => {
-  test('it validates altitude', () => {
+  test('validates altitude', () => {
     const schema = Joi.object({
       a: Joi.altitude()
     });
@@ -28,7 +28,7 @@ describe('joi', () => {
     expect(res.error).toBeDefined();
   });
 
-  test('it validates a string or sets it to null', () => {
+  test('validates a string or sets it to null', () => {
     const schema = Joi.object({
       a: Joi.stringOrNull()
     });
@@ -50,7 +50,7 @@ describe('joi', () => {
     expect(res.error).toBeUndefined();
   });
 
-  test('it validates a number or sets it to null', () => {
+  test('validates a number or sets it to null', () => {
     const schema = Joi.object({
       a: Joi.numberOrNull()
     });
@@ -88,7 +88,7 @@ describe('joi', () => {
     expect(res.error).toBeUndefined();
   });
 
-  test('it validates a date or sets it to null', () => {
+  test('validates a date or sets it to null', () => {
     const schema = Joi.object({
       a: Joi.dateOrNull()
     });
@@ -125,7 +125,7 @@ describe('joi', () => {
     expect(res.error).toBeUndefined();
   });
 
-  test('it converts hPa to inHg', () => {
+  test('converts hPa to inHg', () => {
     const schema = Joi.object({
       a: Joi.altimeter()
     });

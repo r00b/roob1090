@@ -64,7 +64,7 @@ describe('aircraft-store', () => {
     expect(mocks.hsetJsonEx.mock.calls[call][3]).toBeGreaterThan(0);
   };
 
-  test('it adds valid aircraft to the valid and all aircraft stores', async () => {
+  test('adds valid aircraft to the valid and all aircraft stores', async () => {
     const data = {
       now: Date.now(),
       aircraft
@@ -81,7 +81,7 @@ describe('aircraft-store', () => {
     expect(mocks.exec.mock.calls.length).toBe(1);
   });
 
-  test('it adds invalid aircraft to the invalid and all aircraft stores', async () => {
+  test('adds invalid aircraft to the invalid and all aircraft stores', async () => {
     const data = {
       now: Date.now(),
       aircraft
@@ -96,7 +96,7 @@ describe('aircraft-store', () => {
     expect(mocks.exec.mock.calls.length).toBe(1);
   });
 
-  test('it camelCases keys on all aircraft', async () => {
+  test('camelCases keys on all aircraft', async () => {
     const data = {
       now: Date.now(),
       aircraft
@@ -115,7 +115,7 @@ describe('aircraft-store', () => {
     expect(mocks.hsetJsonEx.mock.calls[4][2].alt_baro).toBeUndefined();
   });
 
-  test('it rejects stale data', async () => {
+  test('rejects stale data', async () => {
     const staleData = {
       now: millisToSeconds(Date.now() - store.MAX_DATA_AGE_MILLIS - 1),
       aircraft
@@ -127,7 +127,7 @@ describe('aircraft-store', () => {
     expect(mocks.exec.mock.calls.length).toBe(0);
   });
 
-  test('it gets the all aircraft store', async () => {
+  test('gets the all aircraft store', async () => {
     const res = await store.getAllAircraft();
     expect(res.aircraft).toEqual(aircraft);
     expect(res.count).toEqual(aircraft.length);
@@ -137,7 +137,7 @@ describe('aircraft-store', () => {
     expect(mocks.hgetAllAsJsonValues.mock.calls[0][0]).toBe(ALL_AIRCRAFT_STORE);
   });
 
-  test('it gets the valid aircraft store', async () => {
+  test('gets the valid aircraft store', async () => {
     const res = await store.getValidAircraft();
     expect(res.aircraft).toEqual(aircraft);
     expect(res.count).toEqual(aircraft.length);
@@ -147,7 +147,7 @@ describe('aircraft-store', () => {
     expect(mocks.hgetAllAsJsonValues.mock.calls[0][0]).toBe(VALID_AIRCRAFT_STORE);
   });
 
-  test('it gets the invalid aircraft store', async () => {
+  test('gets the invalid aircraft store', async () => {
     const res = await store.getInvalidAircraft();
     expect(res.aircraft).toEqual(aircraft);
     expect(res.count).toEqual(aircraft.length);
@@ -157,7 +157,7 @@ describe('aircraft-store', () => {
     expect(mocks.hgetAllAsJsonValues.mock.calls[0][0]).toBe(INVALID_AIRCRAFT_STORE);
   });
 
-  test('it gets aircraft by hex', async () => {
+  test('gets aircraft by hex', async () => {
     const res = await store.getAircraftWithHex('foo');
 
     expect(res).toEqual(aircraft[0]);
@@ -166,7 +166,7 @@ describe('aircraft-store', () => {
     expect(mocks.hgetAsJson.mock.calls[0][1]).toBe('foo');
   });
 
-  test('it gets valid aircraft by hex', async () => {
+  test('gets valid aircraft by hex', async () => {
     const res = await store.getValidAircraftWithHex('foo');
 
     expect(res).toEqual(aircraft[0]);
@@ -175,7 +175,7 @@ describe('aircraft-store', () => {
     expect(mocks.hgetAsJson.mock.calls[0][1]).toBe('foo');
   });
 
-  test('it gets total aircraft count', async () => {
+  test('gets total aircraft count', async () => {
     const res = await store.getTotalAircraftCount();
 
     expect(res).toBe(15);
@@ -183,7 +183,7 @@ describe('aircraft-store', () => {
     expect(mocks.hlen.mock.calls[0][0]).toBe(ALL_AIRCRAFT_STORE);
   });
 
-  test('it gets valid valid aircraft count', async () => {
+  test('gets valid valid aircraft count', async () => {
     const res = await store.getValidAircraftCount();
 
     expect(res).toBe(15);

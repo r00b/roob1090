@@ -6,6 +6,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 ### Changed
 ### Fixed
+- refactor all routes and write tests
+- general refactor of lib and middleware code with testing
 ### Removed
 ### Breaking
 

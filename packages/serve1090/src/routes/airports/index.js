@@ -31,9 +31,8 @@ module.exports = (airports, broadcastKey, store, redis) => {
  * @param airports {string[]} - list of airport icaos
  */
 function getAirports (airports) {
-  return (req, res, next) =>
-    res.status(200).json({ airports }).bind(res)
-      .catch(next);
+  return (req, res) =>
+    res.status(200).json({ airports });
 }
 
 /**

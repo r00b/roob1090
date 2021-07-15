@@ -6,10 +6,16 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 ### Changed
 ### Fixed
-- refactor all routes and write tests
-- general refactor of lib and middleware code with testing
 ### Removed
 ### Breaking
+
+## [2.3.0]
+### Changed
+- node bumped to `16.5.0`
+- npm bumped to `7.19.1`
+### Fixed
+- refactor all routes and write tests
+- general refactor of lib and middleware code with testing
 
 ## [2.2.0] - 2020-10-01
 ### Added

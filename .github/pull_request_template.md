@@ -15,4 +15,4 @@ none
 ## 2. Releases:
 none at this time
 
-[ ] updated changelog
+- [ ] updated changelog

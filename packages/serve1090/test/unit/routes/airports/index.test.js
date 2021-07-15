@@ -187,6 +187,7 @@ describe('airports router', () => {
           .close(1000)
           .wait(WS_WAIT)
           .expectClosed(1000);
+
         // a subsequent, separate ws request is fulfilled
         expect(redis.incr.mock.calls.length).toBe(2);
         expect(redis.decr.mock.calls.length).toBe(2);

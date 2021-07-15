@@ -1,26 +1,22 @@
 const {
   AuthError,
-  StaleDataError,
-  PumpError,
+  PayloadError,
   BroadcastError
 } = require('../lib/errors');
+const { close } = require('../lib/utils');
 
-/**
- * Handle errors thrown at any point in a request
- */
 module.exports = (err, req, res, next) => {
   try {
-    const { status, message, detail } = parseError(err);
+    const { status, wsStatus, message, detail } = parseError(err);
     // send over both ws and HTTP
     if (req.ws) {
       req.ws.locals.socketLogger.error(message, { detail });
       // test to make sure it's open
       req.ws.send(JSON.stringify({
-        status,
         message,
         detail
       }));
-      close(req.ws);
+      close(req.ws, wsStatus || 1011, `${message}: ${detail}`);
     } else {
       res.locals.requestLogger.error(message, { detail });
     }
@@ -39,30 +35,28 @@ function parseError (err) {
     case AuthError:
       return {
         status: err.code,
+        wsStatus: err.wsCode,
         message: 'auth error',
         detail: err.message
       };
-    case StaleDataError:
+    case PayloadError:
       return {
-        status: 400,
-        message: 'rejected: stale payload',
-        detail: err.message
-      };
-    case PumpError:
-      return {
-        status: 400,
-        message: 'rejected: malformed payload',
+        status: err.code,
+        wsStatus: err.wsCode,
+        message: 'malformed payload rejected',
         detail: err.message
       };
     case BroadcastError:
       return {
-        status: 500,
+        status: err.code,
+        wsStatus: err.wsCode,
         message: 'broadcast error',
         detail: err.message
       };
     default:
       return {
         status: 500,
+        wsStatus: 1011,
         message: 'internal server error',
         detail: err.message
       };

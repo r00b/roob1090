@@ -41,12 +41,12 @@ describe('redis-service', () => {
     expect(expiremember.mock.calls[callIdx].slice(0, 3)).toEqual([key, member, ex]);
   };
 
-  test('it instantiates', () => {
+  test('instantiates', () => {
     expect(service).toBeDefined();
     expect(service.redis).toBeDefined();
   });
 
-  test('it creates and execs a pipeline', async () => {
+  test('creates and execs a pipeline', async () => {
     const pipeline = service.pipeline();
 
     const callback = jest.fn();

@@ -4,6 +4,28 @@ const fs = require('fs');
 const path = require('path');
 const got = require('got');
 const distance = require('@turf/distance').default;
+const { AuthError } = require('./errors');
+const safeCompare = require('safe-compare');
+
+/**
+ * Take an input and resolve it to a port or a fallback if unable
+ *
+ * @param port {any}
+ * @returns {number} - valid port to start server on
+ */
+function normalizePort (port) {
+  const fallback = 3000;
+  try {
+    const normalizedPort = parseInt(port);
+    const floatTest = parseFloat(port);
+    if (isNaN(normalizedPort) || !Number.isSafeInteger(floatTest) || normalizedPort < 0) {
+      return fallback;
+    }
+    return normalizedPort;
+  } catch (_) {
+    return fallback;
+  }
+}
 
 /**
  * @param seconds {number}
@@ -132,7 +154,42 @@ function exit (code) {
   });
 }
 
+/**
+ * Check a payload for a token; throw AuthError if the token
+ * isn't present or doesn't match the specified key
+ *
+ * @param {string} key - string that the payload's token should match
+ * @param {object} payload - parsed payload object to check for valid token
+ */
+function checkToken (key, payload) {
+  const token = _.get(payload, 'token', null);
+  if (!token) {
+    throw new AuthError('missing token', 401);
+  }
+  if (!safeCompare(key, token)) {
+    throw new AuthError('bad token', 403);
+  }
+}
+
+/**
+ * Close a WebSocket, terminating it after 1000 ms
+ *
+ * @param {WebSocket} ws
+ * @param {number?} code - CloseEvent code (see https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent)
+ * @param {string?} reason - CloseEvent reason
+ * @param {number?} terminateAfter - how long to wait before forcing the WebSocket closed
+ */
+function close (ws, code, reason, terminateAfter = 1000) {
+  ws.close(code || 1000, reason);
+  if (ws.terminate) {
+    setTimeout(() => {
+      ws.terminate();
+    }, terminateAfter);
+  }
+}
+
 module.exports = {
+  normalizePort,
   secondsToMillis,
   millisToSeconds,
   hex,
@@ -141,5 +198,7 @@ module.exports = {
   computeDistance,
   get,
   getFileNames,
-  exit
+  exit,
+  checkToken,
+  close
 };

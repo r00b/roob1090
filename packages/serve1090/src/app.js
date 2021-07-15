@@ -2,9 +2,14 @@ const app = require('express')();
 const logger = require('./lib/logger')().scope('app');
 const cors = require('cors');
 
-const rootRouter = require('./routes/root/index');
+const rootRouter = require('./routes/index');
 const aircraftRouter = require('./routes/aircraft/index');
 const airportsRouter = require('./routes/airports/index');
+
+const { normalizePort, getFileNames } = require('./lib/utils');
+
+const RedisService = require('./services/redis-service');
+const redis = new RedisService();
 
 async function init (config) {
   const normalizedPort = normalizePort(config.port);
@@ -15,8 +20,6 @@ async function init (config) {
 
     // ensure no artifacts remain from previous runs
     if (config.nodeEnv === 'production') {
-      const RedisService = require('./services/redis-service');
-      const redis = new RedisService();
       await redis.flushall();
       logger.info('flushed redis');
     }
@@ -29,28 +32,15 @@ async function init (config) {
     require('./services/worker-service')();
 
     // set up routers
-    app.use('/', rootRouter(store));
-    app.use('/aircraft', aircraftRouter(config.pumpKey, store));
-    app.use('/airports', airportsRouter(config.broadcastKey, store));
+    app.use('/', rootRouter(store, redis));
+    app.use('/aircraft', aircraftRouter(config.pumpKey, store, redis));
+    app.use('/airports', airportsRouter(getFileNames('./airports'), config.broadcastKey, store, redis));
 
     logger.info('started serve1090', { port: normalizedPort });
     return server;
   } catch (err) {
     logger.error('failed to start serve1090', { port: normalizedPort, error: err });
     process.exit(1);
-  }
-}
-
-function normalizePort (port) {
-  const fallback = 5432;
-  try {
-    const normalizedPort = parseInt(port);
-    if (isNaN(normalizedPort)) {
-      return fallback;
-    }
-    return normalizedPort;
-  } catch (_) {
-    return fallback;
   }
 }
 

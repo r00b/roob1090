@@ -4,7 +4,6 @@ const DEV_EXCLUDED = [
   // 'request',
   // 'ws',
   'aircraft store',
-  'redis-connection',
   'airport-board',
   'worker-service',
   'airport-board-worker',

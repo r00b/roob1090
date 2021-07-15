@@ -1,15 +1,28 @@
 const {
+  normalizePort,
   secondsToMillis,
   millisToSeconds,
   hex,
   secondsToTimeString,
   compareDistance,
   computeDistance,
-  get
+  get,
+  checkToken,
+  close
 } = require('../../../src/lib/utils');
 const nock = require('nock');
+const { AuthError } = require('../../../src/lib/errors');
 
 describe('utils', () => {
+  test('normalizePort', () => {
+    expect(normalizePort(8080)).toBe(8080);
+    expect(normalizePort()).toBe(3000);
+    expect(normalizePort(false)).toBe(3000);
+    expect(normalizePort('8080')).toBe(8080);
+    expect(normalizePort('-8080')).toBe(3000);
+    expect(normalizePort('80.80')).toBe(3000);
+  });
+
   test('secondsToMillis', () => {
     expect(secondsToMillis(2)).toBe(2000);
     expect(secondsToMillis(0)).toBe(0);
@@ -85,5 +98,46 @@ describe('utils', () => {
     const res = await get('https://foo.com', 'user1', 'pass1');
     expect(res.statusCode).toBe(200);
     expect(res.body).toEqual(expected);
+  });
+
+  test('checkPayloadToken', () => {
+    const key = 'the key';
+    const payload = {
+      token: key
+    };
+
+    expect(checkToken(key, payload)).toBeUndefined();
+
+    payload.token = 'not the key';
+    expect(() => checkToken(key, payload)).toThrowError(AuthError);
+
+    delete payload.token;
+    expect(() => checkToken(key, payload)).toThrowError(AuthError);
+
+    payload.token = null;
+    expect(() => checkToken(key, payload)).toThrowError(AuthError);
+  });
+
+  test('close', async () => {
+    const terminate = jest.fn();
+    const ws = {
+      close: jest.fn()
+    };
+
+    close(ws, 1011, 'reason');
+
+    expect(ws.close.mock.calls.length).toBe(1);
+    expect(ws.close.mock.calls[0][0]).toBe(1011);
+    expect(ws.close.mock.calls[0][1]).toBe('reason');
+
+    expect(terminate.mock.calls.length).toBe(0);
+
+    ws.terminate = terminate;
+    close(ws, 1011, 'reason', 0);
+    // wait for the timeout to resolve even though it's 0
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    expect(ws.close.mock.calls.length).toBe(2);
+    expect(terminate.mock.calls.length).toBe(1);
   });
 });

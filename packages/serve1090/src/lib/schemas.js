@@ -184,6 +184,17 @@ const airframe = Joi.object({
   .rename('typecode', 'type', { override: true })
   .rename('timestamp', 'lastUpdated');
 
+const pumpBody = Joi.object({
+  aircraft: Joi.array().required(),
+  // router will handle missing token
+  token: Joi.string().optional(),
+  // device identifier, generated client-side
+  device_id: Joi.string().required(),
+  messages: Joi.number().required(),
+  // current time in seconds since epoch
+  now: Joi.number().required()
+});
+
 const exportSchema = function (schema) {
   return {
     ...schema,
@@ -199,5 +210,6 @@ const exportSchema = function (schema) {
 
 module.exports = {
   aircraft: exportSchema(aircraft),
-  airframe: exportSchema(airframe)
+  airframe: exportSchema(airframe),
+  pumpBody
 };

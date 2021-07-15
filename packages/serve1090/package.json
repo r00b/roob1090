@@ -19,7 +19,7 @@
   "dependencies": {
     "@turf/boolean-point-in-polygon": "^6.5.0",
     "@turf/distance": "^6.5.0",
-    "@turf/helpers": "^6.3.0",
+    "@turf/helpers": "^6.5.0",
     "bree": "^6.2.1",
     "camelcase-keys": "^7.0.0",
     "cors": "^2.8.5",

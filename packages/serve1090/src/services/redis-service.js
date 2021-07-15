@@ -19,7 +19,7 @@ class RedisService {
       password,
       retryStrategy: (_) => 5000
     });
-    this.redis.on('ready', () => logger.scope('redis-connection').info('redis connection established', { host, port }));
+    // this.redis.on('ready', () => logger.info('redis connection established', { host, port }));
     this.redis.on('error', (err) => logger.fatal('redis client error', { detail: err.message, host, port }));
     this.redis.on('end', () => logger.info('redis connection ended', { host, port }));
   }

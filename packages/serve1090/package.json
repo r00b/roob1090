@@ -13,7 +13,7 @@
     "test": "jest",
     "t": "npm run test",
     "compose": "docker-compose up -d --build",
-    "logs": "docker logs --follow serve1090",
+    "logs": "docker logs --follow serve1090_express",
     "redis": "docker run -v $PWD/keydb.conf:/etc/keydb/keydb.conf --publish=6379:6379 --name=serve1090_redis -d eqalpha/keydb:latest"
   },
   "dependencies": {
@@ -41,7 +41,9 @@
     "jest": "^26.6.3",
     "nock": "^13.0.11",
     "nodemon": "^2.0.7",
-    "signale": "^1.4.0"
+    "signale": "^1.4.0",
+    "supertest": "^6.1.3",
+    "superwstest": "^1.3.0"
   },
   "volta": {
     "node": "16.0.0",

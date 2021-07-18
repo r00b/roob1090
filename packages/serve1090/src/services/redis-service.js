@@ -10,7 +10,7 @@ const logger = require('../lib/logger')().scope('redis');
 const pMap = require('p-map');
 
 class RedisService {
-  constructor (verbose) {
+  constructor (verbose = false) {
     this.redis = new Redis({
       host,
       port,

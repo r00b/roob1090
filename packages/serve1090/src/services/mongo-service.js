@@ -24,20 +24,30 @@ class MongoService {
    * Connect to the database
    * @returns {Promise<void>}
    */
-  async connect () {
+  async connect (verbose = false) {
     await this.mongo.connect();
     this.db = this.mongo.db(MONGO_DB);
+    if (verbose) {
+      logger.info('mongo connection established', { host, port });
+    }
   }
 
   /**
-   * Ensure mongo is available by connecting, pinging, and then disconnecting
+   * Ensure mongo is available by connecting, pinging, and then disconnecting;
+   * if db already exists, just issue a ping
+   *
    * @returns {Promise<void>}
    */
   async ping () {
-    await this.connect();
+    const openAndClose = !this.db;
+    if (openAndClose) {
+      await this.connect();
+    }
     await this.db.command({ ping: 1 });
     logger.info('mongo connection established', { host, port });
-    await this.mongo.close();
+    if (openAndClose) {
+      await this.mongo.close();
+    }
   }
 }
 

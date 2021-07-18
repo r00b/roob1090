@@ -2,14 +2,14 @@ const app = require('express')();
 const logger = require('./lib/logger')().scope('app');
 const cors = require('cors');
 
+const RedisService = require('./services/redis-service');
+const MongoService = require('./services/mongo-service');
+
 const rootRouter = require('./routes/index');
 const aircraftRouter = require('./routes/aircraft/index');
 const airportsRouter = require('./routes/airports/index');
 
 const { normalizePort, getFileNames } = require('./lib/utils');
-
-const RedisService = require('./services/redis-service');
-const redis = new RedisService();
 
 async function init (config) {
   const normalizedPort = normalizePort(config.port);
@@ -27,6 +27,8 @@ async function init (config) {
     app.use(require('./middleware/http-request-logger'));
 
     const store = require('../src/stores/aircraft-store');
+    const redis = new RedisService(true);
+    await new MongoService().ping(); // don't need mongo now, but ensure it is available
 
     // kick off the jobs
     require('./services/worker-service')();

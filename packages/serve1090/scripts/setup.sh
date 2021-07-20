@@ -8,6 +8,7 @@ random() {
 
 # generate keys
 KEYDB_PASSWORD=$(random)
+MONGO_ROOT_PASSWORD=$(random)
 MONGO_PASSWORD=$(random)
 PUMP_KEY=$(random)
 BROADCAST_KEY=$(random)
@@ -30,7 +31,8 @@ cp keydb.conf.template keydb.conf
 sed -i '' -e "s/PUMP_KEY=/PUMP_KEY=$PUMP_KEY/" .env
 sed -i '' -e "s/BROADCAST_KEY=/BROADCAST_KEY=$BROADCAST_KEY/" .env
 sed -i '' -e "s/KEYDB_PASSWORD=/KEYDB_PASSWORD=$KEYDB_PASSWORD/" .env
-sed -i '' -e "s/MONGO_PASSWORD=/MONGO_PASSWORD=$MONGO_PASSWORD/" .env
+sed -i '' -e "s/MONGO_ROOT_PASSWORD=/MONGO_ROOT_PASSWORD=$MONGO_ROOT_PASSWORD/" .env
+sed -i '' -e "s/MONGO_PASSWORD=/MONGO_PASSWORD=$MONGO_ROOT_PASSWORD/" .env
 sed -i '' -e "s/REPLACE_WITH_KEYDB_PASSWORD/$KEYDB_PASSWORD/" keydb.conf
 
 printf 'serve1090 environment setup complete\n'

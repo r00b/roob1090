@@ -42,7 +42,7 @@
     "nock": "^13.1.1",
     "nodemon": "^2.0.12",
     "signale": "^1.4.0",
-    "supertest": "^6.1.3",
+    "supertest": "^6.1.5",
     "superwstest": "^1.4.0"
   },
   "volta": {

@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const got = require('got');
 const { airframe: airframeSchema } = require('./schemas');
 
@@ -128,6 +129,9 @@ const fetchOpenSkyRoute = async function ({ flight, hex }, airport, openSkyRoute
       return findCurrentLeg(hex, route, airportKey, redis);
     }
   } catch (e) {
+    if (_.get(e, 'message', '').includes('404')) {
+      return;
+    }
     logger.warn(`error resolving route data from OpenSky for ${flight}`, e);
   }
 };

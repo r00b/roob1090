@@ -3,6 +3,9 @@ const camelcaseKeys = require('camelcase-keys');
 
 const MAX_VALID_SEEN = 10;
 
+// note: carefully review any code that consumes aircraft objects
+// if changing props from required() to optional()
+
 // https://github.com/flightaware/dump1090/blob/master/README-json.md
 const aircraft = Joi.object({
   // 24-bit ICAO identifier, unique to each aircraft

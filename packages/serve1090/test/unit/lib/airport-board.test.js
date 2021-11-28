@@ -1,413 +1,333 @@
+const _ = require('lodash');
 const mockLogger = require('../../support/mock-logger');
+const {
+  mockAirport,
+  mockAircraft
+} = require('../../support/mock-data');
 const {
   BOARD,
   ARRIVALS,
   DEPARTURES,
   REGION_AIRCRAFT,
-  ACTIVE_RUNWAY,
   ENRICHMENTS
 } = require('../../../src/lib/redis-keys');
-
 const airportBoard = require('../../../src/lib/airport-board');
 
 describe('airport-board', () => {
-  const mockStore = {
-    getValidAircraft: jest.fn()
-  };
+  let computeAirportBoard, airport, aircraft;
 
+  const mockStore = {
+    getValidAircraftMap: jest.fn()
+  };
   const mockRedis = {
     get: jest.fn(),
     smembers: jest.fn(),
+    hgetAsJson: jest.fn(),
     pipeline: jest.fn(),
-    exec: jest.fn(),
     saddEx: jest.fn(),
     setex: jest.fn(),
-    hgetAsJson: jest.fn()
+    exec: jest.fn()
+  };
+  const mockMongo = {
+    getAirport: jest.fn()
   };
 
-  const { computeAirportBoard } = airportBoard(mockStore, mockRedis, mockLogger);
+  // see mock-data for visual description of airport and aircraft locations
 
-  let route, airport;
+  function simpleAirport (airport, aircraft) {
+    const { ac1, ac2, ac3, ac4, ac5, ac6, ac7, ac8, ac10 } = aircraft;
+    return key => {
+      switch (key) {
+        case REGION_AIRCRAFT('airspace1'):
+          return [ac1.hex, ac2.hex, ac3.hex];
+        case REGION_AIRCRAFT('runway1'):
+          return [ac4.hex, ac5.hex];
+        case REGION_AIRCRAFT('airspace2'):
+          return [ac6.hex, ac7.hex];
+        case ARRIVALS(airport.ident):
+          return [ac4.hex];
+        default:
+          return [];
+      }
+    };
+  }
 
-  // route:
-  //
-  // (0,50)     (50,50)      (100,50)    (150,50)
-  //  _______________________________________
-  // |             |            |            |
-  // |   region1   |   runway   |  region2   |
-  // |             |            |            |
-  //  ---------------------------------------
-  // (0,0)       (50,0)       (100,0)     (150,0)
-  //      ac1           ac4 (arr)     ac6              ac9 - outside route
-  //      ac2           ac5 (dep)     ac7
-  //      ac3                         ac8 (too high)
-
-  const aircraft = {
-    ac1: {
-      hex: 'ac1',
-      altBaro: 500,
-      lon: 0,
-      lat: 0
-    },
-    ac2: {
-      hex: 'ac2',
-      altBaro: 500,
-      lon: 25,
-      lat: 25
-    },
-    ac3: {
-      hex: 'ac3',
-      altBaro: 250,
-      lon: 45,
-      lat: 45
-    },
-    ac4: {
-      hex: 'ac4',
-      altBaro: 250,
-      lon: 75,
-      lat: 25
-    },
-    ac5: {
-      hex: 'ac5',
-      altBaro: 250,
-      lon: 75,
-      lat: 25
-    },
-    ac6: {
-      hex: 'ac6',
-      altBaro: 500,
-      lon: 125,
-      lat: 25
-    },
-    ac7: {
-      hex: 'ac7',
-      altBaro: 500,
-      lon: 145,
-      lat: 20
-    },
-    ac8: {
-      hex: 'ac8',
-      altBaro: 50000,
-      lon: 125,
-      lat: 25
-    },
-    ac9: {
-      hex: 'ac9',
-      altBaro: 500,
-      lon: 200,
-      lat: 25
-    }
-  };
-
-  const region1 = {
-    key: 'region1Key',
-    ceiling: 10000,
-    boundary: [[
-      [0, 0],
-      [50, 0],
-      [50, 50],
-      [0, 50],
-      [0, 0]
-    ]]
-  };
-
-  const runway = {
-    key: 'runwayKey',
-    ceiling: 500,
-    boundary: [[
-      [50, 0],
-      [100, 0],
-      [100, 50],
-      [50, 50],
-      [50, 0]
-    ]]
-  };
-
-  const region2 = {
-    key: 'region2Key',
-    ceiling: 10000,
-    boundary: [[
-      [100, 0],
-      [150, 0],
-      [150, 50],
-      [100, 50],
-      [100, 0]
-    ]]
-  };
-
-  function store (aircraftHashes) {
-    return {
-      now: Date.now(),
-      count: aircraftHashes.length,
-      aircraft: aircraftHashes
+  function complexAirport (airport, aircraft) {
+    const { ac1, ac2, ac3, ac4, ac5, ac6, ac7, ac10 } = aircraft;
+    return key => {
+      switch (key) {
+        case REGION_AIRCRAFT('airspace1'):
+          return [ac1.hex, ac2.hex, ac3.hex];
+        case REGION_AIRCRAFT('runway1'):
+          return [ac4.hex, ac5.hex];
+        case REGION_AIRCRAFT('airspace2'):
+          return [ac6.hex, ac7.hex];
+        case REGION_AIRCRAFT('runway2'):
+          return [ac10.hex];
+        case ARRIVALS(airport.ident):
+          return [ac4.hex, ac10.hex];
+        default:
+          return [];
+      }
     };
   }
 
   beforeEach(() => {
-    route = {
-      key: 'routeKey',
-      parentKey: 'airportKey',
-      regions: [region1, region2],
-      runway,
-      getApproachRouteKey: (runway) => region1.key,
-      getDepartureRouteKey: (runway) => region2.key
-    };
+    computeAirportBoard = airportBoard(mockStore, mockRedis, mockMongo, mockLogger);
+    airport = mockAirport();
+    aircraft = mockAircraft();
 
-    airport = {
-      key: 'airportKey',
-      locus: [75, 25],
-      routes: [route]
-    };
-
-    // called by partition-aircraft
-    mockRedis
-      .smembers
-      .mockReturnValue([aircraft.ac4.hex]);
+    mockStore
+      .getValidAircraftMap
+      .mockReturnValue({ aircraft });
     mockRedis
       .pipeline
       .mockReturnValue(mockRedis);
+    mockMongo
+      .getAirport
+      .mockReturnValue(airport);
+
   });
 
   afterEach(() => {
     Object.values(mockStore).forEach(m => m.mockReset());
     Object.values(mockRedis).forEach(m => m.mockReset());
+    Object.values(mockMongo).forEach(m => m.mockReset());
   });
 
-  test('computes aircraft board', async () => {
-    const { ac1, ac4, ac5, ac6, ac8, ac9 } = aircraft;
-    mockStore
-      .getValidAircraft
-      .mockReturnValueOnce(store([ac1, ac4, ac5, ac6, ac8, ac9]));
+  test('computes, sorts, and writes airport board for airport with single runway', async () => {
+    const { ac1, ac2, ac3, ac4, ac5, ac6, ac7 } = aircraft;
     mockRedis
       .get
       .mockReturnValueOnce('24');
+    mockRedis
+      .smembers
+      .mockImplementation(simpleAirport(airport, aircraft));
 
-    const expectedBoard = {
-      arriving: [ac1],
+    const result = await computeAirportBoard(airport.ident);
+
+    expect(result).toEqual({
+      ident: airport.ident,
+      arriving: [ac3, ac2, ac1],
       arrived: [ac4],
       departing: [ac5],
-      departed: [ac6],
+      departed: [ac7, ac6],
       onRunway: [ac4, ac5],
       activeRunways: ['24']
-    };
+    });
 
-    const result = await computeAirportBoard(airport);
-    expect(result).toEqual(expectedBoard);
+    expect(mockRedis.pipeline.mock.calls.length).toBe(1);
+
+    expect(mockRedis.saddEx.mock.calls.length).toBe(2);
+    expect(mockRedis.saddEx.mock.calls[0]).toEqual([
+      ARRIVALS(airport.ident),
+      60,
+      ac4.hex,
+      ac3.hex,
+      ac2.hex,
+      ac1.hex
+    ]);
+    expect(mockRedis.saddEx.mock.calls[1]).toEqual([
+      DEPARTURES(airport.ident),
+      60,
+      ac5.hex,
+      ac7.hex,
+      ac6.hex
+    ]);
+
+    expect(mockRedis.setex.mock.calls.length).toBe(1);
+    expect(mockRedis.setex.mock.calls[0]).toEqual([
+      BOARD(airport.ident),
+      15,
+      JSON.stringify(result)
+    ]);
+
+    expect(mockRedis.exec.mock.calls.length).toBe(1);
   });
 
-  test('computes and sorts aircraft board for multiple aircraft', async () => {
-    const { ac1, ac2, ac3, ac4, ac5, ac6, ac7, ac8, ac9 } = aircraft;
-    mockStore
-      .getValidAircraft
-      .mockReturnValueOnce(store([ac1, ac2, ac3, ac4, ac5, ac6, ac7, ac8, ac9]));
+  test('computes, sorts, and writes airport board for airport with multiple runways', async () => {
+    const { ac1, ac2, ac3, ac4, ac5, ac6, ac7, ac10 } = aircraft;
+
     mockRedis
       .get
-      .mockReturnValueOnce('24');
+      .mockReturnValueOnce('24')
+      .mockReturnValueOnce('01');
+    mockRedis
+      .smembers
+      .mockImplementation(complexAirport(airport, aircraft));
 
-    const expectedBoard = {
-      arriving: [ac3, ac2, ac1], // note sort
-      arrived: [ac4],
+    airport = mockAirport(true);
+    mockMongo
+      .getAirport
+      .mockReturnValue(airport);
+
+    const result = await computeAirportBoard(airport.ident);
+
+    expect(result).toEqual({
+      ident: airport.ident,
+      arriving: [ac3, ac2, ac1],
+      arrived: [ac4, ac10],
       departing: [ac5],
-      departed: [ac6, ac7],
-      onRunway: [ac4, ac5],
-      activeRunways: ['24']
-    };
+      departed: [ac7, ac6],
+      onRunway: [ac4, ac5, ac10],
+      activeRunways: ['01', '24']
+    });
 
-    const result = await computeAirportBoard(airport);
-    expect(result).toEqual(expectedBoard);
+    expect(mockRedis.pipeline.mock.calls.length).toBe(1);
+    expect(mockRedis.saddEx.mock.calls.length).toBe(2);
+    expect(mockRedis.setex.mock.calls.length).toBe(1);
+    expect(mockRedis.exec.mock.calls.length).toBe(1);
   });
 
-  test('enriches aircraft board', async () => {
-    const { ac1, ac4, ac5, ac6, ac8, ac9 } = aircraft;
-    mockStore
-      .getValidAircraft
-      .mockReturnValueOnce(store([ac1, ac4, ac5, ac6, ac8, ac9]));
+  test('fetches enrichments for aircraft', async () => {
+    const { ac1, ac2, ac3, ac4, ac5, ac6, ac7 } = aircraft;
+
     mockRedis
       .get
       .mockReturnValueOnce('24');
+    mockRedis
+      .smembers
+      .mockImplementation(simpleAirport(airport, aircraft));
     mockRedis
       .hgetAsJson
       .mockImplementation((key, hex) => {
+        expect(key).toBe(ENRICHMENTS);
         switch (hex) {
-          case 'ac1':
+          case ac3.hex:
             return {
-              foo: 'bar'
+              model: 'B787'
             };
-          case 'ac5':
+          case ac4.hex:
             return {
-              bar: 'baz'
+              model: 'C172'
+            };
+          case ac6.hex:
+            return {
+              model: 'BE35',
+              origin: '5B2',
+              destination: '2W5'
             };
           default:
             return null;
         }
       });
 
-    const expectedBoard = {
-      arriving: [{ ...ac1, foo: 'bar' }],
-      arrived: [ac4],
-      departing: [ac5],
-      departed: [ac6],
-      onRunway: [ac4, { ...ac5, bar: 'baz' }],
-      activeRunways: ['24']
-    };
+    const result = await computeAirportBoard(airport.ident);
 
-    const result = await computeAirportBoard(airport);
-    expect(result).toEqual(expectedBoard);
-    expect(mockRedis.hgetAsJson.mock.calls[0][0]).toBe(ENRICHMENTS);
-  });
+    // ac1
+    expect(result.arriving[2]).toEqual(ac1);
+    // ac2
+    expect(result.arriving[1]).toEqual(ac2);
+    // ac3
+    expect(result.arriving[0].model).toBe('B787');
+    // ac4
+    expect(result.arrived[0].model).toBe('C172');
+    // ac5
+    expect(result.departing[0]).toEqual(ac5);
+    // ac6
+    expect(result.departed[1].model).toBe('BE35');
+    expect(result.departed[1].origin).toBe('5B2');
+    expect(result.departed[1].destination).toBe('2W5');
+    // ac7
+    expect(result.departed[0]).toEqual(ac7);
 
-  test('makes expected calls to redis and store when computing aircraft board', async () => {
-    const { ac1, ac2, ac3, ac4, ac5, ac6, ac7, ac8, ac9 } = aircraft;
-    mockStore
-      .getValidAircraft
-      .mockReturnValueOnce(store([ac1, ac2, ac3, ac4, ac5, ac6, ac7, ac8, ac9]));
-    mockRedis
-      .get
-      .mockReturnValueOnce('24');
-
-    const result = await computeAirportBoard(airport);
-    expect(result).toBeTruthy();
-
-    // gets valid aircraft from store
-    expect(mockStore.getValidAircraft.mock.calls.length).toBe(1);
-    // gets active runway
-    expect(mockRedis.get.mock.calls.length).toBe(1);
-    expect(mockRedis.get.mock.calls[0][0]).toBe(ACTIVE_RUNWAY(route.key));
-
-    // one pipeline for writing partitions (consumed by active-runway),
-    // one pipeline for writing the route (consumed by partition-aircraft for runway),
-    // one pipeline for writing the airport board
-    expect(mockRedis.pipeline.mock.calls.length).toBe(3);
-    expect(mockRedis.exec.mock.calls.length).toBe(3);
-
-    // expect 1 setex call from board write
-    expect(mockRedis.setex.mock.calls.length).toBe(1);
-    const boardSetex = mockRedis.setex.mock.calls[0];
-    expect(boardSetex[0]).toBe(BOARD(airport.key));
-    const expectedBoard = {
-      arriving: [ac3, ac2, ac1],
-      arrived: [ac4],
-      departing: [ac5],
-      departed: [ac6, ac7],
-      onRunway: [ac4, ac5],
-      activeRunways: ['24']
-    };
-    expect(boardSetex[2]).toBe(JSON.stringify(expectedBoard));
-
-    // expect 3 saddEx calls from partition write, 2 calls from route
-    // write, and 2 calls from board write -> 7 total calls
-    expect(mockRedis.saddEx.mock.calls.length).toBe(7);
-    // partition write
-    const partitionWrites = mockRedis.saddEx.mock.calls.slice(0, 3);
-    expect(partitionWrites.map(args => args[0])).toEqual([
-      REGION_AIRCRAFT(runway.key),
-      REGION_AIRCRAFT(region1.key),
-      REGION_AIRCRAFT(region2.key)
-    ]);
-    expect(partitionWrites.map(args => args.slice(2))).toEqual([
-      ['ac4', 'ac5'],
-      ['ac1', 'ac2', 'ac3'],
-      ['ac6', 'ac7']
-    ]);
-    // route write
-    const routeWrites = mockRedis.saddEx.mock.calls.slice(3, 5);
-    expect(routeWrites.map(args => args[0])).toEqual([
-      ARRIVALS(route.key),
-      DEPARTURES(route.key)
-    ]);
-    expect(routeWrites.map(args => args.slice(2))).toEqual([
-      ['ac4', 'ac1', 'ac2', 'ac3'],
-      ['ac5', 'ac6', 'ac7']
-    ]);
-
-    // board write
-    const boardSaddExs = mockRedis.saddEx.mock.calls.slice(5);
-    expect(boardSaddExs.map(args => args[0])).toEqual([
-      ARRIVALS(airport.key),
-      DEPARTURES(airport.key)
-    ]);
-    expect(boardSaddExs.map(args => args.slice(2))).toEqual([
-      ['ac4', 'ac3', 'ac2', 'ac1'],
-      ['ac5', 'ac6', 'ac7']
-    ]);
-  });
-
-  test('only includes valid aircraft in aircraft board', async () => {
-    const { ac2, ac4, ac7, ac8 } = aircraft;
-    mockStore
-      .getValidAircraft
-      .mockReturnValueOnce(store([ac2, ac4, ac7, ac8]));
-    mockRedis
-      .get
-      .mockReturnValueOnce('24');
-
-    const result = await computeAirportBoard(airport);
-    expect(result).toEqual({
-      arriving: [ac2],
-      arrived: [ac4],
-      departing: [],
-      departed: [ac7],
-      onRunway: [ac4],
-      activeRunways: ['24']
-    });
-  });
-
-  test('handles empty aircraft store', async () => {
-    mockStore
-      .getValidAircraft
-      .mockReturnValueOnce(store([]));
-    const result = await computeAirportBoard(airport);
-    expect(result).toBeUndefined();
+    // called for every aircraft, even the ones that didn't have enrichments
+    expect(mockRedis.hgetAsJson.mock.calls.length).toBe(7);
   });
 
   test('handles no active runway', async () => {
-    mockStore
-      .getValidAircraft
-      .mockReturnValueOnce(store(Object.values(aircraft)));
+    const { ac4, ac5 } = aircraft;
     mockRedis
       .get
+      .mockReturnValue(null);
+    mockRedis
+      .smembers
+      .mockImplementation(simpleAirport(airport, aircraft));
+
+    const result = await computeAirportBoard(airport.ident);
+
+    expect(result).toEqual({
+      ident: airport.ident,
+      arriving: null,
+      arrived: null,
+      departing: null,
+      departed: null,
+      onRunway: [ac4, ac5],
+      activeRunways: null,
+      note: 'active runway unknown'
+    });
+
+    expect(mockRedis.pipeline.mock.calls.length).toBe(1);
+    expect(mockRedis.saddEx.mock.calls.length).toBe(0);
+    expect(mockRedis.setex.mock.calls.length).toBe(1);
+    expect(mockRedis.exec.mock.calls.length).toBe(1);
+  });
+
+  test('handles malformed airport runway surface', async () => {
+    mockRedis
+      .get
+      .mockReturnValue('24');
+    mockRedis
+      .smembers
+      .mockImplementation(simpleAirport(airport, aircraft));
+
+    delete airport.runways[0].surfaces[0].approachRegionKey;
+    mockMongo
+      .getAirport
+      .mockReturnValueOnce(airport);
+
+    let result = await computeAirportBoard(airport.ident);
+    expect(result).toBeFalsy();
+
+    airport = mockAirport();
+    delete airport.runways[0].surfaces[0].departureRegionKey;
+    mockMongo
+      .getAirport
+      .mockReturnValueOnce(airport);
+
+    result = await computeAirportBoard(airport.ident);
+    expect(result).toBeFalsy();
+  });
+
+  test('handles redis read error', async () => {
+    mockRedis
+      .smembers
+      .mockImplementationOnce(() => {
+        throw new Error('this should have been caught');
+      });
+
+    const result = await computeAirportBoard(airport.ident);
+    expect(result).toBeFalsy();
+  });
+
+  test('handles redis write error', async () => {
+    mockRedis
+      .saddEx
+      .mockImplementationOnce(() => {
+        throw new Error('this should have been caught');
+      });
+
+    const result = await computeAirportBoard(airport.ident);
+    expect(result).toBeTruthy();
+  });
+
+  test('handles missing airport', async () => {
+    mockMongo
+      .getAirport
       .mockReturnValueOnce(null);
 
-    const result = await computeAirportBoard(airport);
-    expect(result).toBeUndefined();
+    const result = await computeAirportBoard(airport.ident);
+    expect(result).toBeFalsy();
   });
 
-  test('handles failure to compute approach/departure route', async () => {
-    mockStore
-      .getValidAircraft
-      .mockReturnValueOnce(store(Object.values(aircraft)));
-    mockRedis
-      .get
-      .mockReturnValueOnce('24');
+  test('handles mongo error', async () => {
+    mockMongo
+      .getAirport
+      .mockImplementationOnce(() => {
+        throw new Error('this should have been caught');
+      });
 
-    route.getApproachRouteKey = () => false;
-    route.getDepartureRouteKey = () => region2.key;
-    let result = await computeAirportBoard(airport);
-    expect(result).toBeUndefined();
-
-    route.getApproachRouteKey = () => region1.key;
-    route.getDepartureRouteKey = () => false;
-    result = await computeAirportBoard(airport);
-    expect(result).toBeUndefined();
-  });
-
-  test('handles failure to find computed routes in partition', async () => {
-    mockStore
-      .getValidAircraft
-      .mockReturnValueOnce(store(Object.values(aircraft)));
-    mockRedis
-      .get
-      .mockReturnValueOnce('24');
-
-    route.getApproachRouteKey = () => 'random';
-    route.getDepartureRouteKey = () => region2.key;
-    let result = await computeAirportBoard(airport);
-    expect(result).toBeUndefined();
-
-    route.getApproachRouteKey = () => region1.key;
-    route.getDepartureRouteKey = () => 'random';
-    result = await computeAirportBoard(airport);
-    expect(result).toBeUndefined();
+    const result = await computeAirportBoard(airport.ident);
+    expect(result).toBeFalsy();
   });
 });
-

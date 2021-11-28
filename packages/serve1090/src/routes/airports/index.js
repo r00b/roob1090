@@ -69,7 +69,7 @@ async function fetchBoard (airport, store, redis) {
       validAircraftCount: await store.getValidAircraftCount()
     }
   };
-};
+}
 
 /**
  * Set up the ws object and create a interval that will broadcast messages

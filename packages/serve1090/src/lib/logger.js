@@ -1,15 +1,14 @@
 const _ = require('lodash');
+const { nodeEnv, verbose, ...env } = require('../config');
 
 const DEV_EXCLUDED = [
-  // 'request',
-  // 'ws',
+  'request',
+  'ws',
   'aircraft store',
-  'airport-board',
   'worker-service',
-  'airport-board-worker',
-  'active-runway-worker',
-  'enrichments-worker'
 ];
+
+const production = nodeEnv === 'production';
 
 function pino (secrets) {
   const pino = require('pino')({
@@ -43,8 +42,7 @@ function signale (secrets) {
 }
 
 module.exports = () => {
-  const config = require('../config');
-  const secrets = _.pick(config, [
+  const secrets = _.pick(env, [
     'pumpKey',
     'broadcastKey',
     'redisPass',
@@ -53,9 +51,5 @@ module.exports = () => {
     'faUsername',
     'faPassword'
   ]);
-  if (config.nodeEnv === 'production') {
-    return pino(secrets);
-  } else {
-    return signale(secrets);
-  }
+  return (production ? pino : signale)(secrets);
 };

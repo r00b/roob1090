@@ -31,7 +31,7 @@ const {
     logger.info('enrichments worker completed', { airport: airportKey, duration: Date.now() - start });
     exit(0);
   } catch (e) {
-    logger.error(e.message, e);
+    logger.error(`unhandled enrichments-worker error: ${e.message}`, e);
     exit(1);
   }
 })();
@@ -74,7 +74,12 @@ async function computeAndStoreEnrichments (board) {
  * @returns {aircraft[]}
  */
 function getAircraftHashes (board) {
-  return [...board.arriving, ...board.onRunway, ...board.departed];
+  const arriving = board.arriving || [];
+  const arrived = board.arrived || [];
+  const onRunway = board.onRunway || [];
+  const departing = board.departing || [];
+  const departed = board.departed || [];
+  return [...arriving, ...arrived, ...onRunway, ...departing, ...departed];
 }
 
 /**

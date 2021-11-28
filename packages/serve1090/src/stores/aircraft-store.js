@@ -79,30 +79,61 @@ async function validateAndWrite (store) {
   await pipeline.exec();
 }
 
+/**
+ * @returns {Promise<{now: number, count: number, aircraft: aircraft[]}>} all aircraft in the store
+ */
 function getAllAircraft () {
   return getStore(ALL_AIRCRAFT_STORE);
 }
 
+/**
+ * @returns {Promise<{now: number, count: number, aircraft: aircraft[]}>} all valid aircraft in the store
+ */
 function getValidAircraft () {
   return getStore(VALID_AIRCRAFT_STORE);
 }
 
+/**
+ * @returns {Promise<{now: number, count: number, aircraft: aircraft[]}>} all valid aircraft in the store
+ *                                                                        as a map
+ */
+function getValidAircraftMap () {
+  return getStore(VALID_AIRCRAFT_STORE, true);
+}
+
+/**
+ * @returns {Promise<{now: number, count: number, aircraft: aircraft[]}>} all invalid aircraft in the store
+ */
 function getInvalidAircraft () {
   return getStore(INVALID_AIRCRAFT_STORE);
 }
 
+/**
+ * @param hex
+ * @returns {Promise<aircraft>}
+ */
 function getAircraftWithHex (hex) {
   return redis.hgetAsJson(ALL_AIRCRAFT_STORE, hex);
 }
 
+/**
+ * @param hex
+ * @returns {Promise<aircraft>}
+ */
 function getValidAircraftWithHex (hex) {
   return redis.hgetAsJson(VALID_AIRCRAFT_STORE, hex);
 }
 
+/**
+ * @returns {Promise<number>}
+ */
 function getTotalAircraftCount () {
   return redis.hlen(ALL_AIRCRAFT_STORE);
 }
 
+/**
+ * @returns {Promise<number>}
+ */
 function getValidAircraftCount () {
   return redis.hlen(VALID_AIRCRAFT_STORE);
 }
@@ -111,10 +142,12 @@ function getValidAircraftCount () {
  * Get a store stored at key
  *
  * @param key {string} - key of store
+ * @param getAsMap {boolean} - whether to return the store as a map or array
  * @returns {Promise<{now: number, count: number, aircraft: aircraft[]}>}
  */
-async function getStore (key) {
-  const aircraft = await redis.hgetAllAsJsonValues(key);
+async function getStore (key, getAsMap = false) {
+  const fetch = getAsMap ? redis.hgetAllAsJson : redis.hgetAllAsJsonValues;
+  const aircraft = await fetch.bind(redis)(key);
   return {
     now: Date.now(),
     count: aircraft.length,
@@ -126,6 +159,7 @@ module.exports = {
   addAircraft,
   getAllAircraft,
   getValidAircraft,
+  getValidAircraftMap,
   getInvalidAircraft,
   getAircraftWithHex,
   getValidAircraftWithHex,

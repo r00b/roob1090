@@ -1,27 +1,45 @@
 version: '3.9'
 services:
   redis:
-    image: eqalpha/keydb:latest
+    image: eqalpha/keydb:x86_64_v6.2.1
     container_name: redis
     ports:
-      - 6379:6379
-      - 6380:6379 # for local access, in case host machine is running a separate redis
+      - "6379:6379"
+      - "6380:6379" # for local access, in case host machine is running a separate redis
     volumes:
       - $PWD/keydb.conf:/etc/keydb/keydb.conf
+  mongo:
+    image: mongo:5.0.4
+    container_name: mongo
+    volumes:
+      - ./docker/mongo:/docker-entrypoint-initdb.d
+      - ./seed_data:/data/seed_data
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+      - MONGO_USERNAME=${MONGO_USERNAME}
+      - MONGO_PASSWORD=${MONGO_PASSWORD}
+    ports:
+      - "27017:27017"
   express:
-    build: .
+    build:
+      context: .
+      dockerfile: ./docker/express/Dockerfile
     container_name: express
     volumes:
       - .:/app/serve1090
       - /app/serve1090/node_modules
     depends_on:
       - redis
+      - mongo
     environment:
       - NODE_ENV=${NODE_ENV}
       - PORT=${PORT}
       - KEYDB_HOST=redis
       - KEYDB_PORT=6379
+      - MONGO_HOST=mongo
+      - MONGO_PORT=27017
     entrypoint: /docker-entrypoint.sh
     ports:
       - ${PORT}:${PORT}
-      - 9229:9229
+      - "9229:9229"

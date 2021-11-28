@@ -33,7 +33,7 @@ class BroadcastError extends Error {
   }
 }
 
-class RedisError extends Error {
+class DatabaseError extends Error {
   constructor (message, detail) {
     super();
     this._message = message;
@@ -41,7 +41,7 @@ class RedisError extends Error {
   }
 
   get message () {
-    return `redis error: ${this._message}`;
+    return `database error: ${this._message}`;
   }
 
   get detail () {
@@ -49,9 +49,22 @@ class RedisError extends Error {
   }
 }
 
+class RedisError extends DatabaseError {
+  get message () {
+    return `redis error: ${this._message}`;
+  }
+}
+
+class MongoError extends DatabaseError {
+  get message () {
+    return `mongo error: ${this._message}`;
+  }
+}
+
 module.exports = {
   AuthError,
   PayloadError,
   BroadcastError,
-  RedisError
+  RedisError,
+  MongoError
 };

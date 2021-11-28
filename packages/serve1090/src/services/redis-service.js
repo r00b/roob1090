@@ -1,17 +1,16 @@
 const Redis = require('ioredis');
-const config = require('../config');
+const {
+  redisHost: host,
+  redisPort: port,
+  redisUser: username,
+  redisPass: password
+} = require('../config');
 const { RedisError } = require('../lib/errors');
 const logger = require('../lib/logger')().scope('redis');
 const pMap = require('p-map');
 
 class RedisService {
-  constructor () {
-    const {
-      redisHost: host,
-      redisPort: port,
-      redisUser: username,
-      redisPass: password
-    } = config;
+  constructor (verbose = false) {
     this.redis = new Redis({
       host,
       port,
@@ -19,9 +18,17 @@ class RedisService {
       password,
       retryStrategy: (_) => 5000
     });
-    // this.redis.on('ready', () => logger.info('redis connection established', { host, port }));
+    this.redis.on('ready', () => {
+      if (verbose) {
+        logger.info('redis connection established', { host, port });
+      }
+    });
     this.redis.on('error', (err) => logger.fatal('redis client error', { detail: err.message, host, port }));
-    this.redis.on('end', () => logger.info('redis connection ended', { host, port }));
+    this.redis.on('end', () => {
+      if (verbose) {
+        logger.info('redis connection ended', { host, port });
+      }
+    });
   }
 
   // WRITE OPERATIONS
@@ -248,6 +255,17 @@ class RedisService {
   }
 
   /**
+   * Get the TTL of a key;
+   * https://redis.io/commands/TTL
+   *
+   * @param  {string} key - key of value
+   * @returns {Promise}
+   */
+  ttl (key) { // todo test
+    return this.redis.ttl(key, this._errHandler);
+  }
+
+  /**
    * Get all members of a set;
    * https://redis.io/commands/smembers
    *
@@ -373,6 +391,11 @@ class Pipeline {
 
   hlen (key) {
     this._pipeline.hlen(key);
+    return this;
+  }
+
+  ttl (key) {
+    this._pipeline.ttl(key);
     return this;
   }
 

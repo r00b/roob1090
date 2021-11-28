@@ -6,6 +6,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 ### Changed
 - upgrade node to v16.13.0
+- bump deps
 ### Fixed
 - mongo dockerfile issues
 - pm2-runtime directly called in express Dockerfile

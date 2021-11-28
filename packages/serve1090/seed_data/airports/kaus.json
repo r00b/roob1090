@@ -1,0 +1,197 @@
+{
+  "ident": "kaus",
+  "name": "Austin-Bergstrom International Airport",
+  "active": true,
+  "lonlat": [
+    -97.6698761,
+    30.1945272
+  ],
+  "runways": [
+    {
+      "key": "kaus:runway18L36R",
+      "ceiling": 200,
+      "surfaces": [
+        {
+          "name": "18L",
+          "trueHeading": 179,
+          "magneticHeading": 175,
+          "approachRegionKey": "kaus:route18L36R:north",
+          "departureRegionKey": "kaus:route18L36R:south"
+        },
+        {
+          "name": "36R",
+          "trueHeading": 359,
+          "magneticHeading": 355,
+          "approachRegionKey": "kaus:route18L36R:south",
+          "departureRegionKey": "kaus:route18L36R:north"
+        }
+      ],
+      "boundary": [
+        [
+          -97.658224,
+          30.2049427
+        ],
+        [
+          -97.6575151,
+          30.1779747
+        ],
+        [
+          -97.6569183,
+          30.1779844
+        ],
+        [
+          -97.6576285,
+          30.2049489
+        ],
+        [
+          -97.658224,
+          30.2049427
+        ]
+      ]
+    },
+    {
+      "key": "kaus:runway18R36L",
+      "ceiling": 200,
+      "surfaces": [
+        {
+          "name": "18R",
+          "trueHeading": 179,
+          "magneticHeading": 175,
+          "approachRegionKey": "kaus:route18L36R:north",
+          "departureRegionKey": "kaus:route18L36R:south"
+        },
+        {
+          "name": "36L",
+          "trueHeading": 359,
+          "magneticHeading": 355,
+          "approachRegionKey": "kaus:route18L36R:south",
+          "departureRegionKey": "kaus:route18L36R:north"
+        }
+      ],
+      "boundary": [
+        [
+          -97.6799181,
+          30.216376
+        ],
+        [
+          -97.6789204,
+          30.1771736
+        ],
+        [
+          -97.6778952,
+          30.1771972
+        ],
+        [
+          -97.6789713,
+          30.2163922
+        ],
+        [
+          -97.6799181,
+          30.216376
+        ]
+      ]
+    }
+  ],
+  "airspace": [
+    {
+      "key": "kaus:route18L36R:north",
+      "ceiling": 5000,
+      "boundary": [
+        [
+          -97.6799496,
+          30.2163838
+        ],
+        [
+          -97.6789558,
+          30.2163937
+        ],
+        [
+          -97.6735367,
+          30.2187032
+        ],
+        [
+          -97.6691379,
+          30.2180542
+        ],
+        [
+          -97.6668157,
+          30.2163664
+        ],
+        [
+          -97.6582272,
+          30.2049461
+        ],
+        [
+          -97.6576306,
+          30.2049483
+        ],
+        [
+          -97.5891495,
+          30.2074545
+        ],
+        [
+          -97.5740433,
+          30.3044284
+        ],
+        [
+          -97.5764465,
+          30.4030832
+        ],
+        [
+          -97.7521623,
+          30.4022617
+        ],
+        [
+          -97.7500194,
+          30.3024946
+        ],
+        [
+          -97.7357437,
+          30.2145494
+        ],
+        [
+          -97.6799496,
+          30.2163838
+        ]
+      ]
+    },
+    {
+      "key": "kaus:route18L36R:south",
+      "ceiling": 5000,
+      "boundary": [
+        [
+          -97.6788999,
+          30.1771538
+        ],
+        [
+          -97.7279155,
+          30.1749669
+        ],
+        [
+          -97.7664297,
+          30.016273
+        ],
+        [
+          -97.5651041,
+          30.0185097
+        ],
+        [
+          -97.5942993,
+          30.177201
+        ],
+        [
+          -97.6569357,
+          30.1779736
+        ],
+        [
+          -97.6574997,
+          30.177962
+        ],
+        [
+          -97.6788999,
+          30.1771538
+        ]
+      ]
+    }
+  ]
+}

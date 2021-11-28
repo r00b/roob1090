@@ -1,12 +1,12 @@
 const config = require('../../../src/config');
-const logger = require('../../lib/logger')().scope('airport-board-worker');
+const logger = require('../../lib/logger')().scope('active-runway-worker');
 const { exit } = require('../../lib/utils');
 const airport = require('worker_threads').workerData.job.airport;
 
 const store = require('../../stores/aircraft-store');
 const RedisService = require('../redis-service');
 const MongoService = require('../mongo-service');
-const airportBoard = require('../../lib/airport-board');
+const partitionAircraft = require('../../lib/partition-airport');
 
 (async () => {
   try {
@@ -22,16 +22,16 @@ const airportBoard = require('../../lib/airport-board');
       host: mongoHost,
       port: mongoPort,
       username: mongoUser,
-      password: mongoPass,
+      password: mongoPass
     }).connect();
 
-    const computeAirportBoard = airportBoard(store, redis, mongo, logger);
+    const partitionAirport = partitionAircraft(store, redis, mongo, logger);
 
-    await computeAirportBoard(airport);
+    await partitionAirport(airport);
 
     exit(0);
   } catch (e) {
-    logger.error(`unhandled airport-board-worker error: ${e.message}`, e);
+    logger.error(`unhandled partition-aircraft-worker error: ${e.message}`, e);
     exit(1);
   }
 })();

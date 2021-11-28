@@ -1,30 +1,28 @@
 const express = require('express');
 const errorHandler = require('../middleware/error-handler');
 const {
-  getFileNames,
   secondsToTimeString
 } = require('../lib/utils');
-const AIRPORTS_PATH = '../lib/airports';
 const {
   BROADCAST_CLIENT_COUNT,
   DATA_SOURCE_COUNT
 } = require('../lib/redis-keys');
 
-module.exports = (store, redis) => {
+module.exports = (store, redis, mongo) => {
   return new express.Router()
-    .get('/', getRoot(store, redis))
+    .get('/', getRoot(store, redis, mongo))
     .use(errorHandler);
 };
 
 /**
  * GET root of the API
  */
-const getRoot = (store, redis) => (req, res, next) =>
-  body(store, redis, res.locals.requestLogger)
+const getRoot = (store, redis, mongo) => (req, res, next) =>
+  body(store, redis, mongo, res.locals.requestLogger)
     .then(res.status(200).json.bind(res))
     .catch(next);
 
-async function body (store, redis, logger) {
+async function body (store, redis, mongo, logger) {
   const body = {
     message: 'roob1090 realtime ADS-B API',
     documentation: 'https://github.com/robertsteilberg/roob1090/blob/master/packages/serve1090/README.md',
@@ -39,7 +37,7 @@ async function body (store, redis, logger) {
         enrichments: '/aircraft/enrichments'
       },
       airspaces: {},
-      airports: {}
+      airports: await getAirports(mongo, logger)
     },
     stats: {
       now: Date.now(),
@@ -50,19 +48,33 @@ async function body (store, redis, logger) {
       validAircraftCount: await store.getValidAircraftCount()
     }
   };
-  // TODO populate dynamically
-  const airports = getFileNames(AIRPORTS_PATH);
-  airports.forEach(airport => {
-    body.routes.airports[airport] = `/airports/boards/${airport}/[.websocket]`;
-  });
+
   return body;
+}
+
+/**
+ * @param {MongoService} mongo
+ * @param {logger} logger
+ * @returns {Promise<{}>}
+ */
+async function getAirports (mongo, logger) {
+  try {
+    const airports = await mongo.getAllActiveAirportIdents() || [];
+    return airports.reduce((acc, airport) => {
+      acc[airport] = `/airports/boards/${airport}/[.websocket]`;
+      return acc;
+    }, {});
+  } catch (e) {
+    logger.warn('failed to get supported airports for root route', e);
+    return 'error';
+  }
 }
 
 /**
  * @param {string} key - key of value holding the count
  * @param {RedisService} redis
  * @param {logger} logger
- * @returns {Promise}
+ * @returns {Promise<number|string>}
  */
 async function getCount (key, redis, logger) {
   try {

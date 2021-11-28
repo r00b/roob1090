@@ -9,34 +9,50 @@ const rootRouter = require('./routes/index');
 const aircraftRouter = require('./routes/aircraft/index');
 const airportsRouter = require('./routes/airports/index');
 
-const { normalizePort, getFileNames } = require('./lib/utils');
+const { normalizePort } = require('./lib/utils');
 
 async function init (config) {
-  const normalizedPort = normalizePort(config.port);
+  const {
+    port,
+    pumpKey,
+    broadcastKey,
+    mongoHost,
+    mongoPort,
+    mongoUser,
+    mongoPass
+  } = config;
+
+  const normalizedPort = normalizePort(port);
   try {
     const server = app.listen(normalizedPort);
     require('express-ws')(app, server);
     app.use(cors());
-
-    // ensure no artifacts remain from previous runs
-    if (config.nodeEnv === 'production') {
-      await redis.flushall();
-      logger.info('flushed redis');
-    }
-
     app.use(require('./middleware/http-request-logger'));
 
-    const store = require('../src/stores/aircraft-store');
+    // ensure no artifacts remain from previous runs
     const redis = new RedisService(true);
-    await new MongoService().ping(); // don't need mongo now, but ensure it is available
+    await redis.flushall();
+    logger.info('flushed redis');
+
+    const mongo = await new MongoService({
+      host: mongoHost,
+      port: mongoPort,
+      username: mongoUser,
+      password: mongoPass,
+      verbose: true
+    }).connect();
+
+    const store = require('../src/stores/aircraft-store');
 
     // kick off the jobs
-    require('./services/worker-service')();
+    await require('./services/worker-service')(mongo); // todo use a Class?
 
     // set up routers
-    app.use('/', rootRouter(store, redis));
-    app.use('/aircraft', aircraftRouter(config.pumpKey, store, redis));
-    app.use('/airports', airportsRouter(getFileNames('./airports'), config.broadcastKey, store, redis));
+    app.use('/', rootRouter(store, redis, mongo));
+    app.use('/aircraft', aircraftRouter(pumpKey, store, redis));
+
+    const airports = await mongo.getAllActiveAirportIdents();
+    app.use('/airports', airportsRouter(airports, broadcastKey, store, redis));
 
     logger.info('started serve1090', { port: normalizedPort });
     return server;

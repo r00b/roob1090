@@ -6,7 +6,7 @@ const rootRouter = require('../../../src/routes/index');
 jest.mock('../../../src/lib/logger', () => () => require('../../support/mock-logger'));
 
 describe('root router', () => {
-  let app, store, redis;
+  let app, store, redis, mongo;
 
   beforeEach(() => {
     app = express();
@@ -19,8 +19,11 @@ describe('root router', () => {
     redis = {
       get: jest.fn()
     };
+    mongo = {
+      getAllActiveAirportIdents: jest.fn()
+    };
 
-    app.use(rootRouter(store, redis));
+    app.use(rootRouter(store, redis, mongo));
   });
 
   test('returns the root of the api', async () => {
@@ -31,6 +34,8 @@ describe('root router', () => {
     redis.get
       .mockReturnValueOnce(1)
       .mockReturnValueOnce(2);
+    mongo.getAllActiveAirportIdents
+      .mockResolvedValueOnce(['kvkx']);
 
     const res = await request(app)
       .get('/')
@@ -40,7 +45,7 @@ describe('root router', () => {
     const body = res.body;
 
     expect(Object.values(body.routes.aircraft).length).toBeGreaterThan(0);
-    expect(body.routes.airports).toBeTruthy();
+    expect(body.routes.airports.kvkx).toBeTruthy();
     expect(body.routes.airspaces).toBeTruthy();
 
     expect(body.stats.dataSourcesCount).toBe(1);
@@ -52,7 +57,7 @@ describe('root router', () => {
     expect(body.stats.uptime.length).toBeGreaterThan(0);
   });
 
-  test('handles store errors', async () => {
+  test('handles store error', async () => {
     store.getTotalAircraftCount
       .mockImplementation(() => {
         throw new Error('oh noes');
@@ -70,7 +75,7 @@ describe('root router', () => {
     });
   });
 
-  test('handles redis errors', async () => {
+  test('handles redis error', async () => {
     redis.get
       .mockImplementation(() => {
         throw new Error('oh noes');
@@ -83,5 +88,20 @@ describe('root router', () => {
       .expect(200);
 
     expect(res.body.stats.dataSourcesCount).toEqual('error');
+  });
+
+  test('handles mongo error', async () => {
+    mongo.getAllActiveAirportIdents
+      .mockImplementation(() => {
+        throw new Error('oh noes');
+      });
+
+    const res = await request(app)
+      .get('/')
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    expect(res.body.routes.airports).toEqual('error');
   });
 });

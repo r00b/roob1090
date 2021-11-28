@@ -3,12 +3,15 @@ const {
   secondsToMillis,
   millisToSeconds,
   hex,
+  key,
   secondsToTimeString,
   compareDistance,
   computeDistance,
   get,
   checkToken,
-  close
+  close,
+  withinBoundaryAndCeiling,
+  aligned
 } = require('../../../src/lib/utils');
 const nock = require('nock');
 const { AuthError } = require('../../../src/lib/errors');
@@ -41,6 +44,12 @@ describe('utils', () => {
     expect(hex({ hex: '3ef' })).toBe('3ef');
     expect(hex({})).toBeUndefined();
     expect(hex()).toBeUndefined();
+  });
+
+  test('key', () => {
+    expect(key({ key: '3ef' })).toBe('3ef');
+    expect(key({})).toBeUndefined();
+    expect(key()).toBeUndefined();
   });
 
   test('secondsToTimeString', () => {
@@ -82,9 +91,9 @@ describe('utils', () => {
       .get('/')
       .reply(200, expected);
 
-    const res = await get('https://foo.com');
-    expect(res.statusCode).toBe(200);
-    expect(res.body).toEqual(expected);
+    const result = await get('https://foo.com');
+    expect(result.statusCode).toBe(200);
+    expect(result.body).toEqual(expected);
   });
 
   test('get with auth', async () => {
@@ -95,9 +104,9 @@ describe('utils', () => {
       .basicAuth({ user: 'user1', pass: 'pass1' })
       .reply(200, expected);
 
-    const res = await get('https://foo.com', 'user1', 'pass1');
-    expect(res.statusCode).toBe(200);
-    expect(res.body).toEqual(expected);
+    const result = await get('https://foo.com', 'user1', 'pass1');
+    expect(result.statusCode).toBe(200);
+    expect(result.body).toEqual(expected);
   });
 
   test('checkPayloadToken', () => {
@@ -139,5 +148,45 @@ describe('utils', () => {
 
     expect(ws.close.mock.calls.length).toBe(2);
     expect(terminate.mock.calls.length).toBe(1);
+  });
+
+  test('withinBoundaryAndCeiling', () => {
+    let boundary = [
+      [0, 0],
+      [5, 0],
+      [5, 5],
+      [0, 5],
+      [0, 0]
+    ];
+    let ceiling = 500;
+    let aircraft = {
+      lon: 2,
+      lat: 2,
+      altBaro: 499
+    };
+
+    expect(withinBoundaryAndCeiling(boundary, ceiling)(aircraft)).toBeTruthy();
+
+    aircraft.altBaro = 500;
+    expect(withinBoundaryAndCeiling(boundary, ceiling)(aircraft)).toBeTruthy();
+
+    aircraft.altBaro = 501;
+    expect(withinBoundaryAndCeiling(boundary, ceiling)(aircraft)).toBeFalsy();
+
+    aircraft = {
+      lon: 20,
+      lat: 20,
+      altBaro: 499
+    };
+    expect(withinBoundaryAndCeiling(boundary, ceiling)(aircraft)).toBeFalsy();
+  });
+
+  test('aligned', () => {
+    expect(aligned(0, 30)).toBeTruthy();
+    expect(aligned(0, 31)).toBeFalsy();
+    expect(aligned(30, 30)).toBeTruthy();
+    expect(aligned(359, 1)).toBeTruthy();
+    expect(aligned(330, 1)).toBeFalsy();
+    expect(aligned(331, 1)).toBeTruthy();
   });
 });

@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const { wait } = require('../../../support/helpers');
 const express = require('express');
 const ws = require('express-ws');
 const request = require('supertest');
@@ -102,8 +103,9 @@ describe('airports router', () => {
         server = app.listen();
       });
 
-      afterEach(() => {
-        server.close();
+      afterEach(async () => {
+        await server.close();
+        await wait();
       });
 
       test('repeatedly broadcasts airport board', async () => {

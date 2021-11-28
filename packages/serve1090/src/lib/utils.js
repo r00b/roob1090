@@ -1,11 +1,10 @@
 const _ = require('lodash');
-const { point } = require('@turf/helpers');
-const fs = require('fs');
-const path = require('path');
 const got = require('got');
+const { point, polygon } = require('@turf/helpers');
+const pointInPolygon = require('@turf/boolean-point-in-polygon').default;
 const distance = require('@turf/distance').default;
-const { AuthError } = require('./errors');
 const safeCompare = require('safe-compare');
+const { AuthError } = require('./errors');
 
 /**
  * Take an input and resolve it to a port or a fallback if unable
@@ -44,13 +43,23 @@ function millisToSeconds (millis) {
 }
 
 /**
- * Retrieve an aircraft's hex
+ * Get an aircraft's hex
  *
  * @param {aircraft} aircraft
  * @returns {string} hex
  */
 function hex (aircraft) {
   return _.get(aircraft, 'hex', undefined);
+}
+
+/**
+ * Get a region's key
+ *
+ * @param {region} region
+ * @returns {string} key
+ */
+function key (region) {
+  return _.get(region, 'key', undefined);
 }
 
 /**
@@ -123,26 +132,6 @@ function get (url, username, password) {
 }
 
 /**
- * Strip the extension from a filename string
- *
- * @param {string} filename
- * @returns {string}
- */
-function stripFileExtension (filename) {
-  return filename.replace(/\.[^.]+$/, '');
-}
-
-/**
- * Get a list of filenames in a directory
- *
- * @param {string} relativePathToDir - relative path to directory
- * @returns {string[]} filenames
- */
-function getFileNames (relativePathToDir) {
-  return fs.readdirSync(path.resolve(__dirname, relativePathToDir)).map(stripFileExtension);
-}
-
-/**
  * Exit and flush and pending logs or messages to stdout
  *
  * @param {number} code - exit code
@@ -188,17 +177,49 @@ function close (ws, code, reason, terminateAfter = 1000) {
   }
 }
 
+/**
+ * Determine if an aircraft is contained within a region by geofencing it to
+ * the region's lateral boundaries and ceiling
+ *
+ * @param boundary {number[][]} - array of lonlat points
+ * @param ceiling {number} - maximum allowable altBaro for an aircraft to be
+ *                           considered within a region
+ */
+function withinBoundaryAndCeiling (boundary, ceiling) {
+  const boundaryPolygon = polygon([boundary]);
+  return aircraft => {
+    const loc = point([aircraft.lon, aircraft.lat]);
+    const inRegion = pointInPolygon(loc, boundaryPolygon);
+    const atOrBelowCeiling = aircraft.altBaro <= ceiling;
+    return inRegion && atOrBelowCeiling;
+  };
+}
+
+const CENTERLINE_OFFSET = 30;
+
+/**
+ * @param x {number} i.e. track
+ * @param y {number} i.e. runway centerline
+ * @returns {boolean} true if x is within CENTERLINE_OFFSET of y inclusive, false otherwise
+ */
+function aligned (x, y) {
+  const angleDiff = (x - y + 180 + 360) % 360 - 180;
+  return angleDiff <= CENTERLINE_OFFSET && angleDiff >= -CENTERLINE_OFFSET;
+}
+
 module.exports = {
   normalizePort,
   secondsToMillis,
   millisToSeconds,
   hex,
+  key,
   secondsToTimeString,
   compareDistance,
   computeDistance,
   get,
-  getFileNames,
   exit,
   checkToken,
-  close
+  close,
+  withinBoundaryAndCeiling,
+  aligned
 };

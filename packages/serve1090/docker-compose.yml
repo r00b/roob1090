@@ -4,8 +4,8 @@ services:
     image: eqalpha/keydb:x86_64_v6.0.18
     container_name: redis
     ports:
-      - 6379:6379
-      - 6380:6379 # for local access, in case host machine is running a separate redis
+      - "6379:6379"
+      - "6380:6379" # for local access, in case host machine is running a separate redis
     volumes:
       - $PWD/keydb.conf:/etc/keydb/keydb.conf
   mongo:
@@ -20,16 +20,7 @@ services:
       - MONGO_USERNAME=${MONGO_USERNAME}
       - MONGO_PASSWORD=${MONGO_PASSWORD}
     ports:
-      - 27017:27017
-  mongo-admin:
-    image: mongo-express
-    container_name: mongo-console
-    depends_on:
-      - mongo
-    ports:
-      - 8081:8081
-    environment:
-      - ME_CONFIG_MONGODB_URL=mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongo:27017
+      - "27017:27017"
   express:
     build:
       context: .
@@ -51,4 +42,4 @@ services:
     entrypoint: /docker-entrypoint.sh
     ports:
       - ${PORT}:${PORT}
-      - 9229:9229
+      - "9229:9229"

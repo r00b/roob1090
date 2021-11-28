@@ -3,29 +3,14 @@ const Bree = require('bree');
 const path = require('path');
 
 /**
- * Build jobs for each airport and schedule them
- * TODO: build jobs array from persistent storage or args
+ * Build jobs for each airport and airspace; kick off the scheduler
+ *
+ * @param mongo
  */
-function init () {
-  const jobs = [
-    {
-      name: 'airport-board-worker',
-      interval: '2s',
-      airport: 'kdca'
-    },
-    {
-      name: 'active-runway-worker',
-      timeout: '5s', // give airport board a chance to create partitions
-      interval: '1m',
-      airport: 'kdca'
-    },
-    {
-      name: 'enrichments-worker',
-      timeout: '5s', // give airport board a chance to create partitions
-      interval: '5s',
-      airport: 'kdca'
-    }
-  ];
+async function init (mongo) {
+  const airportJobs = await generateAirportJobs(mongo);
+  const airspaceJobs = await generateAirspaceJobs(mongo);
+  const jobs = [...airportJobs, ...airspaceJobs];
 
   const scheduler = new Bree({
     logger,
@@ -37,6 +22,32 @@ function init () {
 
   const workerNames = [...new Set(jobs.map(j => j.name))];
   logger.info('started jobs', { count: jobs.length, jobs: workerNames });
+}
+
+async function generateAirportJobs (mongo) {
+  const icaos = await mongo.getAllActiveAirportIdents();
+  return icaos.flatMap(airport => [
+    {
+      name: 'partition-airport-worker',
+      interval: '3s',
+      airport
+    },
+    {
+      name: 'airport-board-worker',
+      interval: '3s',
+      airport
+    },
+    {
+      name: 'enrichments-worker',
+      timeout: '5s', // wait for partitions to be created
+      interval: '5s',
+      airport
+    }
+  ]);
+}
+
+function generateAirspaceJobs (mongo) {
+  return [];
 }
 
 module.exports = init;

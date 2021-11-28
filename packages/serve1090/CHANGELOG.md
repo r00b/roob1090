@@ -9,7 +9,12 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Removed
 ### Breaking
 
-## [2.3.0]
+## [2.4.0] - 2021-11-27
+### Changed
+- airports dynamically queried from mongo
+- update test dependencies
+
+## [2.3.0] - 2021-7-15
 ### Changed
 - node bumped to `16.5.0`
 - npm bumped to `7.19.1`

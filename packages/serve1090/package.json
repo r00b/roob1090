@@ -1,20 +1,20 @@
 {
   "name": "serve1090",
-  "version": "2.3.0",
-  "description": "WebSocket server for receiving, aggregating, and exposing dump1090 data",
+  "version": "2.4.0",
+  "description": "WebSocket server for receiving, aggregating, and serving dump1090 data",
   "repository": "https://github.com/robertsteilberg/serve1090/",
   "license": "AGPL-3.0-only",
   "author": "Robert Steilberg <rsteilberg@gmail.com>",
   "scripts": {
     "start": "node index.js",
-    "start-pm2": "pm2-runtime index.js",
+    "pm2": "pm2-runtime index.js",
     "debug": "nodemon --inspect=0.0.0.0 index.js",
     "d": "npm run debug",
     "test": "jest",
     "t": "npm run test",
-    "compose": "docker-compose up -d --build",
-    "logs": "docker logs --follow serve1090_express",
-    "redis": "docker run -v $PWD/keydb.conf:/etc/keydb/keydb.conf --publish=6379:6379 --name=serve1090_redis -d eqalpha/keydb:latest"
+    "l": "docker logs --follow express",
+    "cl": "docker-compose up -d --build && npm run l",
+    "mongo-admin": "mongo-express -a --url mongodb://$(grep MONGO_USERNAME .env | cut -d '=' -f2):$(grep MONGO_PASSWORD .env | cut -d '=' -f2)@127.0.0.1:27017"
   },
   "dependencies": {
     "@turf/boolean-point-in-polygon": "^6.5.0",
@@ -30,7 +30,8 @@
     "ioredis": "^4.27.6",
     "joi": "^17.4.1",
     "lodash": "^4.17.21",
-    "mongodb": "^4.0.0",
+    "mongodb": "^4.1.4",
+    "mongodb-memory-server": "^8.0.3",
     "nanoid": "^3.1.23",
     "p-map": "^4.0.0",
     "pino": "^6.12.0",
@@ -38,13 +39,14 @@
     "safe-compare": "^1.1.4"
   },
   "devDependencies": {
-    "ioredis-mock": "^5.6.0",
-    "jest": "^27.0.6",
-    "nock": "^13.1.1",
+    "ioredis-mock": "^5.8.0",
+    "jest": "^27.3.1",
+    "mongo-express": "^1.0.0-alpha.4",
+    "nock": "^13.2.1",
     "nodemon": "^2.0.12",
     "signale": "^1.4.0",
-    "supertest": "^6.1.3",
-    "superwstest": "^1.4.0"
+    "supertest": "^6.1.6",
+    "superwstest": "^1.8.0"
   },
   "volta": {
     "node": "16.5.0",

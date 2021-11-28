@@ -246,8 +246,8 @@ describe('redis-service', () => {
     pipeline.get('a');
     pipeline.get('bar');
 
-    const res = await pipeline.exec();
-    expect(res).toEqual([[null, '15'], [null, '16']]);
+    const result = await pipeline.exec();
+    expect(result).toEqual([[null, '15'], [null, '16']]);
   });
 
   test('getAsJson', async () => {
@@ -269,9 +269,9 @@ describe('redis-service', () => {
 
     const pipeline = service.pipeline();
     pipeline.hget('foo', 'bar');
-    const res = await pipeline.exec();
+    const result = await pipeline.exec();
 
-    expect(res).toEqual([[null, 'baz']]);
+    expect(result).toEqual([[null, 'baz']]);
   });
 
   test('hgetAsJson', async () => {
@@ -294,9 +294,9 @@ describe('redis-service', () => {
 
     const pipeline = service.pipeline();
     pipeline.hgetall('foo');
-    const res = await pipeline.exec();
+    const result = await pipeline.exec();
 
-    expect(res).toEqual([[null, { bar: 'baz', baz: 'bar' }]]);
+    expect(result).toEqual([[null, { bar: 'baz', baz: 'bar' }]]);
   });
 
   test('hgetAllAsJson', async () => {
@@ -343,9 +343,9 @@ describe('redis-service', () => {
     const pipeline = service.pipeline();
     pipeline.hexists('a', 'foo');
     pipeline.hexists('a', 'unset');
-    const res = await pipeline.exec();
+    const result = await pipeline.exec();
 
-    expect(res).toEqual([[null, 1], [null, 0]]);
+    expect(result).toEqual([[null, 1], [null, 0]]);
   });
 
   test('hlen', async () => {
@@ -359,10 +359,21 @@ describe('redis-service', () => {
     // pipelining
     const pipeline = service.pipeline();
     pipeline.hlen('a');
-    const res = await pipeline.exec();
+    const result = await pipeline.exec();
 
-    expect(res).toEqual([[null, 3]]);
+    expect(result).toEqual([[null, 3]]);
   });
+
+  test('ttl', async () => {
+    await redis.setex('a', 100, 'foo');
+    await redis.setex('b', 150, 'bar');
+    await redis.set('c', 'baz');
+
+    expect(await redis.ttl('a')).toBe(100);
+    expect(await redis.ttl('b')).toBe(150);
+    expect(await redis.ttl('c')).toBe(-1);
+    expect(await redis.ttl('d')).toBe(-2);
+  })
 
   test('smembers', async () => {
     await redis.sadd('a', 'foo');
@@ -374,9 +385,9 @@ describe('redis-service', () => {
     // pipelining
     const pipeline = service.pipeline();
     pipeline.smembers('a');
-    const res = await pipeline.exec();
+    const result = await pipeline.exec();
 
-    expect(res).toEqual([[null, ['foo', 'bar']]]);
+    expect(result).toEqual([[null, ['foo', 'bar']]]);
   });
 
   test('sismember', async () => {
@@ -391,9 +402,9 @@ describe('redis-service', () => {
     const pipeline = service.pipeline();
     pipeline.sismember('a', 'foo');
     pipeline.sismember('a', 'baz');
-    const res = await pipeline.exec();
+    const result = await pipeline.exec();
 
-    expect(res).toEqual([[null, 1], [null, 0]]);
+    expect(result).toEqual([[null, 1], [null, 0]]);
   });
 
   test('handles op errors', async () => {

@@ -255,6 +255,17 @@ class RedisService {
   }
 
   /**
+   * Get the TTL of a key;
+   * https://redis.io/commands/TTL
+   *
+   * @param  {string} key - key of value
+   * @returns {Promise}
+   */
+  ttl (key) { // todo test
+    return this.redis.ttl(key, this._errHandler);
+  }
+
+  /**
    * Get all members of a set;
    * https://redis.io/commands/smembers
    *
@@ -380,6 +391,11 @@ class Pipeline {
 
   hlen (key) {
     this._pipeline.hlen(key);
+    return this;
+  }
+
+  ttl (key) {
+    this._pipeline.ttl(key);
     return this;
   }
 

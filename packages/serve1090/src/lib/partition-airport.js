@@ -12,14 +12,14 @@ const {
 } = require('../lib/redis-keys');
 
 const REGION_TTL = 2;
-const RUNWAY_TTL = 28800;    // 8 hours
-const RUNWAY_RECHECK = 900;  // 15 minutes
+const RUNWAY_TTL = 28800;   // 8 hours
+const RUNWAY_RECHECK = 900; // 15 minutes
 
 module.exports = (store, redis, mongo, logger) =>
   partitionAirport(store, redis, mongo, logger.scope('partition-aircraft'));
 
 /**
- * Return a function that will fetch all aircraft currently in the store and a specified
+ * Return a function that will fetch all aircraft currently in the store along with a specified
  * airport and then partition the aircraft into the airport's runways and airspace regions
  *
  * @param store
@@ -84,7 +84,7 @@ function aircraftInRegion (aircraft, region) {
  * active runway surfaces to an aircraft partition
  *
  * @param aircraft {aircraft[]} - all valid aircraft from the aircraft store
- * @param aircraftAloft {aircraft[]} - aircraft currently in the an airspace region but not a runway
+ * @param aircraftAloft {aircraft[]} - aircraft currently in the an airspace region but not on a runway
  * @returns (acc, runway) => partition
  */
 function runwayReducer (aircraft, aircraftAloft) {

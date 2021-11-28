@@ -9,7 +9,7 @@ services:
     volumes:
       - $PWD/keydb.conf:/etc/keydb/keydb.conf
   mongo:
-    image: mongo:5.0.0
+    image: mongo:5.0.4
     container_name: mongo
     volumes:
       - ./docker/mongo:/docker-entrypoint-initdb.d

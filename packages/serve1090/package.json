@@ -13,8 +13,7 @@
     "test": "jest",
     "t": "npm run test",
     "l": "docker logs --follow express",
-    "cl": "docker-compose up -d --build && npm run l",
-    "mongo-admin": "mongo-express -a --url mongodb://$(grep MONGO_USERNAME .env | cut -d '=' -f2):$(grep MONGO_PASSWORD .env | cut -d '=' -f2)@127.0.0.1:27017"
+    "cl": "docker-compose up -d --build && npm run l"
   },
   "dependencies": {
     "@turf/boolean-point-in-polygon": "^6.5.0",
@@ -41,7 +40,6 @@
   "devDependencies": {
     "ioredis-mock": "^5.8.0",
     "jest": "^27.3.1",
-    "mongo-express": "^1.0.0-alpha.4",
     "nock": "^13.2.1",
     "nodemon": "^2.0.12",
     "signale": "^1.4.0",

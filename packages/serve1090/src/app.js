@@ -45,7 +45,7 @@ async function init (config) {
     const store = require('../src/stores/aircraft-store');
 
     // kick off the jobs
-    await require('./services/worker-service')(mongo); // todo use a Class?
+    await require('./services/worker-service')(mongo);
 
     // set up routers
     app.use('/', rootRouter(store, redis, mongo));

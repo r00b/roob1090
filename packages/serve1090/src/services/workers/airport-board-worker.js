@@ -26,7 +26,6 @@ const airportBoard = require('../../lib/airport-board');
     }).connect();
 
     const computeAirportBoard = airportBoard(store, redis, mongo, logger);
-
     await computeAirportBoard(airport);
 
     exit(0);

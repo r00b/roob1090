@@ -1,4 +1,4 @@
-const { wait } = require('../../../support/helpers');
+const { delay } = require('../../../support/helpers');
 const express = require('express');
 const ws = require('express-ws');
 const request = require('supertest');
@@ -57,7 +57,7 @@ describe('aircraft router', () => {
 
     afterEach(async () => {
       await server.close();
-      await wait();
+      await delay();
     });
 
     test('accepts data via WebSocket and adds it to store', async () => {

@@ -40,7 +40,7 @@ Alternatively, if running the `express` server outside a Docker container:
 
 #### Installation and execution
 
-`npm run compose` (`docker-compose up -d --build`) will start the entire `serve1090` stack within two `docker` containers, one for the `express` server and one for KeyDB. The `express` server running in the container supports hot reloading.
+`docker-compose up -d --build` will start the entire `serve1090` stack within two `docker` containers, one for the `express` server and one for KeyDB. The `express` server running in the container supports hot reloading.
 
 By default, the app builds under `NODE_ENV=development`. For a production build without hot reloading that uses a performance logger and PM2 for crash recovery, change `NODE_ENV` to `production` in `.env` and run `npm compose`.
 
@@ -53,6 +53,14 @@ See [package.json](package.json) for more info.
 `serve1090` depends on [KeyDB](https://github.com/JohnSully/KeyDB), a high performance fork of [Redis](https://github.com/redis/redis) with some extra features that are particularly useful for keeping and constantly refreshing an updated data stream of aircraft. Specifically, `serve1090` leverages the `EXPIREMEMBER` command unique to KeyDB that allows for an individual member of a hash or set to be given an expiration time, something that is not possible in Redis and saves a lot of complicated store logic to purge out stale aircraft as the fly out of range of the dependent `dump1090` receiver(s).
 
 `serve1090` will fail to persist aircraft without a properly configured instance of KeyDB exposed on port 6379 (see [keydb.conf.template](keydb.conf.template)).
+
+#### MongoDB
+
+[mongo-express](https://www.npmjs.com/package/mongo-express) can be used to directly view the MongoDB database via
+
+```bash
+mongo-express -a --url mongodb://$(grep MONGO_USERNAME .env | cut -d '=' -f2):$(grep MONGO_PASSWORD .env | cut -d '=' -f2)@127.0.0.1:27017
+```
 
 #### Adding new airspaces
 

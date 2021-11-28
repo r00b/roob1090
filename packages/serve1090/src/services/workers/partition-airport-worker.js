@@ -26,7 +26,6 @@ const partitionAircraft = require('../../lib/partition-airport');
     }).connect();
 
     const partitionAirport = partitionAircraft(store, redis, mongo, logger);
-
     await partitionAirport(airport);
 
     exit(0);

@@ -31,7 +31,7 @@ const {
     logger.info('enrichments worker completed', { airport: airportKey, duration: Date.now() - start });
     exit(0);
   } catch (e) {
-    logger.error(`unhandled worker error: ${e.message}`, e);
+    logger.error(`unhandled enrichments-worker error: ${e.message}`, e);
     exit(1);
   }
 })();

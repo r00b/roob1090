@@ -7,7 +7,7 @@
   "author": "Robert Steilberg <rsteilberg@gmail.com>",
   "scripts": {
     "start": "node index.js",
-    "pm2": "pm2-runtime index.js",
+    "pm2": "pm2 index.js",
     "debug": "nodemon --inspect=0.0.0.0 index.js",
     "d": "npm run debug",
     "test": "jest",
@@ -34,7 +34,7 @@
     "nanoid": "^3.1.23",
     "p-map": "^4.0.0",
     "pino": "^6.12.0",
-    "pm2": "^5.1.0",
+    "pm2": "^5.1.2",
     "safe-compare": "^1.1.4"
   },
   "devDependencies": {
@@ -47,7 +47,7 @@
     "superwstest": "^1.8.0"
   },
   "volta": {
-    "node": "16.5.0",
-    "npm": "7.19.1"
+    "node": "16.13.0",
+    "npm": "8.1.4"
   }
 }

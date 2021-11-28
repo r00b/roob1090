@@ -6,6 +6,7 @@ WORKDIR $APP_DIR
 
 COPY package.json package-lock.json $APP_DIR/
 
+RUN npm i -g pm2
 RUN npm ci
 
 COPY index.js $APP_DIR

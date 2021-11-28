@@ -1,7 +1,7 @@
 #!/bin/sh
 
 if [ "$NODE_ENV" = "production" ]; then
-  npm run pm2
+  pm2-runtime index.js
 else
   npm run debug
 fi

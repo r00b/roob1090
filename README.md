@@ -19,16 +19,3 @@
 2. `git submodule init`
 3. `git submodule update` will fetch `dump1090`
 4. Follow the individual READMEs for each package to initialize the dependent environment variables
-
-### Remarks
-
-I created this stack as a personal exercise to achieve the following goals, in descending order of importance:
-
-1. As someone who lives next to and with a direct view of Washington Reagan National Airport, I wanted to be able to see an aircraft landing or taking off and immediately know its flight number, origin or destination, aircraft type, and other information without consulting/paying for a public API
-2. Record and analyze flight trends into and out of DCA and the surrounding airspace
-3. Take up ADS-B flight tracking as a hobby and contribute to the flight tracking community by sending data to aggregates like FlightAware
-4. Learn Rust and Raspberry Pi
-5. Build a "full stack" application that harvests data and exposes an API and hone my back-end development skills
-6. Develop software for something other than my full-time job
-
-This stack should require minimal development to make it useful for any airspace or airport other than DCA; details on how to do this are included in the `serve1090` [README](./packages/pump1090/README.md).

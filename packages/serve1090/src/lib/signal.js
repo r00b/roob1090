@@ -1,4 +1,4 @@
-const { Signale } = require("signale");
+const { Signale } = require('signale');
 
 class Signal extends Signale {
   constructor(options = {}) {

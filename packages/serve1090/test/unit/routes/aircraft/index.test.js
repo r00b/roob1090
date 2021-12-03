@@ -1,22 +1,22 @@
-const { delay } = require("../../../support/helpers");
-const express = require("express");
-const ws = require("express-ws");
-const request = require("supertest");
-const requestWs = require("superwstest").default;
-const httpRequestLogger = require("../../../../src/middleware/http-request-logger");
-const aircraftRouter = require("../../../../src/routes/aircraft/index");
-const { ENRICHMENTS } = require("../../../../src/lib/redis-keys");
+const { delay } = require('../../../support/helpers');
+const express = require('express');
+const ws = require('express-ws');
+const request = require('supertest');
+const requestWs = require('superwstest').default;
+const httpRequestLogger = require('../../../../src/middleware/http-request-logger');
+const aircraftRouter = require('../../../../src/routes/aircraft/index');
+const { ENRICHMENTS } = require('../../../../src/lib/redis-keys');
 
 jest.mock(
-  "../../../../src/lib/logger",
-  () => () => require("../../../support/mock-logger")
+  '../../../../src/lib/logger',
+  () => () => require('../../../support/mock-logger')
 );
 
 const WS_WAIT = 100;
 
-describe("aircraft router", () => {
+describe('aircraft router', () => {
   let app, wss, store, redis;
-  const pumpKey = "pumpKey";
+  const pumpKey = 'pumpKey';
 
   beforeEach(() => {
     app = express();
@@ -40,14 +40,14 @@ describe("aircraft router", () => {
     app.use(aircraftRouter(pumpKey, store, redis));
   });
 
-  describe("/pump", () => {
+  describe('/pump', () => {
     let server, payload;
 
     beforeEach(() => {
       payload = {
         aircraft: [],
         token: pumpKey,
-        device_id: "deviceId",
+        device_id: 'deviceId',
         messages: 20,
         now: Date.now(),
       };
@@ -62,9 +62,9 @@ describe("aircraft router", () => {
       await delay();
     });
 
-    test("accepts data via WebSocket and adds it to store", async () => {
+    test('accepts data via WebSocket and adds it to store', async () => {
       await requestWs(wss)
-        .ws("/pump")
+        .ws('/pump')
         .sendText(JSON.stringify(payload))
         .close(1000)
         .expectClosed(1000)
@@ -77,14 +77,14 @@ describe("aircraft router", () => {
       expect(redis.decr.mock.calls.length).toBe(1);
     });
 
-    test("rejects payload with missing token", async () => {
+    test('rejects payload with missing token', async () => {
       delete payload.token;
 
       await requestWs(wss)
-        .ws("/pump")
+        .ws('/pump')
         .sendText(JSON.stringify(payload))
         .expectText('{"message":"auth error","detail":"missing token"}')
-        .expectClosed(1008, "auth error: missing token")
+        .expectClosed(1008, 'auth error: missing token')
         .wait(WS_WAIT);
 
       expect(store.addAircraft.mock.calls.length).toBe(0);
@@ -93,14 +93,14 @@ describe("aircraft router", () => {
       expect(redis.decr.mock.calls.length).toBe(1);
     });
 
-    test("rejects payload with invalid token", async () => {
-      payload.token = "ruh roh";
+    test('rejects payload with invalid token', async () => {
+      payload.token = 'ruh roh';
 
       await requestWs(wss)
-        .ws("/pump")
+        .ws('/pump')
         .sendText(JSON.stringify(payload))
         .expectText('{"message":"auth error","detail":"bad token"}')
-        .expectClosed(1008, "auth error: bad token")
+        .expectClosed(1008, 'auth error: bad token')
         .wait(WS_WAIT);
 
       expect(store.addAircraft.mock.calls.length).toBe(0);
@@ -109,11 +109,11 @@ describe("aircraft router", () => {
       expect(redis.decr.mock.calls.length).toBe(1);
     });
 
-    test("rejects malformed payload", async () => {
+    test('rejects malformed payload', async () => {
       delete payload.aircraft;
 
       await requestWs(wss)
-        .ws("/pump")
+        .ws('/pump')
         .sendText(JSON.stringify(payload))
         .expectText(
           '{"message":"malformed payload rejected","detail":"\'aircraft\' is required"}'
@@ -130,16 +130,16 @@ describe("aircraft router", () => {
       expect(redis.decr.mock.calls.length).toBe(1);
     });
 
-    test("handles internal errors", async () => {
+    test('handles internal errors', async () => {
       await requestWs(wss)
-        .ws("/pump")
-        .sendText("this will blow up JSON.parse")
+        .ws('/pump')
+        .sendText('this will blow up JSON.parse')
         .expectText(
           '{"message":"internal server error","detail":"Unexpected token h in JSON at position 1"}'
         )
         .expectClosed(
           1011,
-          "internal server error: Unexpected token h in JSON at position 1"
+          'internal server error: Unexpected token h in JSON at position 1'
         )
         .wait(WS_WAIT);
 
@@ -150,199 +150,199 @@ describe("aircraft router", () => {
     });
   });
 
-  describe("/all", () => {
-    test("gets the entire aircraft store", async () => {
+  describe('/all', () => {
+    test('gets the entire aircraft store', async () => {
       store.getAllAircraft.mockResolvedValue({
-        aircraft: "aircraft",
+        aircraft: 'aircraft',
       });
 
       const res = await request(app)
-        .get("/all")
-        .set("Accept", "application/json")
-        .expect("Content-Type", /json/)
+        .get('/all')
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
         .expect(200);
       expect(res.body).toEqual({
-        aircraft: "aircraft",
+        aircraft: 'aircraft',
       });
     });
 
-    test("handles errors", async () => {
+    test('handles errors', async () => {
       store.getAllAircraft.mockImplementation(() => {
-        throw new Error("oh noes");
+        throw new Error('oh noes');
       });
 
       const res = await request(app)
-        .get("/all")
-        .set("Accept", "application/json")
-        .expect("Content-Type", /json/)
+        .get('/all')
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
         .expect(500);
 
       expect(res.body).toEqual({
-        detail: "oh noes",
-        message: "internal server error",
+        detail: 'oh noes',
+        message: 'internal server error',
       });
     });
   });
 
-  describe("/valid", () => {
-    test("gets the valid aircraft store", async () => {
+  describe('/valid', () => {
+    test('gets the valid aircraft store', async () => {
       store.getValidAircraft.mockResolvedValue({
-        aircraft: "aircraft",
+        aircraft: 'aircraft',
       });
 
       const res = await request(app)
-        .get("/valid")
-        .set("Accept", "application/json")
-        .expect("Content-Type", /json/)
+        .get('/valid')
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
         .expect(200);
       expect(res.body).toEqual({
-        aircraft: "aircraft",
+        aircraft: 'aircraft',
       });
     });
 
-    test("handles errors", async () => {
+    test('handles errors', async () => {
       store.getValidAircraft.mockImplementation(() => {
-        throw new Error("oh noes");
+        throw new Error('oh noes');
       });
 
       const res = await request(app)
-        .get("/valid")
-        .set("Accept", "application/json")
-        .expect("Content-Type", /json/)
+        .get('/valid')
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
         .expect(500);
 
       expect(res.body).toEqual({
-        detail: "oh noes",
-        message: "internal server error",
+        detail: 'oh noes',
+        message: 'internal server error',
       });
     });
   });
 
-  describe("/invalid", () => {
-    test("gets the invalid aircraft store", async () => {
+  describe('/invalid', () => {
+    test('gets the invalid aircraft store', async () => {
       store.getInvalidAircraft.mockResolvedValue({
-        aircraft: "aircraft",
+        aircraft: 'aircraft',
       });
 
       const res = await request(app)
-        .get("/invalid")
-        .set("Accept", "application/json")
-        .expect("Content-Type", /json/)
+        .get('/invalid')
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
         .expect(200);
       expect(res.body).toEqual({
-        aircraft: "aircraft",
+        aircraft: 'aircraft',
       });
     });
 
-    test("handles errors", async () => {
+    test('handles errors', async () => {
       store.getInvalidAircraft.mockImplementation(() => {
-        throw new Error("oh noes");
+        throw new Error('oh noes');
       });
 
       const res = await request(app)
-        .get("/invalid")
-        .set("Accept", "application/json")
-        .expect("Content-Type", /json/)
+        .get('/invalid')
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
         .expect(500);
 
       expect(res.body).toEqual({
-        detail: "oh noes",
-        message: "internal server error",
+        detail: 'oh noes',
+        message: 'internal server error',
       });
     });
   });
 
-  describe("/enrichments", () => {
-    test("gets enrichments", async () => {
+  describe('/enrichments', () => {
+    test('gets enrichments', async () => {
       redis.hgetAllAsJson.mockResolvedValue({
-        enrichments: "enrichments",
+        enrichments: 'enrichments',
       });
 
       const res = await request(app)
-        .get("/enrichments")
-        .set("Accept", "application/json")
-        .expect("Content-Type", /json/)
+        .get('/enrichments')
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
         .expect(200);
       expect(res.body).toEqual({
-        enrichments: "enrichments",
+        enrichments: 'enrichments',
       });
       expect(redis.hgetAllAsJson.mock.calls[0][0]).toBe(ENRICHMENTS);
     });
 
-    test("handles errors", async () => {
+    test('handles errors', async () => {
       redis.hgetAllAsJson.mockImplementation(() => {
-        throw new Error("oh noes");
+        throw new Error('oh noes');
       });
 
       const res = await request(app)
-        .get("/enrichments")
-        .set("Accept", "application/json")
-        .expect("Content-Type", /json/)
+        .get('/enrichments')
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
         .expect(500);
 
       expect(res.body).toEqual({
-        detail: "oh noes",
-        message: "internal server error",
+        detail: 'oh noes',
+        message: 'internal server error',
       });
     });
   });
 
-  describe("/totalCount", () => {
-    test("gets the total count of all aircraft in the store", async () => {
+  describe('/totalCount', () => {
+    test('gets the total count of all aircraft in the store', async () => {
       store.getTotalAircraftCount.mockResolvedValue(58);
 
       const res = await request(app)
-        .get("/totalCount")
-        .set("Accept", "application/json")
-        .expect("Content-Type", /json/)
+        .get('/totalCount')
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
         .expect(200);
       expect(res.body).toBe(58);
     });
 
-    test("handles errors", async () => {
+    test('handles errors', async () => {
       store.getTotalAircraftCount.mockImplementation(() => {
-        throw new Error("oh noes");
+        throw new Error('oh noes');
       });
 
       const res = await request(app)
-        .get("/totalCount")
-        .set("Accept", "application/json")
-        .expect("Content-Type", /json/)
+        .get('/totalCount')
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
         .expect(500);
 
       expect(res.body).toEqual({
-        detail: "oh noes",
-        message: "internal server error",
+        detail: 'oh noes',
+        message: 'internal server error',
       });
     });
   });
 
-  describe("/validCount", () => {
-    test("gets the total count of valid aircraft in the store", async () => {
+  describe('/validCount', () => {
+    test('gets the total count of valid aircraft in the store', async () => {
       store.getValidAircraftCount.mockResolvedValue(85);
 
       const res = await request(app)
-        .get("/validCount")
-        .set("Accept", "application/json")
-        .expect("Content-Type", /json/)
+        .get('/validCount')
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
         .expect(200);
       expect(res.body).toBe(85);
     });
 
-    test("handles errors", async () => {
+    test('handles errors', async () => {
       store.getValidAircraftCount.mockImplementation(() => {
-        throw new Error("oh noes");
+        throw new Error('oh noes');
       });
 
       const res = await request(app)
-        .get("/validCount")
-        .set("Accept", "application/json")
-        .expect("Content-Type", /json/)
+        .get('/validCount')
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
         .expect(500);
 
       expect(res.body).toEqual({
-        detail: "oh noes",
-        message: "internal server error",
+        detail: 'oh noes',
+        message: 'internal server error',
       });
     });
   });

@@ -1,13 +1,13 @@
-const _ = require("lodash");
-const logger = require("../../lib/logger")().scope("enrichments-worker");
-const config = require("../../config");
-const { exit } = require("../../lib/utils");
-const airportKey = require("worker_threads").workerData.job.airport;
-const enrichments = require("../../lib/enrichments");
+const _ = require('lodash');
+const logger = require('../../lib/logger')().scope('enrichments-worker');
+const config = require('../../config');
+const { exit } = require('../../lib/utils');
+const airportKey = require('worker_threads').workerData.job.airport;
+const enrichments = require('../../lib/enrichments');
 
-const RedisService = require("../redis-service");
+const RedisService = require('../redis-service');
 const redis = new RedisService();
-const { BOARD, ENRICHMENTS } = require("../../lib/redis-keys");
+const { BOARD, ENRICHMENTS } = require('../../lib/redis-keys');
 
 const { fetchRoute, fetchAirframe } = enrichments(config, redis, logger);
 
@@ -19,12 +19,12 @@ const { fetchRoute, fetchAirframe } = enrichments(config, redis, logger);
     if (board) {
       await computeAndStoreEnrichments(board);
     } else {
-      logger.warn("unable to find board with which to compute enrichments", {
+      logger.warn('unable to find board with which to compute enrichments', {
         airport: airportKey,
       });
     }
 
-    logger.info("enrichments worker completed", {
+    logger.info('enrichments worker completed', {
       airport: airportKey,
       duration: Date.now() - start,
     });
@@ -89,6 +89,6 @@ function getAircraftHashes(board) {
  * @returns {object} - merged enrichments
  */
 function resolveAndMerge(promises) {
-  const fulfilled = promises.filter((p) => (p.status = "fulfilled"));
+  const fulfilled = promises.filter((p) => (p.status = 'fulfilled'));
   return _.merge(...fulfilled.map((p) => p.value));
 }

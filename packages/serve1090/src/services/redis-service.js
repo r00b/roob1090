@@ -1,13 +1,13 @@
-const Redis = require("ioredis");
+const Redis = require('ioredis');
 const {
   redisHost: host,
   redisPort: port,
   redisUser: username,
   redisPass: password,
-} = require("../config");
-const { RedisError } = require("../lib/errors");
-const logger = require("../lib/logger")().scope("redis");
-const pMap = require("p-map");
+} = require('../config');
+const { RedisError } = require('../lib/errors');
+const logger = require('../lib/logger')().scope('redis');
+const pMap = require('p-map');
 
 class RedisService {
   constructor(verbose = false) {
@@ -18,17 +18,17 @@ class RedisService {
       password,
       retryStrategy: (_) => 5000,
     });
-    this.redis.on("ready", () => {
+    this.redis.on('ready', () => {
       if (verbose) {
-        logger.info("redis connection established", { host, port });
+        logger.info('redis connection established', { host, port });
       }
     });
-    this.redis.on("error", (err) =>
-      logger.fatal("redis client error", { detail: err.message, host, port })
+    this.redis.on('error', (err) =>
+      logger.fatal('redis client error', { detail: err.message, host, port })
     );
-    this.redis.on("end", () => {
+    this.redis.on('end', () => {
       if (verbose) {
-        logger.info("redis connection ended", { host, port });
+        logger.info('redis connection ended', { host, port });
       }
     });
   }
@@ -84,7 +84,7 @@ class RedisService {
   async hsetJsonEx(key, field, value, ex) {
     const set = await this.hsetJson(key, field, value);
     const expire = await this.redis.call(
-      "expiremember",
+      'expiremember',
       key,
       field,
       ex,
@@ -104,7 +104,7 @@ class RedisService {
   async saddEx(key, ex, ...values) {
     const adds = await this.redis.sadd(key, ...values, this._errHandler);
     const expires = await pMap(values, (value) =>
-      this.redis.call("expiremember", key, value, ex, this._errHandler)
+      this.redis.call('expiremember', key, value, ex, this._errHandler)
     );
     return [adds, expires.length];
   }
@@ -177,7 +177,7 @@ class RedisService {
       try {
         return JSON.parse(res);
       } catch (e) {
-        throw new RedisError("unable to parse result into JSON", {
+        throw new RedisError('unable to parse result into JSON', {
           key,
           value: String(res),
         });
@@ -198,7 +198,7 @@ class RedisService {
       try {
         return JSON.parse(res);
       } catch (e) {
-        throw new RedisError("unable to parse result into JSON", {
+        throw new RedisError('unable to parse result into JSON', {
           key,
           field,
           value: String(res),
@@ -329,7 +329,7 @@ class RedisService {
    */
   _errHandler(e, result) {
     if (e) {
-      logger.error("redis op error", { detail: e.message, ...e.command });
+      logger.error('redis op error', { detail: e.message, ...e.command });
     }
   }
 }
@@ -362,14 +362,14 @@ class Pipeline {
 
   hsetJsonEx(key, field, value, ex) {
     this.hsetJson(key, field, value);
-    this._pipeline.call("expiremember", key, field, ex);
+    this._pipeline.call('expiremember', key, field, ex);
     return this;
   }
 
   saddEx(key, ex, ...values) {
     this._pipeline.sadd(key, ...values);
     values.forEach((value) =>
-      this._pipeline.call("expiremember", key, value, ex)
+      this._pipeline.call('expiremember', key, value, ex)
     );
     return this;
   }

@@ -1,10 +1,10 @@
-const { aircraft, airframe, pumpBody } = require("../../../src/lib/schemas");
+const { aircraft, airframe, pumpBody } = require('../../../src/lib/schemas');
 
-describe("schemas", () => {
-  describe("aircraft", () => {
+describe('schemas', () => {
+  describe('aircraft', () => {
     const baseValidated = {
-      hex: "3ef",
-      flight: "AAL1",
+      hex: '3ef',
+      flight: 'AAL1',
       lat: 0.0,
       lon: 10.0,
       altBaro: 100,
@@ -14,10 +14,10 @@ describe("schemas", () => {
       error: false,
     };
 
-    test("camelcases keys", () => {
+    test('camelcases keys', () => {
       const input = {
-        hex: "3ef",
-        flight: "AAL1",
+        hex: '3ef',
+        flight: 'AAL1',
         lat: 0.0,
         lon: 10.0,
         alt_baro: 100,
@@ -34,18 +34,18 @@ describe("schemas", () => {
       expect(error).toBeUndefined();
     });
 
-    test("strips unknown keys", () => {
+    test('strips unknown keys', () => {
       const input = {
-        hex: "3ef",
-        flight: "AAL1",
+        hex: '3ef',
+        flight: 'AAL1',
         lat: 0.0,
         lon: 10.0,
         alt_baro: 100,
         baro_rate: 20,
         track: 180,
         seen: 1,
-        foo: "bar",
-        bar: "baz",
+        foo: 'bar',
+        bar: 'baz',
       };
 
       const { value, error } = aircraft.validate(input);
@@ -56,10 +56,10 @@ describe("schemas", () => {
       expect(error).toBeUndefined();
     });
 
-    test("strips expected keys", () => {
+    test('strips expected keys', () => {
       const input = {
-        hex: "3ef",
-        flight: "AAL1",
+        hex: '3ef',
+        flight: 'AAL1',
         lat: 0.0,
         lon: 10.0,
         alt_baro: 100,
@@ -67,7 +67,7 @@ describe("schemas", () => {
         track: 180,
         seen: 1,
 
-        category: "foo",
+        category: 'foo',
         nic: 1,
         nic_baro: 1,
         rc: 1,
@@ -75,12 +75,12 @@ describe("schemas", () => {
         nac_p: 1,
         nac_v: 1,
         sil: 1,
-        sil_type: "foo",
+        sil_type: 'foo',
         gva: 1,
         sda: 1,
-        mlat: ["foo"],
-        tisb: ["foo"],
-        type: "foo",
+        mlat: ['foo'],
+        tisb: ['foo'],
+        type: 'foo',
       };
 
       const { value, error } = aircraft.validate(input);
@@ -91,10 +91,10 @@ describe("schemas", () => {
       expect(error).toBeUndefined();
     });
 
-    test("renames expected keys", () => {
+    test('renames expected keys', () => {
       const input = {
-        hex: "3ef",
-        flight: "AAL1",
+        hex: '3ef',
+        flight: 'AAL1',
         lat: 0.0,
         lon: 10.0,
         alt_baro: 100,
@@ -115,12 +115,12 @@ describe("schemas", () => {
       expect(error).toBeUndefined();
     });
 
-    test("sets updated to Date.now()", () => {
+    test('sets updated to Date.now()', () => {
       const baseline = Date.now() - 300000;
 
       const input = {
-        hex: "3ef",
-        flight: "AAL1",
+        hex: '3ef',
+        flight: 'AAL1',
         lat: 0.0,
         lon: 10.0,
         alt_baro: 100,
@@ -136,10 +136,10 @@ describe("schemas", () => {
       expect(error).toBeUndefined();
     });
 
-    test("forbids updated to be set prior to validation", () => {
+    test('forbids updated to be set prior to validation', () => {
       const input = {
-        hex: "3ef",
-        flight: "AAL1",
+        hex: '3ef',
+        flight: 'AAL1',
         lat: 0.0,
         lon: 10.0,
         alt_baro: 100,
@@ -155,7 +155,7 @@ describe("schemas", () => {
     });
   });
 
-  describe("airframe", () => {
+  describe('airframe', () => {
     const baseValidated = {
       registration: null,
       manufacturerName: null,
@@ -173,25 +173,25 @@ describe("schemas", () => {
       built: null,
       engines: null,
       country: null,
-      hex: "a9bb8b",
+      hex: 'a9bb8b',
       lastUpdated: null,
     };
 
-    test("capitalizes registration", () => {
+    test('capitalizes registration', () => {
       const input = {
-        registration: "n6619O",
-        hex: "a9bb8b",
+        registration: 'n6619O',
+        hex: 'a9bb8b',
       };
 
       const { value, error } = airframe.validate(input);
-      expect(value.registration).toEqual("N6619O");
+      expect(value.registration).toEqual('N6619O');
       expect(error).toBeUndefined();
     });
 
-    test("renames expected keys", () => {
+    test('renames expected keys', () => {
       const input = {
-        icao24: "3ef",
-        typecode: "B788",
+        icao24: '3ef',
+        typecode: 'B788',
         timestamp: 1578942000000,
       };
       const expected = {
@@ -206,39 +206,39 @@ describe("schemas", () => {
       expect(error).toBeUndefined();
     });
 
-    test("strips expected keys and nulls expected values", () => {
+    test('strips expected keys and nulls expected values', () => {
       const input = {
-        registration: "",
-        manufacturerName: "",
-        manufacturerIcao: "foo",
-        model: "",
-        typecode: "",
-        serialNumber: "",
-        lineNumber: "foo",
-        icaoAircraftClass: "",
-        selCal: "foo",
-        operator: "",
-        operatorCallsign: "",
-        operatorIcao: "",
-        operatorIata: "",
-        owner: "",
-        categoryDescription: "",
-        registered: "foo",
-        regUntil: "",
-        status: "foo",
+        registration: '',
+        manufacturerName: '',
+        manufacturerIcao: 'foo',
+        model: '',
+        typecode: '',
+        serialNumber: '',
+        lineNumber: 'foo',
+        icaoAircraftClass: '',
+        selCal: 'foo',
+        operator: '',
+        operatorCallsign: '',
+        operatorIcao: '',
+        operatorIata: '',
+        owner: '',
+        categoryDescription: '',
+        registered: 'foo',
+        regUntil: '',
+        status: 'foo',
         built: null,
-        firstFlightDate: "foo",
-        engines: "",
+        firstFlightDate: 'foo',
+        engines: '',
         modes: false,
         adsb: false,
         acars: false,
         vdlr: false,
-        notes: "foo",
-        country: "",
-        lastSeen: "foo",
-        firstSeen: "foo",
-        hex: "a9bb8b",
-        timestamp: "",
+        notes: 'foo',
+        country: '',
+        lastSeen: 'foo',
+        firstSeen: 'foo',
+        hex: 'a9bb8b',
+        timestamp: '',
       };
 
       const { value, error } = airframe.validate(input);
@@ -246,17 +246,17 @@ describe("schemas", () => {
       expect(error).toBeUndefined();
     });
 
-    test("parses dates", () => {
+    test('parses dates', () => {
       const expected = {
         ...baseValidated,
-        regUntil: new Date("2023-01-01"),
-        built: new Date("1996-01-01"),
-        lastUpdated: new Date("2020-06-01T19:00:00.000Z"),
+        regUntil: new Date('2023-01-01'),
+        built: new Date('1996-01-01'),
+        lastUpdated: new Date('2020-06-01T19:00:00.000Z'),
       };
       const input = {
-        hex: "a9bb8b",
-        regUntil: "2023-01-01",
-        built: "1996-01-01",
+        hex: 'a9bb8b',
+        regUntil: '2023-01-01',
+        built: '1996-01-01',
         timestamp: 1591038000000,
       };
 
@@ -265,11 +265,11 @@ describe("schemas", () => {
       expect(error).toBeUndefined();
     });
 
-    test("strips unknown keys", () => {
+    test('strips unknown keys', () => {
       const input = {
-        icao24: "3ef",
-        foo: "bar",
-        bar: "baz",
+        icao24: '3ef',
+        foo: 'bar',
+        bar: 'baz',
       };
 
       const expected = {
@@ -283,12 +283,12 @@ describe("schemas", () => {
     });
   });
 
-  describe("pump body", () => {
-    test("validates payload", () => {
+  describe('pump body', () => {
+    test('validates payload', () => {
       const input = {
         aircraft: [],
-        token: "3ef",
-        device_id: "4ef",
+        token: '3ef',
+        device_id: '4ef',
         messages: 2,
         now: Date.now(),
       };
@@ -297,7 +297,7 @@ describe("schemas", () => {
       expect(res.value).toEqual(input);
       expect(res.error).toBeUndefined();
 
-      input.foo = "bar";
+      input.foo = 'bar';
       res = pumpBody.validate(input);
       expect(res.error).toBeDefined();
 

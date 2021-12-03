@@ -1,7 +1,7 @@
-const Joi = require("../../../src/lib/joi");
+const Joi = require('../../../src/lib/joi');
 
-describe("joi", () => {
-  test("validates altitude", () => {
+describe('joi', () => {
+  test('validates altitude', () => {
     const schema = Joi.object({
       a: Joi.altitude(),
     });
@@ -15,7 +15,7 @@ describe("joi", () => {
     expect(res.error).toBeUndefined();
 
     res = schema.validate({
-      a: "ground",
+      a: 'ground',
     });
     expect(res.value).toEqual({
       a: 0,
@@ -23,18 +23,18 @@ describe("joi", () => {
     expect(res.error).toBeUndefined();
 
     res = schema.validate({
-      a: "a",
+      a: 'a',
     });
     expect(res.error).toBeDefined();
   });
 
-  test("validates a string or sets it to null", () => {
+  test('validates a string or sets it to null', () => {
     const schema = Joi.object({
       a: Joi.stringOrNull(),
     });
 
     let res = schema.validate({
-      a: "",
+      a: '',
     });
     expect(res.value).toEqual({
       a: null,
@@ -42,15 +42,15 @@ describe("joi", () => {
     expect(res.error).toBeUndefined();
 
     res = schema.validate({
-      a: "a",
+      a: 'a',
     });
     expect(res.value).toEqual({
-      a: "a",
+      a: 'a',
     });
     expect(res.error).toBeUndefined();
   });
 
-  test("validates a number or sets it to null", () => {
+  test('validates a number or sets it to null', () => {
     const schema = Joi.object({
       a: Joi.numberOrNull(),
     });
@@ -80,7 +80,7 @@ describe("joi", () => {
     expect(res.error).toBeUndefined();
 
     res = schema.validate({
-      a: "a",
+      a: 'a',
     });
     expect(res.value).toEqual({
       a: null,
@@ -88,16 +88,16 @@ describe("joi", () => {
     expect(res.error).toBeUndefined();
   });
 
-  test("validates a date or sets it to null", () => {
+  test('validates a date or sets it to null', () => {
     const schema = Joi.object({
       a: Joi.dateOrNull(),
     });
 
     let res = schema.validate({
-      a: "1996-04-04",
+      a: '1996-04-04',
     });
     expect(res.value).toEqual({
-      a: new Date("1996-04-04"),
+      a: new Date('1996-04-04'),
     });
     expect(res.error).toBeUndefined();
 
@@ -117,7 +117,7 @@ describe("joi", () => {
     });
 
     res = schema.validate({
-      a: "a",
+      a: 'a',
     });
     expect(res.value).toEqual({
       a: null,
@@ -125,7 +125,7 @@ describe("joi", () => {
     expect(res.error).toBeUndefined();
   });
 
-  test("converts hPa to inHg", () => {
+  test('converts hPa to inHg', () => {
     const schema = Joi.object({
       a: Joi.altimeter(),
     });
@@ -139,7 +139,7 @@ describe("joi", () => {
     expect(res.error).toBeUndefined();
 
     res = schema.validate({
-      a: "foo",
+      a: 'foo',
     });
     expect(res.error).toBeDefined();
   });

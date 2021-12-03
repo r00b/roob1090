@@ -1,14 +1,14 @@
-const express = require("express");
-const request = require("supertest");
-const httpRequestLogger = require("../../../src/middleware/http-request-logger");
-const rootRouter = require("../../../src/routes/index");
+const express = require('express');
+const request = require('supertest');
+const httpRequestLogger = require('../../../src/middleware/http-request-logger');
+const rootRouter = require('../../../src/routes/index');
 
 jest.mock(
-  "../../../src/lib/logger",
-  () => () => require("../../support/mock-logger")
+  '../../../src/lib/logger',
+  () => () => require('../../support/mock-logger')
 );
 
-describe("root router", () => {
+describe('root router', () => {
   let app, store, redis, mongo;
 
   beforeEach(() => {
@@ -29,16 +29,16 @@ describe("root router", () => {
     app.use(rootRouter(store, redis, mongo));
   });
 
-  test("returns the root of the api", async () => {
+  test('returns the root of the api', async () => {
     store.getTotalAircraftCount.mockResolvedValue(5);
     store.getValidAircraftCount.mockResolvedValue(10);
     redis.get.mockReturnValueOnce(1).mockReturnValueOnce(2);
-    mongo.getAllActiveAirportIdents.mockResolvedValueOnce(["kvkx"]);
+    mongo.getAllActiveAirportIdents.mockResolvedValueOnce(['kvkx']);
 
     const res = await request(app)
-      .get("/")
-      .set("Accept", "application/json")
-      .expect("Content-Type", /json/)
+      .get('/')
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
       .expect(200);
     const body = res.body;
 
@@ -55,48 +55,48 @@ describe("root router", () => {
     expect(body.stats.uptime.length).toBeGreaterThan(0);
   });
 
-  test("handles store error", async () => {
+  test('handles store error', async () => {
     store.getTotalAircraftCount.mockImplementation(() => {
-      throw new Error("oh noes");
+      throw new Error('oh noes');
     });
 
     const res = await request(app)
-      .get("/")
-      .set("Accept", "application/json")
-      .expect("Content-Type", /json/)
+      .get('/')
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
       .expect(500);
 
     expect(res.body).toEqual({
-      detail: "oh noes",
-      message: "internal server error",
+      detail: 'oh noes',
+      message: 'internal server error',
     });
   });
 
-  test("handles redis error", async () => {
+  test('handles redis error', async () => {
     redis.get.mockImplementation(() => {
-      throw new Error("oh noes");
+      throw new Error('oh noes');
     });
 
     const res = await request(app)
-      .get("/")
-      .set("Accept", "application/json")
-      .expect("Content-Type", /json/)
+      .get('/')
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
       .expect(200);
 
-    expect(res.body.stats.dataSourcesCount).toEqual("error");
+    expect(res.body.stats.dataSourcesCount).toEqual('error');
   });
 
-  test("handles mongo error", async () => {
+  test('handles mongo error', async () => {
     mongo.getAllActiveAirportIdents.mockImplementation(() => {
-      throw new Error("oh noes");
+      throw new Error('oh noes');
     });
 
     const res = await request(app)
-      .get("/")
-      .set("Accept", "application/json")
-      .expect("Content-Type", /json/)
+      .get('/')
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
       .expect(200);
 
-    expect(res.body.routes.airports).toEqual("error");
+    expect(res.body.routes.airports).toEqual('error');
   });
 });

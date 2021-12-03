@@ -1,5 +1,5 @@
-const { AuthError, PayloadError, BroadcastError } = require("../lib/errors");
-const { close } = require("../lib/utils");
+const { AuthError, PayloadError, BroadcastError } = require('../lib/errors');
+const { close } = require('../lib/utils');
 
 module.exports = (err, req, res, next) => {
   try {
@@ -26,7 +26,7 @@ module.exports = (err, req, res, next) => {
     const logger = req.ws
       ? req.ws.local.socketLogger
       : res.locals.requestLogger;
-    logger.error("unhandled router error", e);
+    logger.error('unhandled router error', e);
   }
 };
 
@@ -36,28 +36,28 @@ function parseError(err) {
       return {
         status: err.code,
         wsStatus: err.wsCode,
-        message: "auth error",
+        message: 'auth error',
         detail: err.message,
       };
     case PayloadError:
       return {
         status: err.code,
         wsStatus: err.wsCode,
-        message: "malformed payload rejected",
+        message: 'malformed payload rejected',
         detail: err.message,
       };
     case BroadcastError:
       return {
         status: err.code,
         wsStatus: err.wsCode,
-        message: "broadcast error",
+        message: 'broadcast error',
         detail: err.message,
       };
     default:
       return {
         status: 500,
         wsStatus: 1011,
-        message: "internal server error",
+        message: 'internal server error',
         detail: err.message,
       };
   }

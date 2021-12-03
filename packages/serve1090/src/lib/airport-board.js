@@ -1,6 +1,6 @@
-const _ = require("lodash");
-const { compareDistance, hex, key } = require("./utils");
-const pMap = require("p-map");
+const _ = require('lodash');
+const { compareDistance, hex, key } = require('./utils');
+const pMap = require('p-map');
 
 const {
   ACTIVE_RUNWAY,
@@ -9,13 +9,13 @@ const {
   DEPARTURES,
   REGION_AIRCRAFT,
   ENRICHMENTS,
-} = require("../lib/redis-keys");
+} = require('../lib/redis-keys');
 
 const BOARD_TTL = 15;
 const STATUS_TTL = 60;
 
 module.exports = (store, redis, mongo, logger) =>
-  computeAirportBoard(store, redis, mongo, logger.scope("airport-board"));
+  computeAirportBoard(store, redis, mongo, logger.scope('airport-board'));
 
 /**
  * Return an async function that fetches the airport, all valid aircraft, and subsequently
@@ -32,7 +32,7 @@ function computeAirportBoard(store, redis, mongo, logger) {
     try {
       const airport = await mongo.getAirport(ident);
       if (!airport) {
-        logger.error("failed to fetch airport json", { airport: ident });
+        logger.error('failed to fetch airport json', { airport: ident });
         return;
       }
       const { aircraft } = await store.getValidAircraftMap();
@@ -42,7 +42,7 @@ function computeAirportBoard(store, redis, mongo, logger) {
 
       return aircraftBoard;
     } catch (e) {
-      logger.error("failed to compute airport board", { error: e });
+      logger.error('failed to compute airport board', { error: e });
     }
   };
 }
@@ -72,7 +72,7 @@ async function buildBoard(airport, aircraft, redis) {
     return boardTemplate({
       ident,
       onRunway: aircraftOnRunway,
-      note: "active runway unknown",
+      note: 'active runway unknown',
     });
   }
 
@@ -81,7 +81,7 @@ async function buildBoard(airport, aircraft, redis) {
 
   if (!approachRegionKeys.size || !departureRegionKeys.size) {
     throw new Error(
-      "malformed airport; missing approach and departure keys on runway"
+      'malformed airport; missing approach and departure keys on runway'
     );
   }
 
@@ -258,7 +258,7 @@ async function writeBoard(board, redis, logger) {
     pipeline.setex(BOARD(ident), BOARD_TTL, JSON.stringify(board));
     await pipeline.exec();
   } catch (e) {
-    logger.error("failed to write board partition to redis", { error: e });
+    logger.error('failed to write board partition to redis', { error: e });
   }
 }
 

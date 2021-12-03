@@ -1,14 +1,14 @@
-const logger = require("../lib/logger")().scope("aircraft store");
-const { aircraft: aircraftSchema } = require("../lib/schemas");
-const { secondsToMillis, millisToSeconds } = require("../lib/utils");
+const logger = require('../lib/logger')().scope('aircraft store');
+const { aircraft: aircraftSchema } = require('../lib/schemas');
+const { secondsToMillis, millisToSeconds } = require('../lib/utils');
 
-const RedisService = require("../services/redis-service");
+const RedisService = require('../services/redis-service');
 const redis = new RedisService();
 const {
   ALL_AIRCRAFT_STORE,
   VALID_AIRCRAFT_STORE,
   INVALID_AIRCRAFT_STORE,
-} = require("../lib/redis-keys");
+} = require('../lib/redis-keys');
 
 const MAX_DATA_AGE_MILLIS = 30000; // 30 seconds
 const VALID_AIRCRAFT_TTL = 10;
@@ -25,7 +25,7 @@ async function addAircraft(data) {
   const now = Date.now();
   const age = now - clientNowMillis;
   if (age > MAX_DATA_AGE_MILLIS) {
-    logger.warn("rejected stale dump data", {
+    logger.warn('rejected stale dump data', {
       clientTimestamp: new Date(clientNowMillis).toISOString(),
       age: millisToSeconds(age).toFixed(2),
     });
@@ -33,7 +33,7 @@ async function addAircraft(data) {
     // map each aircraft hex to the aircraft
     const newAircraft = createAircraftStore(data.aircraft);
     await validateAndWrite(newAircraft);
-    logger.info("accepted dump data", {
+    logger.info('accepted dump data', {
       messages: data.messages,
       clientTimestamp: new Date(clientNowMillis).toISOString(),
     });

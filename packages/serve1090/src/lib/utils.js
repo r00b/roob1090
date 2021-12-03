@@ -1,10 +1,10 @@
-const _ = require("lodash");
-const got = require("got");
-const { point, polygon } = require("@turf/helpers");
-const pointInPolygon = require("@turf/boolean-point-in-polygon").default;
-const distance = require("@turf/distance").default;
-const safeCompare = require("safe-compare");
-const { AuthError } = require("./errors");
+const _ = require('lodash');
+const got = require('got');
+const { point, polygon } = require('@turf/helpers');
+const pointInPolygon = require('@turf/boolean-point-in-polygon').default;
+const distance = require('@turf/distance').default;
+const safeCompare = require('safe-compare');
+const { AuthError } = require('./errors');
 
 /**
  * Take an input and resolve it to a port or a fallback if unable
@@ -49,7 +49,7 @@ function millisToSeconds(millis) {
  * @returns {string} hex
  */
 function hex(aircraft) {
-  return _.get(aircraft, "hex", undefined);
+  return _.get(aircraft, 'hex', undefined);
 }
 
 /**
@@ -59,7 +59,7 @@ function hex(aircraft) {
  * @returns {string} key
  */
 function key(region) {
-  return _.get(region, "key", undefined);
+  return _.get(region, 'key', undefined);
 }
 
 /**
@@ -71,7 +71,7 @@ function key(region) {
  */
 function secondsToTimeString(s) {
   if (s < 0) {
-    throw new Error("cannot convert negative seconds to time string");
+    throw new Error('cannot convert negative seconds to time string');
   }
   let seconds = parseInt(s, 10);
   const days = Math.floor(seconds / (3600 * 24));
@@ -124,7 +124,7 @@ function computeDistance(a, b) {
  */
 function get(url, username, password) {
   const options = {
-    responseType: "json",
+    responseType: 'json',
   };
   if (username) options.username = username;
   if (password) options.password = password;
@@ -138,7 +138,7 @@ function get(url, username, password) {
  */
 function exit(code) {
   // flush console
-  process.stdout.write("", () => {
+  process.stdout.write('', () => {
     process.exit(code);
   });
 }
@@ -151,12 +151,12 @@ function exit(code) {
  * @param {object} payload - parsed payload object to check for valid token
  */
 function checkToken(key, payload) {
-  const token = _.get(payload, "token", null);
+  const token = _.get(payload, 'token', null);
   if (!token) {
-    throw new AuthError("missing token", 401);
+    throw new AuthError('missing token', 401);
   }
   if (!safeCompare(key, token)) {
-    throw new AuthError("bad token", 403);
+    throw new AuthError('bad token', 403);
   }
 }
 

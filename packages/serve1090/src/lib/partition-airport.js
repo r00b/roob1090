@@ -1,15 +1,15 @@
-const _ = require("lodash");
-const pMap = require("p-map");
-const { hex, withinBoundaryAndCeiling, aligned } = require("./utils");
+const _ = require('lodash');
+const pMap = require('p-map');
+const { hex, withinBoundaryAndCeiling, aligned } = require('./utils');
 
-const { REGION_AIRCRAFT, ACTIVE_RUNWAY } = require("../lib/redis-keys");
+const { REGION_AIRCRAFT, ACTIVE_RUNWAY } = require('../lib/redis-keys');
 
 const REGION_TTL = 2;
 const RUNWAY_TTL = 28800; // 8 hours
 const RUNWAY_RECHECK = 900; // 15 minutes
 
 module.exports = (store, redis, mongo, logger) =>
-  partitionAirport(store, redis, mongo, logger.scope("partition-aircraft"));
+  partitionAirport(store, redis, mongo, logger.scope('partition-aircraft'));
 
 /**
  * Return a function that will fetch all aircraft currently in the store along with a specified
@@ -26,7 +26,7 @@ function partitionAirport(store, redis, mongo, logger) {
     try {
       const airport = await mongo.getAirport(ident);
       if (!airport) {
-        logger.error("failed to fetch airport json", { airport: ident });
+        logger.error('failed to fetch airport json', { airport: ident });
         return;
       }
 
@@ -55,7 +55,7 @@ function partitionAirport(store, redis, mongo, logger) {
 
       return partition;
     } catch (e) {
-      logger.error("failed to partition airport", { error: e });
+      logger.error('failed to partition airport', { error: e });
     }
   };
 }
@@ -185,7 +185,7 @@ async function writePartition(partition, redis, logger) {
       // only rewrite the runway every RUNWAY_RECHECK seconds to save
       if (RUNWAY_TTL - ttl > RUNWAY_RECHECK) {
         pipeline.setex(ACTIVE_RUNWAY(runway), RUNWAY_TTL, surface);
-        logger.info("set active runway", {
+        logger.info('set active runway', {
           runway: runway,
           activeSurface: surface,
           sample: `${_.trim(sample.flight)} / ${sample.hex}`,
@@ -195,6 +195,6 @@ async function writePartition(partition, redis, logger) {
 
     await pipeline.exec();
   } catch (e) {
-    logger.error("failed to write airport partition to redis", { error: e });
+    logger.error('failed to write airport partition to redis', { error: e });
   }
 }

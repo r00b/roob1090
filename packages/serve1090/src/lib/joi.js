@@ -1,15 +1,15 @@
-const BaseJoi = require("joi");
+const BaseJoi = require('joi');
 
 const Joi = {
   ...BaseJoi.extend(
     (joi) => {
       return {
-        type: "altitude",
+        type: 'altitude',
         base: joi
           .alternatives()
-          .try(joi.number(), joi.string().valid("ground")),
+          .try(joi.number(), joi.string().valid('ground')),
         coerce(value, helpers) {
-          if (value === "ground") {
+          if (value === 'ground') {
             return { value: 0 };
           }
         },
@@ -17,7 +17,7 @@ const Joi = {
     },
     (joi) => {
       return {
-        type: "altimeter",
+        type: 'altimeter',
         base: joi.number(),
         coerce(value, helpers) {
           const inHg = value * 0.02953;

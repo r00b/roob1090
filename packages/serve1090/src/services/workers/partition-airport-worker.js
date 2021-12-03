@@ -1,12 +1,12 @@
-const config = require("../../../src/config");
-const logger = require("../../lib/logger")().scope("active-runway-worker");
-const { exit } = require("../../lib/utils");
-const airport = require("worker_threads").workerData.job.airport;
+const config = require('../../../src/config');
+const logger = require('../../lib/logger')().scope('active-runway-worker');
+const { exit } = require('../../lib/utils');
+const airport = require('worker_threads').workerData.job.airport;
 
-const store = require("../../stores/aircraft-store");
-const RedisService = require("../redis-service");
-const MongoService = require("../mongo-service");
-const partitionAircraft = require("../../lib/partition-airport");
+const store = require('../../stores/aircraft-store');
+const RedisService = require('../redis-service');
+const MongoService = require('../mongo-service');
+const partitionAircraft = require('../../lib/partition-airport');
 
 (async () => {
   try {

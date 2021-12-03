@@ -1,14 +1,14 @@
-const MongoService = require("../../../src/services/mongo-service");
-const { MongoMemoryServer } = require("mongodb-memory-server");
+const MongoService = require('../../../src/services/mongo-service');
+const { MongoMemoryServer } = require('mongodb-memory-server');
 
 jest.mock(
-  "../../../src/lib/logger",
-  () => () => require("../../support/mock-logger")
+  '../../../src/lib/logger',
+  () => () => require('../../support/mock-logger')
 );
 
-describe("mongo-service", () => {
+describe('mongo-service', () => {
   let mongod, service, port;
-  const dbName = "foo";
+  const dbName = 'foo';
 
   beforeAll(async () => {
     mongod = new MongoMemoryServer({
@@ -23,7 +23,7 @@ describe("mongo-service", () => {
 
   beforeEach(async () => {
     service = new MongoService({
-      host: "127.0.0.1",
+      host: '127.0.0.1',
       port,
       dbName,
     });
@@ -38,29 +38,29 @@ describe("mongo-service", () => {
     await mongod.stop();
   });
 
-  test("ping", async () => {
+  test('ping', async () => {
     const ping = await service.ping();
     expect(ping.ok).toBe(1);
   });
 
-  test("getAirport", async () => {
+  test('getAirport', async () => {
     const airports = service.airports;
-    await airports.insertOne({ ident: "kvkx" });
+    await airports.insertOne({ ident: 'kvkx' });
 
-    const vkx = await service.getAirport("kvkx");
+    const vkx = await service.getAirport('kvkx');
 
-    expect(vkx.ident).toBe("kvkx");
+    expect(vkx.ident).toBe('kvkx');
   });
 
-  test("getAllActiveAirportIdents", async () => {
+  test('getAllActiveAirportIdents', async () => {
     const airports = service.airports;
     await airports.insertMany([
-      { ident: "kvkx", active: true },
-      { ident: "2w5", active: false },
-      { ident: "kaus" },
+      { ident: 'kvkx', active: true },
+      { ident: '2w5', active: false },
+      { ident: 'kaus' },
     ]);
 
     const idents = await service.getAllActiveAirportIdents();
-    expect(idents).toEqual(["kvkx"]);
+    expect(idents).toEqual(['kvkx']);
   });
 });

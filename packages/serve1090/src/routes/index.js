@@ -1,14 +1,14 @@
-const express = require("express");
-const errorHandler = require("../middleware/error-handler");
-const { secondsToTimeString } = require("../lib/utils");
+const express = require('express');
+const errorHandler = require('../middleware/error-handler');
+const { secondsToTimeString } = require('../lib/utils');
 const {
   BROADCAST_CLIENT_COUNT,
   DATA_SOURCE_COUNT,
-} = require("../lib/redis-keys");
+} = require('../lib/redis-keys');
 
 module.exports = (store, redis, mongo) => {
   return new express.Router()
-    .get("/", getRoot(store, redis, mongo))
+    .get('/', getRoot(store, redis, mongo))
     .use(errorHandler);
 };
 
@@ -22,18 +22,18 @@ const getRoot = (store, redis, mongo) => (req, res, next) =>
 
 async function body(store, redis, mongo, logger) {
   const body = {
-    message: "roob1090 realtime ADS-B API",
+    message: 'roob1090 realtime ADS-B API',
     documentation:
-      "https://github.com/robertsteilberg/roob1090/blob/master/packages/serve1090/README.md",
+      'https://github.com/robertsteilberg/roob1090/blob/master/packages/serve1090/README.md',
     routes: {
       aircraft: {
-        pump: "/aircraft/pump/.websocket",
-        all: "/aircraft/all",
-        valid: "/aircraft/valid",
-        invalid: "/aircraft/invalid",
-        totalCount: "/aircraft/totalCount",
-        validCount: "/aircraft/validCount",
-        enrichments: "/aircraft/enrichments",
+        pump: '/aircraft/pump/.websocket',
+        all: '/aircraft/all',
+        valid: '/aircraft/valid',
+        invalid: '/aircraft/invalid',
+        totalCount: '/aircraft/totalCount',
+        validCount: '/aircraft/validCount',
+        enrichments: '/aircraft/enrichments',
       },
       airspaces: {},
       airports: await getAirports(mongo, logger),
@@ -68,8 +68,8 @@ async function getAirports(mongo, logger) {
       return acc;
     }, {});
   } catch (e) {
-    logger.warn("failed to get supported airports for root route", e);
-    return "error";
+    logger.warn('failed to get supported airports for root route', e);
+    return 'error';
   }
 }
 
@@ -84,7 +84,7 @@ async function getCount(key, redis, logger) {
     const count = parseInt(await redis.get(key));
     return isNaN(count) ? 0 : count;
   } catch (e) {
-    logger.warn("failed to get value for root api stats", e);
-    return "error";
+    logger.warn('failed to get value for root api stats', e);
+    return 'error';
   }
 }

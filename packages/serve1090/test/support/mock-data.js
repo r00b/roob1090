@@ -21,26 +21,26 @@
 
 function mockAirport(includeMultipleRunways = false) {
   const airport = {
-    ident: "kvkx",
-    name: "Potomac Airfield",
+    ident: 'kvkx',
+    name: 'Potomac Airfield',
     active: true,
     lonlat: [75, 25],
     runways: [
       {
-        key: "runway1",
+        key: 'runway1',
         ceiling: 500,
         surfaces: [
           {
-            name: "24",
+            name: '24',
             trueHeading: 240,
-            approachRegionKey: "airspace1",
-            departureRegionKey: "airspace2",
+            approachRegionKey: 'airspace1',
+            departureRegionKey: 'airspace2',
           },
           {
-            name: "06",
+            name: '06',
             trueHeading: 60,
-            approachRegionKey: "airspace2",
-            departureRegionKey: "airspace1",
+            approachRegionKey: 'airspace2',
+            departureRegionKey: 'airspace1',
           },
         ],
         boundary: [
@@ -54,7 +54,7 @@ function mockAirport(includeMultipleRunways = false) {
     ],
     airspace: [
       {
-        key: "airspace1",
+        key: 'airspace1',
         ceiling: 10000,
         boundary: [
           [0, 0],
@@ -65,7 +65,7 @@ function mockAirport(includeMultipleRunways = false) {
         ],
       },
       {
-        key: "airspace2",
+        key: 'airspace2',
         ceiling: 10000,
         boundary: [
           [100, 0],
@@ -80,20 +80,20 @@ function mockAirport(includeMultipleRunways = false) {
 
   if (includeMultipleRunways) {
     airport.runways.push({
-      key: "runway2",
+      key: 'runway2',
       ceiling: 500,
       surfaces: [
         {
-          name: "01",
+          name: '01',
           trueHeading: 10,
-          approachRegionKey: "airspace1",
-          departureRegionKey: "airspace2",
+          approachRegionKey: 'airspace1',
+          departureRegionKey: 'airspace2',
         },
         {
-          name: "19",
+          name: '19',
           trueHeading: 190,
-          approachRegionKey: "airspace2",
-          departureRegionKey: "airspace1",
+          approachRegionKey: 'airspace2',
+          departureRegionKey: 'airspace1',
         },
       ],
       boundary: [
@@ -112,61 +112,61 @@ function mockAirport(includeMultipleRunways = false) {
 function mockAircraft() {
   return {
     ac1: {
-      hex: "ac1",
+      hex: 'ac1',
       altBaro: 500,
       lon: 0,
       lat: 0,
     },
     ac2: {
-      hex: "ac2",
+      hex: 'ac2',
       altBaro: 500,
       lon: 25,
       lat: 25,
     },
     ac3: {
-      hex: "ac3",
+      hex: 'ac3',
       altBaro: 250,
       lon: 45,
       lat: 45,
     },
     ac4: {
-      hex: "ac4",
+      hex: 'ac4',
       altBaro: 250,
       lon: 75,
       lat: 25,
     },
     ac5: {
-      hex: "ac5",
+      hex: 'ac5',
       altBaro: 250,
       lon: 75,
       lat: 25,
     },
     ac6: {
-      hex: "ac6",
+      hex: 'ac6',
       altBaro: 500,
       lon: 125,
       lat: 25,
     },
     ac7: {
-      hex: "ac7",
+      hex: 'ac7',
       altBaro: 500,
       lon: 145,
       lat: 20,
     },
     ac8: {
-      hex: "ac8",
+      hex: 'ac8',
       altBaro: 50000,
       lon: 125,
       lat: 25,
     },
     ac9: {
-      hex: "ac9",
+      hex: 'ac9',
       altBaro: 500,
       lon: 200,
       lat: 25,
     },
     ac10: {
-      hex: "ac10",
+      hex: 'ac10',
       altBaro: 250,
       lon: 75,
       lat: 150,

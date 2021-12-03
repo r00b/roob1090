@@ -1,21 +1,21 @@
-const express = require("express");
-const logger = require("../../lib/logger")().scope("request");
-const { nanoid } = require("nanoid");
-const errorHandler = require("../../middleware/error-handler");
-const { pumpBody } = require("../../lib/schemas");
-const { checkToken, close } = require("../../lib/utils");
-const { PayloadError } = require("../../lib/errors");
-const { ENRICHMENTS, DATA_SOURCE_COUNT } = require("../../lib/redis-keys");
+const express = require('express');
+const logger = require('../../lib/logger')().scope('request');
+const { nanoid } = require('nanoid');
+const errorHandler = require('../../middleware/error-handler');
+const { pumpBody } = require('../../lib/schemas');
+const { checkToken, close } = require('../../lib/utils');
+const { PayloadError } = require('../../lib/errors');
+const { ENRICHMENTS, DATA_SOURCE_COUNT } = require('../../lib/redis-keys');
 
 module.exports = (pumpKey, store, redis) => {
   return new express.Router()
-    .ws("/pump", pump(pumpKey, store, redis))
-    .get("/all", getAllAircraft(store))
-    .get("/valid", getValidAircraft(store))
-    .get("/invalid", getInvalidAircraft(store))
-    .get("/enrichments", getEnrichments(redis))
-    .get("/totalCount", getTotalAircraftCount(store))
-    .get("/validCount", getValidAircraftCount(store))
+    .ws('/pump', pump(pumpKey, store, redis))
+    .get('/all', getAllAircraft(store))
+    .get('/valid', getValidAircraft(store))
+    .get('/invalid', getInvalidAircraft(store))
+    .get('/enrichments', getEnrichments(redis))
+    .get('/totalCount', getTotalAircraftCount(store))
+    .get('/validCount', getValidAircraftCount(store))
     .use(errorHandler);
 };
 
@@ -31,10 +31,10 @@ function pump(pumpKey, store, redis) {
     redis.incr(DATA_SOURCE_COUNT); // fire and forget
     ws.locals = {
       originalUrl,
-      socketLogger: logger.scope("ws").child({ requestId: nanoid() }),
+      socketLogger: logger.scope('ws').child({ requestId: nanoid() }),
       start: Date.now(),
     };
-    ws.on("message", (data) => {
+    ws.on('message', (data) => {
       try {
         // parse the payload
         const rawPayload = JSON.parse(data);
@@ -50,15 +50,15 @@ function pump(pumpKey, store, redis) {
         return next(e);
       }
     });
-    ws.on("close", (_) => {
+    ws.on('close', (_) => {
       close(ws);
       redis.decr(DATA_SOURCE_COUNT); // fire and forget
-      ws.locals.socketLogger.info("terminated pump", {
+      ws.locals.socketLogger.info('terminated pump', {
         elapsedTime: Date.now() - ws.locals.start,
         url: ws.locals.originalUrl,
       });
     });
-    ws.locals.socketLogger.info("init pump", {
+    ws.locals.socketLogger.info('init pump', {
       start: ws.locals.start,
       url: originalUrl,
     });

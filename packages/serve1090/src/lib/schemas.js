@@ -1,5 +1,5 @@
-const Joi = require("./joi");
-const camelcaseKeys = require("camelcase-keys");
+const Joi = require('./joi');
+const camelcaseKeys = require('camelcase-keys');
 
 const MAX_VALID_SEEN = 10;
 
@@ -102,7 +102,7 @@ const aircraft = Joi.object({
   // type: Joi.string()
 })
   .options({ stripUnknown: true })
-  .rename("nav_qnh", "altimeter", { override: true });
+  .rename('nav_qnh', 'altimeter', { override: true });
 
 /**
  * Schema for validating a response from the OpenSky /metadata/aircraft/icao API
@@ -183,9 +183,9 @@ const airframe = Joi.object({
   // waypoints: Joi.string()
 })
   .options({ stripUnknown: true })
-  .rename("icao24", "hex", { override: true })
-  .rename("typecode", "type", { override: true })
-  .rename("timestamp", "lastUpdated");
+  .rename('icao24', 'hex', { override: true })
+  .rename('typecode', 'type', { override: true })
+  .rename('timestamp', 'lastUpdated');
 
 const pumpBody = Joi.object({
   aircraft: Joi.array().required(),

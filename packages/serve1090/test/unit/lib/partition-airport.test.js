@@ -1,9 +1,9 @@
-const mockLogger = require("../../support/mock-logger");
-const { mockAirport, mockAircraft } = require("../../support/mock-data");
-const { ACTIVE_RUNWAY } = require("../../../src/lib/redis-keys");
-const lib = require("../../../src/lib/partition-airport");
+const mockLogger = require('../../support/mock-logger');
+const { mockAirport, mockAircraft } = require('../../support/mock-data');
+const { ACTIVE_RUNWAY } = require('../../../src/lib/redis-keys');
+const lib = require('../../../src/lib/partition-airport');
 
-describe("partition-airport", () => {
+describe('partition-airport', () => {
   let airport, aircraft, partitionAirport;
 
   const mockStore = {
@@ -40,7 +40,7 @@ describe("partition-airport", () => {
     Object.values(mockMongo).forEach((m) => m.mockReset());
   });
 
-  test("computes and writes airport partition without active runways", async () => {
+  test('computes and writes airport partition without active runways', async () => {
     const { ac1, ac2, ac3, ac4, ac5, ac6, ac7 } = aircraft;
     const result = await partitionAirport(airport.ident);
 
@@ -58,7 +58,7 @@ describe("partition-airport", () => {
     expect(mockRedis.setex.mock.calls.length).toBe(0);
   });
 
-  test("computes single active runway with sample on runway", async () => {
+  test('computes single active runway with sample on runway', async () => {
     const { ac4 } = aircraft;
     ac4.track = 233;
     mockRedis.ttl.mockReturnValueOnce(-2);
@@ -67,18 +67,18 @@ describe("partition-airport", () => {
 
     expect(result.activeRunways).toEqual([
       {
-        runway: "runway1",
+        runway: 'runway1',
         sample: ac4,
-        surface: "24",
+        surface: '24',
       },
     ]);
     expect(mockRedis.ttl.mock.calls.length).toBe(1);
     expect(mockRedis.setex.mock.calls.length).toBe(1);
-    expect(mockRedis.setex.mock.calls[0][0]).toBe(ACTIVE_RUNWAY("runway1"));
-    expect(mockRedis.setex.mock.calls[0][2]).toBe("24");
+    expect(mockRedis.setex.mock.calls[0][0]).toBe(ACTIVE_RUNWAY('runway1'));
+    expect(mockRedis.setex.mock.calls[0][2]).toBe('24');
   });
 
-  test("computes single active runway with first sample in airspace", async () => {
+  test('computes single active runway with first sample in airspace', async () => {
     const { ac1, ac2, ac6 } = aircraft;
     ac1.track = 0;
     ac2.track = 55;
@@ -92,18 +92,18 @@ describe("partition-airport", () => {
 
     expect(result.activeRunways).toEqual([
       {
-        runway: "runway1",
+        runway: 'runway1',
         sample: ac2,
-        surface: "06",
+        surface: '06',
       },
     ]);
     expect(mockRedis.ttl.mock.calls.length).toBe(1);
     expect(mockRedis.setex.mock.calls.length).toBe(1);
-    expect(mockRedis.setex.mock.calls[0][0]).toBe(ACTIVE_RUNWAY("runway1"));
-    expect(mockRedis.setex.mock.calls[0][2]).toBe("06");
+    expect(mockRedis.setex.mock.calls[0][0]).toBe(ACTIVE_RUNWAY('runway1'));
+    expect(mockRedis.setex.mock.calls[0][2]).toBe('06');
   });
 
-  test("picks surface with closest centerline to sample", async () => {
+  test('picks surface with closest centerline to sample', async () => {
     const { ac4 } = aircraft;
     // one surface with true heading of 240, the other with 250
     airport.runways[0].surfaces[0].trueHeading = 180;
@@ -113,9 +113,9 @@ describe("partition-airport", () => {
     let result = await partitionAirport(airport.ident);
     expect(result.activeRunways).toEqual([
       {
-        runway: "runway1",
+        runway: 'runway1',
         sample: ac4,
-        surface: "24",
+        surface: '24',
       },
     ]);
 
@@ -123,9 +123,9 @@ describe("partition-airport", () => {
     result = await partitionAirport(airport.ident);
     expect(result.activeRunways).toEqual([
       {
-        runway: "runway1",
+        runway: 'runway1',
         sample: ac4,
-        surface: "24",
+        surface: '24',
       },
     ]);
 
@@ -133,14 +133,14 @@ describe("partition-airport", () => {
     result = await partitionAirport(airport.ident);
     expect(result.activeRunways).toEqual([
       {
-        runway: "runway1",
+        runway: 'runway1',
         sample: ac4,
-        surface: "06",
+        surface: '06',
       },
     ]);
   });
 
-  test("does not write active runway to redis before RUNWAY_RECHECK", async () => {
+  test('does not write active runway to redis before RUNWAY_RECHECK', async () => {
     aircraft.ac4.track = 233;
     mockRedis.ttl
       // want RUNWAY_TTL - ttl to be less than RUNWAY_RECHECK
@@ -153,7 +153,7 @@ describe("partition-airport", () => {
     expect(mockRedis.setex.mock.calls.length).toBe(0);
   });
 
-  test("computes multiple active runways", async () => {
+  test('computes multiple active runways', async () => {
     const { ac4, ac10 } = aircraft;
     ac4.track = 233;
     ac10.track = 185;
@@ -168,25 +168,25 @@ describe("partition-airport", () => {
     expect(result.aircraft.runway2).toEqual([ac10]);
     expect(result.activeRunways).toEqual([
       {
-        runway: "runway1",
+        runway: 'runway1',
         sample: ac4,
-        surface: "24",
+        surface: '24',
       },
       {
-        runway: "runway2",
+        runway: 'runway2',
         sample: ac10,
-        surface: "19",
+        surface: '19',
       },
     ]);
     expect(mockRedis.ttl.mock.calls.length).toBe(2);
     expect(mockRedis.setex.mock.calls.length).toBe(2);
-    expect(mockRedis.setex.mock.calls[0][0]).toBe(ACTIVE_RUNWAY("runway1"));
-    expect(mockRedis.setex.mock.calls[0][2]).toBe("24");
-    expect(mockRedis.setex.mock.calls[1][0]).toBe(ACTIVE_RUNWAY("runway2"));
-    expect(mockRedis.setex.mock.calls[1][2]).toBe("19");
+    expect(mockRedis.setex.mock.calls[0][0]).toBe(ACTIVE_RUNWAY('runway1'));
+    expect(mockRedis.setex.mock.calls[0][2]).toBe('24');
+    expect(mockRedis.setex.mock.calls[1][0]).toBe(ACTIVE_RUNWAY('runway2'));
+    expect(mockRedis.setex.mock.calls[1][2]).toBe('19');
   });
 
-  test("handles no aircraft", async () => {
+  test('handles no aircraft', async () => {
     mockStore.getValidAircraft.mockReturnValueOnce({ aircraft: [] });
 
     const result = await partitionAirport(airport.ident);
@@ -200,9 +200,9 @@ describe("partition-airport", () => {
     expect(mockRedis.exec.mock.calls.length).toBe(1);
   });
 
-  test("handles store error", async () => {
+  test('handles store error', async () => {
     mockStore.getValidAircraft.mockImplementationOnce(() => {
-      throw new Error("this should have been caught");
+      throw new Error('this should have been caught');
     });
 
     const result = await partitionAirport(airport.ident);
@@ -210,25 +210,25 @@ describe("partition-airport", () => {
     expect(result).toBeFalsy();
   });
 
-  test("handles missing airport", async () => {
+  test('handles missing airport', async () => {
     mockMongo.getAirport.mockReturnValueOnce(null);
 
     const result = await partitionAirport(airport.ident);
     expect(result).toBeFalsy();
   });
 
-  test("handles mongo error", async () => {
+  test('handles mongo error', async () => {
     mockMongo.getAirport.mockImplementationOnce(() => {
-      throw new Error("this should have been caught");
+      throw new Error('this should have been caught');
     });
 
     const result = await partitionAirport(airport.ident);
     expect(result).toBeFalsy();
   });
 
-  test("handles redis write error", async () => {
+  test('handles redis write error', async () => {
     mockRedis.saddEx.mockImplementationOnce(() => {
-      throw new Error("this should have been caught");
+      throw new Error('this should have been caught');
     });
 
     const result = await partitionAirport(airport.ident);

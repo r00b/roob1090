@@ -1,6 +1,6 @@
-const _ = require("lodash");
-const got = require("got");
-const { airframe: airframeSchema } = require("./schemas");
+const _ = require('lodash');
+const got = require('got');
+const { airframe: airframeSchema } = require('./schemas');
 
 const ROUTE_TTL = 900; // 15 min
 const {
@@ -9,11 +9,11 @@ const {
   ROUTES,
   AIRFRAMES,
   BROADCAST_CLIENT_COUNT,
-} = require("../lib/redis-keys");
+} = require('../lib/redis-keys');
 
 module.exports = (config, redis, logger) => {
   const apis = generateApis(config, logger);
-  const scopedLogger = logger.scope("enrichments");
+  const scopedLogger = logger.scope('enrichments');
   return {
     fetchRoute: fetchRoute(redis, apis, scopedLogger),
     fetchAirframe: fetchAirframe(redis, apis, scopedLogger),
@@ -39,15 +39,15 @@ const generateApis = function (config, logger) {
     apis.openSkyAirframes = got.extend({
       prefixUrl: `${config.openSkyApi}/api/metadata/aircraft/icao`,
       ...openSkyCredentials,
-      responseType: "json",
+      responseType: 'json',
     });
     apis.openSkyRoutes = got.extend({
       prefixUrl: `${config.openSkyApi}/api/routes`,
       ...openSkyCredentials,
-      responseType: "json",
+      responseType: 'json',
     });
   } else {
-    logger.warn("unable to find OpenSky API credentials");
+    logger.warn('unable to find OpenSky API credentials');
   }
 
   if (faApi && faUsername && faPassword) {
@@ -55,10 +55,10 @@ const generateApis = function (config, logger) {
       prefixUrl: `${config.faApi}/InFlightInfo`,
       username: config.faUsername,
       password: config.faPassword,
-      responseType: "json",
+      responseType: 'json',
     });
   } else {
-    logger.warn("unable to find FlightAware API credentials");
+    logger.warn('unable to find FlightAware API credentials');
   }
 
   return apis;
@@ -153,7 +153,7 @@ const fetchOpenSkyRoute = async function (
       return findCurrentLeg(hex, route, airportKey, redis);
     }
   } catch (e) {
-    if (_.get(e, "message", "").includes("404")) {
+    if (_.get(e, 'message', '').includes('404')) {
       return;
     }
     logger.warn(`error resolving route data from OpenSky for ${flight}`, e);
@@ -270,7 +270,7 @@ const fetchFlightAwareRoute = async function (
     const {
       body: { InFlightInfoResult: result },
     } = await flightAwareRoutes(`?ident=${flight}`);
-    if (result.timeout === "ok") {
+    if (result.timeout === 'ok') {
       // FA can return stale data, indicated by timeout = 'timed_out'
       return {
         origin: result.origin,

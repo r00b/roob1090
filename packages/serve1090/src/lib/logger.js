@@ -1,12 +1,12 @@
-const _ = require("lodash");
-const { nodeEnv, verbose, ...env } = require("../config");
+const _ = require('lodash');
+const { nodeEnv, verbose, ...env } = require('../config');
 
-const DEV_EXCLUDED = ["request", "ws", "aircraft store", "worker-service"];
+const DEV_EXCLUDED = ['request', 'ws', 'aircraft store', 'worker-service'];
 
-const production = nodeEnv === "production";
+const production = nodeEnv === 'production';
 
 function pino(secrets) {
-  const pino = require("pino")({
+  const pino = require('pino')({
     redact: Object.keys(secrets)
       .map((k) => [k, `*.${k}`])
       .flat(),
@@ -25,12 +25,12 @@ function pino(secrets) {
 }
 
 function signale(secrets) {
-  const Signal = require("./signal");
+  const Signal = require('./signal');
   const options = {
     disabled: false,
     interactive: false,
-    logLevel: "info",
-    scope: "global",
+    logLevel: 'info',
+    scope: 'global',
     secrets: Object.values(secrets),
     types: {},
     excluded: DEV_EXCLUDED,
@@ -40,13 +40,13 @@ function signale(secrets) {
 
 module.exports = () => {
   const secrets = _.pick(env, [
-    "pumpKey",
-    "broadcastKey",
-    "redisPass",
-    "openSkyUsername",
-    "openSkyPassword",
-    "faUsername",
-    "faPassword",
+    'pumpKey',
+    'broadcastKey',
+    'redisPass',
+    'openSkyUsername',
+    'openSkyPassword',
+    'faUsername',
+    'faPassword',
   ]);
   return (production ? pino : signale)(secrets);
 };

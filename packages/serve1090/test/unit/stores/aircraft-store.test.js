@@ -1,11 +1,11 @@
-const { millisToSeconds } = require("../../../src/lib/utils");
+const { millisToSeconds } = require('../../../src/lib/utils');
 const {
   ALL_AIRCRAFT_STORE,
   VALID_AIRCRAFT_STORE,
   INVALID_AIRCRAFT_STORE,
-} = require("../../../src/lib/redis-keys");
+} = require('../../../src/lib/redis-keys');
 
-const mockRedisService = require("../../support/mock-redis-service");
+const mockRedisService = require('../../support/mock-redis-service');
 const mocks = {
   hsetJsonEx: jest.fn(),
   hgetAsJson: jest.fn(),
@@ -15,36 +15,36 @@ const mocks = {
   exec: jest.fn(),
 };
 
-jest.mock("../../../src/services/redis-service", () => mockRedisService(mocks));
+jest.mock('../../../src/services/redis-service', () => mockRedisService(mocks));
 jest.mock(
-  "../../../src/lib/logger",
-  () => () => require("../../support/mock-logger")
+  '../../../src/lib/logger',
+  () => () => require('../../support/mock-logger')
 );
 
-const store = require("../../../src/stores/aircraft-store");
+const store = require('../../../src/stores/aircraft-store');
 
-describe("aircraft-store", () => {
+describe('aircraft-store', () => {
   const aircraftMap = {
-    "3ef": {
-      hex: "3ef",
-      flight: "AAL1",
+    '3ef': {
+      hex: '3ef',
+      flight: 'AAL1',
       lat: 0.0,
       lon: 5.0,
       alt_baro: 1000,
       track: 180,
       seen: 1,
     },
-    "4ef": {
-      hex: "4ef",
-      flight: "UAL23",
+    '4ef': {
+      hex: '4ef',
+      flight: 'UAL23',
       lat: 2.0,
       lon: 4.0,
       alt_baro: 1500,
       track: 270,
       seen: 1,
     },
-    "5ef": {
-      hex: "5ef",
+    '5ef': {
+      hex: '5ef',
       alt_baro: 5000,
     },
   };
@@ -68,7 +68,7 @@ describe("aircraft-store", () => {
     expect(mocks.hsetJsonEx.mock.calls[call][3]).toBeGreaterThan(0);
   };
 
-  test("adds valid aircraft to the valid and all aircraft stores", async () => {
+  test('adds valid aircraft to the valid and all aircraft stores', async () => {
     const data = {
       now: Date.now(),
       aircraft: aircraftValues,
@@ -85,7 +85,7 @@ describe("aircraft-store", () => {
     expect(mocks.exec.mock.calls.length).toBe(1);
   });
 
-  test("adds invalid aircraft to the invalid and all aircraft stores", async () => {
+  test('adds invalid aircraft to the invalid and all aircraft stores', async () => {
     const data = {
       now: Date.now(),
       aircraft: aircraftValues,
@@ -100,7 +100,7 @@ describe("aircraft-store", () => {
     expect(mocks.exec.mock.calls.length).toBe(1);
   });
 
-  test("camelCases keys on all aircraft", async () => {
+  test('camelCases keys on all aircraft', async () => {
     const data = {
       now: Date.now(),
       aircraft: aircraftValues,
@@ -119,7 +119,7 @@ describe("aircraft-store", () => {
     expect(mocks.hsetJsonEx.mock.calls[4][2].alt_baro).toBeUndefined();
   });
 
-  test("rejects stale data", async () => {
+  test('rejects stale data', async () => {
     const staleData = {
       now: millisToSeconds(Date.now() - store.MAX_DATA_AGE_MILLIS - 1),
       aircraft: aircraftValues,
@@ -131,7 +131,7 @@ describe("aircraft-store", () => {
     expect(mocks.exec.mock.calls.length).toBe(0);
   });
 
-  test("gets the all aircraft store", async () => {
+  test('gets the all aircraft store', async () => {
     const result = await store.getAllAircraft();
     expect(result.aircraft).toEqual(aircraftValues);
     expect(result.count).toEqual(aircraftValues.length);
@@ -141,7 +141,7 @@ describe("aircraft-store", () => {
     expect(mocks.hgetAllAsJsonValues.mock.calls[0][0]).toBe(ALL_AIRCRAFT_STORE);
   });
 
-  test("gets the valid aircraft store", async () => {
+  test('gets the valid aircraft store', async () => {
     const result = await store.getValidAircraft();
     expect(result.aircraft).toEqual(aircraftValues);
     expect(result.count).toEqual(aircraftValues.length);
@@ -153,7 +153,7 @@ describe("aircraft-store", () => {
     );
   });
 
-  test("gets the valid aircraft store as a map", async () => {
+  test('gets the valid aircraft store as a map', async () => {
     const result = await store.getValidAircraftMap();
     expect(result.aircraft).toEqual(aircraftMap);
     expect(result.count).toEqual(aircraftMap.length);
@@ -163,7 +163,7 @@ describe("aircraft-store", () => {
     expect(mocks.hgetAllAsJson.mock.calls[0][0]).toBe(VALID_AIRCRAFT_STORE);
   });
 
-  test("gets the invalid aircraft store", async () => {
+  test('gets the invalid aircraft store', async () => {
     const result = await store.getInvalidAircraft();
     expect(result.aircraft).toEqual(aircraftValues);
     expect(result.count).toEqual(aircraftValues.length);
@@ -175,25 +175,25 @@ describe("aircraft-store", () => {
     );
   });
 
-  test("gets aircraft by hex", async () => {
-    const result = await store.getAircraftWithHex("foo");
+  test('gets aircraft by hex', async () => {
+    const result = await store.getAircraftWithHex('foo');
 
     expect(result).toEqual(aircraftValues[0]);
     expect(mocks.hgetAsJson.mock.calls.length).toBe(1);
     expect(mocks.hgetAsJson.mock.calls[0][0]).toBe(ALL_AIRCRAFT_STORE);
-    expect(mocks.hgetAsJson.mock.calls[0][1]).toBe("foo");
+    expect(mocks.hgetAsJson.mock.calls[0][1]).toBe('foo');
   });
 
-  test("gets valid aircraft by hex", async () => {
-    const result = await store.getValidAircraftWithHex("foo");
+  test('gets valid aircraft by hex', async () => {
+    const result = await store.getValidAircraftWithHex('foo');
 
     expect(result).toEqual(aircraftValues[0]);
     expect(mocks.hgetAsJson.mock.calls.length).toBe(1);
     expect(mocks.hgetAsJson.mock.calls[0][0]).toBe(VALID_AIRCRAFT_STORE);
-    expect(mocks.hgetAsJson.mock.calls[0][1]).toBe("foo");
+    expect(mocks.hgetAsJson.mock.calls[0][1]).toBe('foo');
   });
 
-  test("gets total aircraft count", async () => {
+  test('gets total aircraft count', async () => {
     const result = await store.getTotalAircraftCount();
 
     expect(result).toBe(15);
@@ -201,7 +201,7 @@ describe("aircraft-store", () => {
     expect(mocks.hlen.mock.calls[0][0]).toBe(ALL_AIRCRAFT_STORE);
   });
 
-  test("gets valid valid aircraft count", async () => {
+  test('gets valid valid aircraft count', async () => {
     const result = await store.getValidAircraftCount();
 
     expect(result).toBe(15);

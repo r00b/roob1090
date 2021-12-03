@@ -1,8 +1,8 @@
-const logger = require("../lib/logger")().scope("mongo");
-const { MongoClient } = require("mongodb");
+const logger = require('../lib/logger')().scope('mongo');
+const { MongoClient } = require('mongodb');
 
-const DEFAULT_DBNAME = "serve1090";
-const AIRPORTS_COLLECTION = "airports";
+const DEFAULT_DBNAME = 'serve1090';
+const AIRPORTS_COLLECTION = 'airports';
 
 class MongoService {
   constructor(config) {
@@ -35,7 +35,7 @@ class MongoService {
     this.db = this.mongo.db(dbName || DEFAULT_DBNAME);
 
     if (verbose) {
-      logger.info("mongo connection established", { host, port });
+      logger.info('mongo connection established', { host, port });
     }
     return this;
   }

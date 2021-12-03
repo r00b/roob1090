@@ -89,6 +89,6 @@ function getAircraftHashes(board) {
  * @returns {object} - merged enrichments
  */
 function resolveAndMerge(promises) {
-  const fulfilled = promises.filter((p) => (p.status = 'fulfilled'));
-  return _.merge(...fulfilled.map((p) => p.value));
+  const fulfilled = promises.filter(p => (p.status = 'fulfilled'));
+  return _.merge(...fulfilled.map(p => p.value));
 }

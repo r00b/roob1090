@@ -34,7 +34,7 @@ function pump(pumpKey, store, redis) {
       socketLogger: logger.scope('ws').child({ requestId: nanoid() }),
       start: Date.now(),
     };
-    ws.on('message', (data) => {
+    ws.on('message', data => {
       try {
         // parse the payload
         const rawPayload = JSON.parse(data);
@@ -50,7 +50,7 @@ function pump(pumpKey, store, redis) {
         return next(e);
       }
     });
-    ws.on('close', (_) => {
+    ws.on('close', _ => {
       close(ws);
       redis.decr(DATA_SOURCE_COUNT); // fire and forget
       ws.locals.socketLogger.info('terminated pump', {

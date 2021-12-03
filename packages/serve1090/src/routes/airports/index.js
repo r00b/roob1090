@@ -12,7 +12,7 @@ const AUTH_TIMEOUT = 5000;
 module.exports = (airports, broadcastKey, store, redis) => {
   const router = new express.Router().get('/', getAirports(airports));
 
-  airports.forEach((airport) => {
+  airports.forEach(airport => {
     router
       .get(`/boards/${airport}`, getBoard(airport, store, redis))
       .ws(`/boards/${airport}`, broadcast(airport, broadcastKey, store, redis));
@@ -90,7 +90,7 @@ function broadcast(airport, broadcastKey, store, redis) {
 
     let broadcast, initialized;
 
-    ws.on('message', (data) => {
+    ws.on('message', data => {
       try {
         // ignore multiple requests for broadcast
         if (initialized) return;
@@ -118,7 +118,7 @@ function broadcast(airport, broadcastKey, store, redis) {
         return next(e);
       }
     });
-    ws.on('close', (_) => {
+    ws.on('close', _ => {
       if (broadcast) {
         clearInterval(broadcast);
       }

@@ -28,7 +28,7 @@ module.exports = (store, redis, mongo, logger) =>
  * @returns {(ident) => Promise<{}>}
  */
 function computeAirportBoard(store, redis, mongo, logger) {
-  return async (ident) => {
+  return async ident => {
     try {
       const airport = await mongo.getAirport(ident);
       if (!airport) {
@@ -61,7 +61,7 @@ async function buildBoard(airport, aircraft, redis) {
 
   const runwayKeys = runways.map(key);
   const activeRunways = _.compact(
-    await pMap(runwayKeys, (k) => redis.get(ACTIVE_RUNWAY(k)))
+    await pMap(runwayKeys, k => redis.get(ACTIVE_RUNWAY(k)))
   );
   const aircraftOnRunway = await pMap(
     _.flatten(await pMap(runwayKeys, fetchAircraft)),
@@ -121,9 +121,9 @@ async function buildBoard(airport, aircraft, redis) {
  * @returns {(string) => aircraft[]}
  */
 function fetchAircraftInRegion(aircraft, redis) {
-  return async (regionKey) => {
+  return async regionKey => {
     const hexes = (await redis.smembers(REGION_AIRCRAFT(regionKey))) || [];
-    return hexes.map((hex) => aircraft[hex]);
+    return hexes.map(hex => aircraft[hex]);
   };
 }
 
@@ -138,7 +138,7 @@ function fetchAircraftInRegion(aircraft, redis) {
 function getApproachAndDepartureKeys(runways, actives) {
   return runways.reduce(
     (acc, runway) => {
-      const activeSurface = _.find(runway.surfaces, (s) =>
+      const activeSurface = _.find(runway.surfaces, s =>
         actives.includes(s.name)
       );
       if (
@@ -204,7 +204,7 @@ function enrich(redis) {
   /**
    * @param aircraft {object}
    */
-  return async (aircraft) => {
+  return async aircraft => {
     const enrichments = await redis.hgetAsJson(ENRICHMENTS, aircraft.hex);
     return enrichments ? _.merge(aircraft, enrichments) : aircraft;
   };

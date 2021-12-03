@@ -13,7 +13,7 @@ describe('error-handler', () => {
     req = {};
     res = {
       status: jest.fn().mockReturnValue({
-        json: jest.fn().mockImplementation((json) => json),
+        json: jest.fn().mockImplementation(json => json),
       }),
       locals: {
         requestLogger: mockLogger,

@@ -2,12 +2,12 @@ const ALL_AIRCRAFT_STORE = 'aircraft:all';
 const VALID_AIRCRAFT_STORE = 'aircraft:valid';
 const INVALID_AIRCRAFT_STORE = 'aircraft:invalid';
 
-const BOARD = (key) => `${key}:board`;
-const ARRIVALS = (key) => `${key}:arrivals`;
-const DEPARTURES = (key) => `${key}:departures`;
+const BOARD = key => `${key}:board`;
+const ARRIVALS = key => `${key}:arrivals`;
+const DEPARTURES = key => `${key}:departures`;
 
-const REGION_AIRCRAFT = (key) => `${key}:aircraft`;
-const ACTIVE_RUNWAY = (key) => `${key}:activeRunway`;
+const REGION_AIRCRAFT = key => `${key}:aircraft`;
+const ACTIVE_RUNWAY = key => `${key}:activeRunway`;
 
 const ENRICHMENTS = 'enrichments';
 const ROUTES = 'routes';

@@ -144,7 +144,7 @@ describe('utils', () => {
     ws.terminate = terminate;
     close(ws, 1011, 'reason', 0);
     // wait for the timeout to resolve even though it's 0
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await new Promise(resolve => setTimeout(resolve, 50));
 
     expect(ws.close.mock.calls.length).toBe(2);
     expect(terminate.mock.calls.length).toBe(1);

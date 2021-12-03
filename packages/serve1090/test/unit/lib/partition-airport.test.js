@@ -35,9 +35,9 @@ describe('partition-airport', () => {
   });
 
   afterEach(() => {
-    Object.values(mockStore).forEach((m) => m.mockReset());
-    Object.values(mockRedis).forEach((m) => m.mockReset());
-    Object.values(mockMongo).forEach((m) => m.mockReset());
+    Object.values(mockStore).forEach(m => m.mockReset());
+    Object.values(mockRedis).forEach(m => m.mockReset());
+    Object.values(mockMongo).forEach(m => m.mockReset());
   });
 
   test('computes and writes airport partition without active runways', async () => {

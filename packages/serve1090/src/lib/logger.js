@@ -8,7 +8,7 @@ const production = nodeEnv === 'production';
 function pino(secrets) {
   const pino = require('pino')({
     redact: Object.keys(secrets)
-      .map((k) => [k, `*.${k}`])
+      .map(k => [k, `*.${k}`])
       .flat(),
     hooks: {
       // so that log fns work the same as signale

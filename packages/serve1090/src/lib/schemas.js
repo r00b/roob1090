@@ -201,7 +201,7 @@ const pumpBody = Joi.object({
 const exportSchema = function (schema) {
   return {
     ...schema,
-    validate: (input) => {
+    validate: input => {
       const { value, ...other } = schema.validate(input);
       return {
         ...other,

@@ -58,7 +58,7 @@ describe('aircraft-store', () => {
   });
 
   afterEach(() => {
-    Object.values(mocks).forEach((m) => m.mockReset());
+    Object.values(mocks).forEach(m => m.mockReset());
   });
 
   const verifyHsetJsonEx = (call, key, aircraft) => {

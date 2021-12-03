@@ -8,10 +8,10 @@ let connections = [];
 
 logger.info('starting serve1090', config);
 
-app(config).then((server) => {
+app(config).then(server => {
   // maintain array of current ws connections and purge them when they are closed
   // so that server shutdown can proceed normally
-  server.on('connection', (connection) => {
+  server.on('connection', connection => {
     // logger.info('connection established');
     connections.push(connection);
     connection.on('close', () => {
@@ -27,7 +27,7 @@ function shutdown() {
   return () => {
     logger.info('received shutdown signal');
     // kill all connections
-    connections.forEach((curr) => {
+    connections.forEach(curr => {
       curr.end();
       curr.destroy();
     });

@@ -22,7 +22,7 @@ module.exports = (store, redis, mongo, logger) =>
  * @returns {(ident: string) => Promise<partition>}
  */
 function partitionAirport(store, redis, mongo, logger) {
-  return async (ident) => {
+  return async ident => {
     try {
       const airport = await mongo.getAirport(ident);
       if (!airport) {
@@ -89,7 +89,7 @@ function runwayReducer(aircraft, aircraftAloft) {
    * @param runway {region} - runway region
    */
   return (acc, runway) => {
-    const computeActiveRunway = (samples) => {
+    const computeActiveRunway = samples => {
       for (const sample of samples) {
         const activeSurface = runway.surfaces.reduce(
           pickBestSurface(sample),

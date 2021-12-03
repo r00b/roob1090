@@ -1,4 +1,4 @@
-module.exports = (mocks) =>
+module.exports = mocks =>
   class RedisService {
     constructor() {
       return {

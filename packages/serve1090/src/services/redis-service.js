@@ -16,14 +16,14 @@ class RedisService {
       port,
       username,
       password,
-      retryStrategy: (_) => 5000,
+      retryStrategy: _ => 5000,
     });
     this.redis.on('ready', () => {
       if (verbose) {
         logger.info('redis connection established', { host, port });
       }
     });
-    this.redis.on('error', (err) =>
+    this.redis.on('error', err =>
       logger.fatal('redis client error', { detail: err.message, host, port })
     );
     this.redis.on('end', () => {
@@ -103,7 +103,7 @@ class RedisService {
    */
   async saddEx(key, ex, ...values) {
     const adds = await this.redis.sadd(key, ...values, this._errHandler);
-    const expires = await pMap(values, (value) =>
+    const expires = await pMap(values, value =>
       this.redis.call('expiremember', key, value, ex, this._errHandler)
     );
     return [adds, expires.length];
@@ -368,7 +368,7 @@ class Pipeline {
 
   saddEx(key, ex, ...values) {
     this._pipeline.sadd(key, ...values);
-    values.forEach((value) =>
+    values.forEach(value =>
       this._pipeline.call('expiremember', key, value, ex)
     );
     return this;

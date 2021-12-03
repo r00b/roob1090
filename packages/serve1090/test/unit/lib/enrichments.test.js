@@ -49,7 +49,7 @@ describe('enrichments', () => {
     // should always make a cache check
     expect(mockRedis.hgetAsJson.mock.calls.length).toBeGreaterThan(0);
     nock.cleanAll();
-    Object.values(mockRedis).forEach((m) => m.mockReset());
+    Object.values(mockRedis).forEach(m => m.mockReset());
   });
 
   describe('fetch route', () => {

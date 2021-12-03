@@ -20,13 +20,13 @@ async function init(mongo) {
 
   scheduler.start();
 
-  const workerNames = [...new Set(jobs.map((j) => j.name))];
+  const workerNames = [...new Set(jobs.map(j => j.name))];
   logger.info('started jobs', { count: jobs.length, jobs: workerNames });
 }
 
 async function generateAirportJobs(mongo) {
   const icaos = await mongo.getAllActiveAirportIdents();
-  return icaos.flatMap((airport) => [
+  return icaos.flatMap(airport => [
     {
       name: 'partition-airport-worker',
       interval: '3s',

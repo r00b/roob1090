@@ -140,7 +140,7 @@ const fetchOpenSkyRoute = async function (
     const {
       body: { route: rawRoute },
     } = await openSkyRoutes.get(`?callsign=${flight}`);
-    const route = rawRoute.map((a) => a.toUpperCase());
+    const route = rawRoute.map(a => a.toUpperCase());
     if (!route.includes(airportKey)) {
       return;
     }
@@ -207,7 +207,7 @@ const findCurrentLeg = async function (hex, route, airport, redis) {
  * @returns {boolean} true if arrival leg can be computed, false otherwise
  */
 const canDeriveArrivalLeg = function (route, airport) {
-  const timesInRoute = route.filter((a) => a === airport).length;
+  const timesInRoute = route.filter(a => a === airport).length;
   switch (timesInRoute) {
     case 1:
       // if airport is only in route once and is the first terminal,
@@ -230,7 +230,7 @@ const canDeriveArrivalLeg = function (route, airport) {
  * @returns {boolean} true if departure leg can be computed, false otherwise
  */
 const canDeriveDepartureLeg = function (route, airport) {
-  const timesInRoute = route.filter((a) => a === airport).length;
+  const timesInRoute = route.filter(a => a === airport).length;
   const lastIndex = route.length - 1;
   switch (timesInRoute) {
     case 1:
@@ -292,7 +292,7 @@ const fetchAirframe = function (redis, { openSkyAirframes }, logger) {
   /**
    * @param {object} aircraft - aircraft hash
    */
-  return async (aircraft) => {
+  return async aircraft => {
     const hex = aircraft.hex.toLowerCase();
     try {
       // first, see if the airframe is cached

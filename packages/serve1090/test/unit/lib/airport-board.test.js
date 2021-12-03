@@ -33,7 +33,7 @@ describe('airport-board', () => {
 
   function simpleAirport(airport, aircraft) {
     const { ac1, ac2, ac3, ac4, ac5, ac6, ac7, ac8, ac10 } = aircraft;
-    return (key) => {
+    return key => {
       switch (key) {
         case REGION_AIRCRAFT('airspace1'):
           return [ac1.hex, ac2.hex, ac3.hex];
@@ -51,7 +51,7 @@ describe('airport-board', () => {
 
   function complexAirport(airport, aircraft) {
     const { ac1, ac2, ac3, ac4, ac5, ac6, ac7, ac10 } = aircraft;
-    return (key) => {
+    return key => {
       switch (key) {
         case REGION_AIRCRAFT('airspace1'):
           return [ac1.hex, ac2.hex, ac3.hex];
@@ -85,9 +85,9 @@ describe('airport-board', () => {
   });
 
   afterEach(() => {
-    Object.values(mockStore).forEach((m) => m.mockReset());
-    Object.values(mockRedis).forEach((m) => m.mockReset());
-    Object.values(mockMongo).forEach((m) => m.mockReset());
+    Object.values(mockStore).forEach(m => m.mockReset());
+    Object.values(mockRedis).forEach(m => m.mockReset());
+    Object.values(mockMongo).forEach(m => m.mockReset());
   });
 
   test('computes, sorts, and writes airport board for airport with single runway', async () => {

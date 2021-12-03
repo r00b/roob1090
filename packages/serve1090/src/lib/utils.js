@@ -187,7 +187,7 @@ function close(ws, code, reason, terminateAfter = 1000) {
  */
 function withinBoundaryAndCeiling(boundary, ceiling) {
   const boundaryPolygon = polygon([boundary]);
-  return (aircraft) => {
+  return aircraft => {
     const loc = point([aircraft.lon, aircraft.lat]);
     const inRegion = pointInPolygon(loc, boundaryPolygon);
     const atOrBelowCeiling = aircraft.altBaro <= ceiling;

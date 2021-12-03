@@ -2,7 +2,7 @@ const BaseJoi = require('joi');
 
 const Joi = {
   ...BaseJoi.extend(
-    (joi) => {
+    joi => {
       return {
         type: 'altitude',
         base: joi
@@ -15,7 +15,7 @@ const Joi = {
         },
       };
     },
-    (joi) => {
+    joi => {
       return {
         type: 'altimeter',
         base: joi.number(),

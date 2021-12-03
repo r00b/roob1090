@@ -13,7 +13,8 @@
     "test": "jest",
     "t": "npm run test",
     "l": "docker logs --follow express",
-    "cl": "docker-compose up -d --build && npm run l"
+    "cl": "docker-compose up -d --build && npm run l",
+    "prettier": "npx prettier --write ."
   },
   "dependencies": {
     "@turf/boolean-point-in-polygon": "^6.5.0",
@@ -42,6 +43,7 @@
     "jest": "^27.3.1",
     "nock": "^13.2.1",
     "nodemon": "^2.0.15",
+    "prettier": "2.5.0",
     "signale": "^1.4.0",
     "supertest": "^6.1.6",
     "superwstest": "^1.8.0"

@@ -1,19 +1,14 @@
-const logger = require('../lib/logger')().scope('mongo');
-const { MongoClient } = require('mongodb');
+const logger = require("../lib/logger")().scope("mongo");
+const { MongoClient } = require("mongodb");
 
-const DEFAULT_DBNAME = 'serve1090';
-const AIRPORTS_COLLECTION = 'airports';
+const DEFAULT_DBNAME = "serve1090";
+const AIRPORTS_COLLECTION = "airports";
 
 class MongoService {
-  constructor (config) {
+  constructor(config) {
     this.config = config;
 
-    const {
-      host,
-      port,
-      username,
-      password
-    } = this.config;
+    const { host, port, username, password } = this.config;
 
     const uri = `mongodb://${host}:${port}`;
     const options = {};
@@ -21,7 +16,7 @@ class MongoService {
     if (username && password) {
       options.auth = {
         username,
-        password
+        password,
       };
     }
 
@@ -33,30 +28,30 @@ class MongoService {
    *
    * @returns {MongoService} this
    */
-  async connect () {
+  async connect() {
     const { host, port, dbName, verbose } = this.config;
 
     await this.mongo.connect();
     this.db = this.mongo.db(dbName || DEFAULT_DBNAME);
 
     if (verbose) {
-      logger.info('mongo connection established', { host, port });
+      logger.info("mongo connection established", { host, port });
     }
     return this;
   }
 
-  async close () {
+  async close() {
     await this.mongo.close();
   }
 
-  async ping () {
+  async ping() {
     return this.db.command({ ping: 1 });
   }
 
   /**
    * @returns {Collection<Document>}
    */
-  get airports () {
+  get airports() {
     return this.db.collection(AIRPORTS_COLLECTION);
   }
 
@@ -66,7 +61,7 @@ class MongoService {
    * @param {string} ident
    * @returns {Promise<Document>}
    */
-  async getAirport (ident) {
+  async getAirport(ident) {
     return this.db.collection(AIRPORTS_COLLECTION).findOne({ ident });
   }
 
@@ -75,9 +70,8 @@ class MongoService {
    *
    * @returns {Promise<string[]>}
    */
-  async getAllActiveAirportIdents () {
-    const docs = await this
-      .airports
+  async getAllActiveAirportIdents() {
+    const docs = await this.airports
       .find({ active: true })
       .project({ ident: 1 })
       .toArray();

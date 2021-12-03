@@ -7,5 +7,5 @@ module.exports = {
   error: jest.fn(),
   fatal: jest.fn(),
   scope: jest.fn().mockReturnThis(),
-  child: jest.fn().mockReturnThis()
+  child: jest.fn().mockReturnThis(),
 };

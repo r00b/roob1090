@@ -1,5 +1,5 @@
-const Joi = require('./joi');
-const camelcaseKeys = require('camelcase-keys');
+const Joi = require("./joi");
+const camelcaseKeys = require("camelcase-keys");
 
 const MAX_VALID_SEEN = 10;
 
@@ -70,7 +70,7 @@ const aircraft = Joi.object({
   // recent verage RSSI (signal power) (dbFS) (always negative)
   rssi: Joi.number().optional(),
   // number of Mode S messages received from aircraft
-  messages: Joi.number().optional()
+  messages: Joi.number().optional(),
 
   // // aircraft emitter category
   // category: Joi.string(),
@@ -102,7 +102,7 @@ const aircraft = Joi.object({
   // type: Joi.string()
 })
   .options({ stripUnknown: true })
-  .rename('nav_qnh', 'altimeter', { override: true });
+  .rename("nav_qnh", "altimeter", { override: true });
 
 /**
  * Schema for validating a response from the OpenSky /metadata/aircraft/icao API
@@ -143,7 +143,7 @@ const airframe = Joi.object({
   // country of registration
   country: Joi.stringOrNull(),
   // date updated (millis)
-  lastUpdated: Joi.dateOrNull()
+  lastUpdated: Joi.dateOrNull(),
 
   // selCal: Joi.string(),
   // // manufacturer ICAO (i.e. BOEING)
@@ -183,9 +183,9 @@ const airframe = Joi.object({
   // waypoints: Joi.string()
 })
   .options({ stripUnknown: true })
-  .rename('icao24', 'hex', { override: true })
-  .rename('typecode', 'type', { override: true })
-  .rename('timestamp', 'lastUpdated');
+  .rename("icao24", "hex", { override: true })
+  .rename("typecode", "type", { override: true })
+  .rename("timestamp", "lastUpdated");
 
 const pumpBody = Joi.object({
   aircraft: Joi.array().required(),
@@ -195,24 +195,24 @@ const pumpBody = Joi.object({
   device_id: Joi.string().required(),
   messages: Joi.number().required(),
   // current time in seconds since epoch
-  now: Joi.number().required()
+  now: Joi.number().required(),
 });
 
 const exportSchema = function (schema) {
   return {
     ...schema,
-    validate: input => {
+    validate: (input) => {
       const { value, ...other } = schema.validate(input);
       return {
         ...other,
-        value: camelcaseKeys(value)
+        value: camelcaseKeys(value),
       };
-    }
+    },
   };
 };
 
 module.exports = {
   aircraft: exportSchema(aircraft),
   airframe: exportSchema(airframe),
-  pumpBody
+  pumpBody,
 };

@@ -1,32 +1,34 @@
-const Redis = require('ioredis');
+const Redis = require("ioredis");
 const {
   redisHost: host,
   redisPort: port,
   redisUser: username,
-  redisPass: password
-} = require('../config');
-const { RedisError } = require('../lib/errors');
-const logger = require('../lib/logger')().scope('redis');
-const pMap = require('p-map');
+  redisPass: password,
+} = require("../config");
+const { RedisError } = require("../lib/errors");
+const logger = require("../lib/logger")().scope("redis");
+const pMap = require("p-map");
 
 class RedisService {
-  constructor (verbose = false) {
+  constructor(verbose = false) {
     this.redis = new Redis({
       host,
       port,
       username,
       password,
-      retryStrategy: (_) => 5000
+      retryStrategy: (_) => 5000,
     });
-    this.redis.on('ready', () => {
+    this.redis.on("ready", () => {
       if (verbose) {
-        logger.info('redis connection established', { host, port });
+        logger.info("redis connection established", { host, port });
       }
     });
-    this.redis.on('error', (err) => logger.fatal('redis client error', { detail: err.message, host, port }));
-    this.redis.on('end', () => {
+    this.redis.on("error", (err) =>
+      logger.fatal("redis client error", { detail: err.message, host, port })
+    );
+    this.redis.on("end", () => {
       if (verbose) {
-        logger.info('redis connection ended', { host, port });
+        logger.info("redis connection ended", { host, port });
       }
     });
   }
@@ -41,7 +43,7 @@ class RedisService {
    * @param {string} value - value of variable
    * @returns {Promise}
    */
-  async set (key, value) {
+  async set(key, value) {
     return this.redis.set(key, value, this._errHandler);
   }
 
@@ -54,7 +56,7 @@ class RedisService {
    * @param {string} value - value of variable
    * @returns {Promise}
    */
-  async setex (key, ex, value) {
+  async setex(key, ex, value) {
     return this.redis.setex(key, ex, value, this._errHandler);
   }
 
@@ -66,7 +68,7 @@ class RedisService {
    * @param {object} value - value to set
    * @returns {Promise}
    */
-  async hsetJson (key, field, value) {
+  async hsetJson(key, field, value) {
     return this.redis.hset(key, field, JSON.stringify(value), this._errHandler);
   }
 
@@ -79,9 +81,15 @@ class RedisService {
    * @param {string|number} ex - number of seconds until key-value pair is deleted
    * @returns {[Promise, Promise]}
    */
-  async hsetJsonEx (key, field, value, ex) {
+  async hsetJsonEx(key, field, value, ex) {
     const set = await this.hsetJson(key, field, value);
-    const expire = await this.redis.call('expiremember', key, field, ex, this._errHandler);
+    const expire = await this.redis.call(
+      "expiremember",
+      key,
+      field,
+      ex,
+      this._errHandler
+    );
     return [set, expire];
   }
 
@@ -93,10 +101,11 @@ class RedisService {
    * @param  values - values to add to set
    * @returns {[Promise, Promise]}
    */
-  async saddEx (key, ex, ...values) {
+  async saddEx(key, ex, ...values) {
     const adds = await this.redis.sadd(key, ...values, this._errHandler);
-    const expires = await pMap(values,
-      value => this.redis.call('expiremember', key, value, ex, this._errHandler));
+    const expires = await pMap(values, (value) =>
+      this.redis.call("expiremember", key, value, ex, this._errHandler)
+    );
     return [adds, expires.length];
   }
 
@@ -107,7 +116,7 @@ class RedisService {
    * @param {string} key - key of value
    * @returns {Promise}
    */
-  async incr (key) {
+  async incr(key) {
     return this.redis.incr(key, this._errHandler);
   }
 
@@ -118,7 +127,7 @@ class RedisService {
    * @param {string} key - key of value
    * @returns {Promise}
    */
-  async decr (key) {
+  async decr(key) {
     return this.redis.decr(key, this._errHandler);
   }
 
@@ -129,7 +138,7 @@ class RedisService {
    * @param {string[]} keys - key(s) of value to delete
    * @returns {Promise}
    */
-  async del (...keys) {
+  async del(...keys) {
     return this.redis.del(...keys, this._errHandler);
   }
 
@@ -139,7 +148,7 @@ class RedisService {
    *
    * @returns {Promise}
    */
-  async flushall () {
+  async flushall() {
     return this.redis.flushall(this._errHandler);
   }
 
@@ -152,7 +161,7 @@ class RedisService {
    * @param {string} key - key of value to get
    * @returns {Promise}
    */
-  get (key) {
+  get(key) {
     return this.redis.get(key, this._errHandler);
   }
 
@@ -162,13 +171,16 @@ class RedisService {
    * @param {string} key - key of hash to get
    * @returns {Promise}
    */
-  async getAsJson (key) {
+  async getAsJson(key) {
     const res = await this.redis.get(key, this._errHandler);
     if (res) {
       try {
         return JSON.parse(res);
       } catch (e) {
-        throw new RedisError('unable to parse result into JSON', { key, value: String(res) });
+        throw new RedisError("unable to parse result into JSON", {
+          key,
+          value: String(res),
+        });
       }
     } else return res;
   }
@@ -180,13 +192,17 @@ class RedisService {
    * @param {string} field - field of value in hash to get
    * @returns {Promise}
    */
-  async hgetAsJson (key, field) {
+  async hgetAsJson(key, field) {
     const res = await this.redis.hget(key, field, this._errHandler);
     if (res) {
       try {
         return JSON.parse(res);
       } catch (e) {
-        throw new RedisError('unable to parse result into JSON', { key, field, value: String(res) });
+        throw new RedisError("unable to parse result into JSON", {
+          key,
+          field,
+          value: String(res),
+        });
       }
     } else return res;
   }
@@ -197,8 +213,11 @@ class RedisService {
    * @param {string} key - key of hash
    * @returns {Promise}
    */
-  async hgetAllAsJson (key) {
-    const hashWithStringValues = await this.redis.hgetall(key, this._errHandler);
+  async hgetAllAsJson(key) {
+    const hashWithStringValues = await this.redis.hgetall(
+      key,
+      this._errHandler
+    );
     if (hashWithStringValues) {
       return Object.entries(hashWithStringValues).reduce((acc, [k, v]) => {
         try {
@@ -217,8 +236,11 @@ class RedisService {
    * @param {string} key - key of hash
    * @returns {Promise}
    */
-  async hgetAllAsJsonValues (key) {
-    const hashWithStringValues = await this.redis.hgetall(key, this._errHandler);
+  async hgetAllAsJsonValues(key) {
+    const hashWithStringValues = await this.redis.hgetall(
+      key,
+      this._errHandler
+    );
     if (hashWithStringValues) {
       return Object.values(hashWithStringValues).reduce((acc, value) => {
         try {
@@ -239,7 +261,7 @@ class RedisService {
    * @param {string} field - field in hash
    * @returns {Promise}
    */
-  hexists (key, field) {
+  hexists(key, field) {
     return this.redis.hexists(key, field, this._errHandler);
   }
 
@@ -250,7 +272,7 @@ class RedisService {
    * @param {string} key - key of hash
    * @returns {Promise}
    */
-  hlen (key) {
+  hlen(key) {
     return this.redis.hlen(key, this._errHandler);
   }
 
@@ -261,7 +283,8 @@ class RedisService {
    * @param  {string} key - key of value
    * @returns {Promise}
    */
-  ttl (key) { // todo test
+  ttl(key) {
+    // todo test
     return this.redis.ttl(key, this._errHandler);
   }
 
@@ -272,7 +295,7 @@ class RedisService {
    * @param {string} key - key of set
    * @returns {Promise}
    */
-  smembers (key) {
+  smembers(key) {
     return this.redis.smembers(key, this._errHandler);
   }
 
@@ -284,7 +307,7 @@ class RedisService {
    * @param {string} value - value of member to check
    * @returns {Promise}
    */
-  sismember (key, value) {
+  sismember(key, value) {
     return this.redis.sismember(key, value, this._errHandler);
   }
 
@@ -294,7 +317,7 @@ class RedisService {
    * Create a Redis pipeline; https://redis.io/topics/pipelining
    * and https://github.com/luin/ioredis#Pipelining
    */
-  pipeline () {
+  pipeline() {
     return new Pipeline(this.redis.pipeline());
   }
 
@@ -304,9 +327,9 @@ class RedisService {
    * @param {ReplyError} e - error object from redis
    * @param result - result of redis command
    */
-  _errHandler (e, result) {
+  _errHandler(e, result) {
     if (e) {
-      logger.error('redis op error', { detail: e.message, ...e.command });
+      logger.error("redis op error", { detail: e.message, ...e.command });
     }
   }
 }
@@ -318,93 +341,95 @@ class RedisService {
  * and https://github.com/luin/ioredis#Pipelining
  */
 class Pipeline {
-  constructor (pipeline) {
+  constructor(pipeline) {
     this._pipeline = pipeline;
   }
 
-  set (key, value) {
+  set(key, value) {
     this._pipeline.set(key, value);
     return this;
   }
 
-  setex (key, ex, value) {
+  setex(key, ex, value) {
     this._pipeline.setex(key, ex, value);
     return this;
   }
 
-  hsetJson (key, field, value) {
+  hsetJson(key, field, value) {
     this._pipeline.hset(key, field, JSON.stringify(value));
     return this;
   }
 
-  hsetJsonEx (key, field, value, ex) {
+  hsetJsonEx(key, field, value, ex) {
     this.hsetJson(key, field, value);
-    this._pipeline.call('expiremember', key, field, ex);
+    this._pipeline.call("expiremember", key, field, ex);
     return this;
   }
 
-  saddEx (key, ex, ...values) {
+  saddEx(key, ex, ...values) {
     this._pipeline.sadd(key, ...values);
-    values.forEach(value => this._pipeline.call('expiremember', key, value, ex));
+    values.forEach((value) =>
+      this._pipeline.call("expiremember", key, value, ex)
+    );
     return this;
   }
 
-  incr (key) {
+  incr(key) {
     this._pipeline.incr(key);
     return this;
   }
 
-  decr (key) {
+  decr(key) {
     this._pipeline.decr(key);
     return this;
   }
 
-  del (...keys) {
+  del(...keys) {
     this._pipeline.del(...keys);
     return this;
   }
 
-  flushall () {
+  flushall() {
     this._pipeline.flushall();
     return this;
   }
 
-  get (key) {
+  get(key) {
     this._pipeline.get(key);
     return this;
   }
 
-  hget (key, field) {
+  hget(key, field) {
     this._pipeline.hget(key, field);
     return this;
   }
 
-  hgetall (key) {
+  hgetall(key) {
     this._pipeline.hgetall(key);
     return this;
   }
 
-  hexists (key, field) {
+  hexists(key, field) {
     this._pipeline.hexists(key, field);
     return this;
   }
 
-  hlen (key) {
+  hlen(key) {
     this._pipeline.hlen(key);
     return this;
   }
 
-  ttl (key) {
+  ttl(key) {
     this._pipeline.ttl(key);
     return this;
   }
 
-  smembers (key) {
+  smembers(key) {
     this._pipeline.smembers(key);
     return this;
   }
 
-  sismember (key, value) {
+  sismember(key, value) {
     this._pipeline.sismember(key, value);
     return this;
   }
@@ -415,7 +440,7 @@ class Pipeline {
    * @param callback {function?} - with erasure (err, results) => {}
    * @returns {array} results of each executed command
    */
-  exec (callback) {
+  exec(callback) {
     return this._pipeline.exec(callback);
   }
 }

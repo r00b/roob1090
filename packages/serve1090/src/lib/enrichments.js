@@ -1,6 +1,6 @@
-const _ = require('lodash');
-const got = require('got');
-const { airframe: airframeSchema } = require('./schemas');
+const _ = require("lodash");
+const got = require("got");
+const { airframe: airframeSchema } = require("./schemas");
 
 const ROUTE_TTL = 900; // 15 min
 const {
@@ -8,15 +8,15 @@ const {
   DEPARTURES,
   ROUTES,
   AIRFRAMES,
-  BROADCAST_CLIENT_COUNT
-} = require('../lib/redis-keys');
+  BROADCAST_CLIENT_COUNT,
+} = require("../lib/redis-keys");
 
 module.exports = (config, redis, logger) => {
   const apis = generateApis(config, logger);
-  const scopedLogger = logger.scope('enrichments');
+  const scopedLogger = logger.scope("enrichments");
   return {
     fetchRoute: fetchRoute(redis, apis, scopedLogger),
-    fetchAirframe: fetchAirframe(redis, apis, scopedLogger)
+    fetchAirframe: fetchAirframe(redis, apis, scopedLogger),
   };
 };
 
@@ -27,27 +27,27 @@ const generateApis = function (config, logger) {
     openSkyPassword,
     faApi,
     faUsername,
-    faPassword
+    faPassword,
   } = config;
   const apis = {};
 
   if (openSkyApi && openSkyUsername && openSkyPassword) {
     const openSkyCredentials = {
       username: config.openSkyUsername,
-      password: config.openSkyPassword
+      password: config.openSkyPassword,
     };
     apis.openSkyAirframes = got.extend({
       prefixUrl: `${config.openSkyApi}/api/metadata/aircraft/icao`,
       ...openSkyCredentials,
-      responseType: 'json'
+      responseType: "json",
     });
     apis.openSkyRoutes = got.extend({
       prefixUrl: `${config.openSkyApi}/api/routes`,
       ...openSkyCredentials,
-      responseType: 'json'
+      responseType: "json",
     });
   } else {
-    logger.warn('unable to find OpenSky API credentials');
+    logger.warn("unable to find OpenSky API credentials");
   }
 
   if (faApi && faUsername && faPassword) {
@@ -55,10 +55,10 @@ const generateApis = function (config, logger) {
       prefixUrl: `${config.faApi}/InFlightInfo`,
       username: config.faUsername,
       password: config.faPassword,
-      responseType: 'json'
+      responseType: "json",
     });
   } else {
-    logger.warn('unable to find FlightAware API credentials');
+    logger.warn("unable to find FlightAware API credentials");
   }
 
   return apis;
@@ -68,7 +68,11 @@ const generateApis = function (config, logger) {
  * Return a function that tests a flight's route, checking redis for a cached route,
  * followed by the OpenSky API and finally the FlightAware API
  */
-const fetchRoute = function (redis, { openSkyRoutes, flightAwareRoutes }, logger) {
+const fetchRoute = function (
+  redis,
+  { openSkyRoutes, flightAwareRoutes },
+  logger
+) {
   /**
    * @param {Object} aircraft - aircraft ADSB hash
    * @param {string} airport - airport key for checking route cache
@@ -81,12 +85,24 @@ const fetchRoute = function (redis, { openSkyRoutes, flightAwareRoutes }, logger
       let result = await redis.hgetAsJson(ROUTES, flight);
       // next, check OpenSky
       if (!result && openSkyRoutes) {
-        result = await fetchOpenSkyRoute(aircraft, airportKey, openSkyRoutes, redis, logger);
+        result = await fetchOpenSkyRoute(
+          aircraft,
+          airportKey,
+          openSkyRoutes,
+          redis,
+          logger
+        );
       }
       // next, fallback to FlightAware if there is a current broadcast client OR if forceFallbackToFA = true
-      const shouldQueryFA = flightAwareRoutes && ((!result && await hasBroadcastClients(redis)) || forceFallbackToFA);
+      const shouldQueryFA =
+        flightAwareRoutes &&
+        ((!result && (await hasBroadcastClients(redis))) || forceFallbackToFA);
       if (shouldQueryFA) {
-        result = await fetchFlightAwareRoute(aircraft, flightAwareRoutes, logger);
+        result = await fetchFlightAwareRoute(
+          aircraft,
+          flightAwareRoutes,
+          logger
+        );
       }
       // finally, cache the result
       if (result) {
@@ -112,24 +128,32 @@ const fetchRoute = function (redis, { openSkyRoutes, flightAwareRoutes }, logger
  * @param logger
  * @returns {Promise<{origin, destination}|undefined>}
  */
-const fetchOpenSkyRoute = async function ({ flight, hex }, airport, openSkyRoutes, redis, logger) {
+const fetchOpenSkyRoute = async function (
+  { flight, hex },
+  airport,
+  openSkyRoutes,
+  redis,
+  logger
+) {
   const airportKey = airport.toUpperCase();
   try {
-    const { body: { route: rawRoute } } = await openSkyRoutes.get(`?callsign=${flight}`);
-    const route = rawRoute.map(a => a.toUpperCase());
+    const {
+      body: { route: rawRoute },
+    } = await openSkyRoutes.get(`?callsign=${flight}`);
+    const route = rawRoute.map((a) => a.toUpperCase());
     if (!route.includes(airportKey)) {
       return;
     }
     if (route.length === 2) {
       return {
         origin: route[0],
-        destination: route[1]
+        destination: route[1],
       };
     } else if (route.length > 2) {
       return findCurrentLeg(hex, route, airportKey, redis);
     }
   } catch (e) {
-    if (_.get(e, 'message', '').includes('404')) {
+    if (_.get(e, "message", "").includes("404")) {
       return;
     }
     logger.warn(`error resolving route data from OpenSky for ${flight}`, e);
@@ -148,23 +172,26 @@ const fetchOpenSkyRoute = async function ({ flight, hex }, airport, openSkyRoute
  */
 const findCurrentLeg = async function (hex, route, airport, redis) {
   const airportKey = airport.toUpperCase();
-  const arrivals = await redis.smembers(ARRIVALS(airportKey.toLowerCase())) || [];
+  const arrivals =
+    (await redis.smembers(ARRIVALS(airportKey.toLowerCase()))) || [];
   if (arrivals.includes(hex) && canDeriveArrivalLeg(route, airport)) {
     const arrivalIdx = route.lastIndexOf(airportKey.toUpperCase());
-    if (arrivalIdx > 0) { // > 0 to prevent index out of range error on origin
+    if (arrivalIdx > 0) {
+      // > 0 to prevent index out of range error on origin
       return {
         origin: route[arrivalIdx - 1],
-        destination: route[arrivalIdx]
+        destination: route[arrivalIdx],
       };
     }
   } else {
-    const departures = await redis.smembers(DEPARTURES(airportKey.toLowerCase())) || [];
+    const departures =
+      (await redis.smembers(DEPARTURES(airportKey.toLowerCase()))) || [];
     if (departures.includes(hex) && canDeriveDepartureLeg(route, airport)) {
       const departureIdx = route.indexOf(airportKey.toUpperCase());
       if (departureIdx >= 0) {
         return {
           origin: route[departureIdx],
-          destination: route[departureIdx + 1]
+          destination: route[departureIdx + 1],
         };
       }
     }
@@ -180,7 +207,7 @@ const findCurrentLeg = async function (hex, route, airport, redis) {
  * @returns {boolean} true if arrival leg can be computed, false otherwise
  */
 const canDeriveArrivalLeg = function (route, airport) {
-  const timesInRoute = route.filter(a => a === airport).length;
+  const timesInRoute = route.filter((a) => a === airport).length;
   switch (timesInRoute) {
     case 1:
       // if airport is only in route once and is the first terminal,
@@ -203,7 +230,7 @@ const canDeriveArrivalLeg = function (route, airport) {
  * @returns {boolean} true if departure leg can be computed, false otherwise
  */
 const canDeriveDepartureLeg = function (route, airport) {
-  const timesInRoute = route.filter(a => a === airport).length;
+  const timesInRoute = route.filter((a) => a === airport).length;
   const lastIndex = route.length - 1;
   switch (timesInRoute) {
     case 1:
@@ -234,13 +261,20 @@ const hasBroadcastClients = async function (redis) {
  * @param logger
  * @returns {Promise<{origin, destination}>|undefined}
  */
-const fetchFlightAwareRoute = async function ({ flight }, flightAwareRoutes, logger) {
+const fetchFlightAwareRoute = async function (
+  { flight },
+  flightAwareRoutes,
+  logger
+) {
   try {
-    const { body: { InFlightInfoResult: result } } = await flightAwareRoutes(`?ident=${flight}`);
-    if (result.timeout === 'ok') { // FA can return stale data, indicated by timeout = 'timed_out'
+    const {
+      body: { InFlightInfoResult: result },
+    } = await flightAwareRoutes(`?ident=${flight}`);
+    if (result.timeout === "ok") {
+      // FA can return stale data, indicated by timeout = 'timed_out'
       return {
         origin: result.origin,
-        destination: result.destination
+        destination: result.destination,
       };
     }
   } catch (e) {
@@ -267,7 +301,11 @@ const fetchAirframe = function (redis, { openSkyAirframes }, logger) {
         return cachedAirframe;
       }
       // next, attempt to fetch airframe from OpenSky
-      const fetchedAirframe = await fetchOpenSkyAirframe(hex, openSkyAirframes, logger);
+      const fetchedAirframe = await fetchOpenSkyAirframe(
+        hex,
+        openSkyAirframes,
+        logger
+      );
       if (fetchedAirframe) {
         // cache airframe for later queries
         redis.hsetJson(AIRFRAMES, hex, fetchedAirframe); // fire and forget
@@ -294,7 +332,10 @@ const fetchOpenSkyAirframe = async function (hex, openSkyAirframes, logger) {
     const { body } = await openSkyAirframes.get(hex);
     const { value: airframe, error } = airframeSchema.validate(body);
     if (error) {
-      logger.warn(`error validating airframe data from OpenSky for ${hex}`, error);
+      logger.warn(
+        `error validating airframe data from OpenSky for ${hex}`,
+        error
+      );
       return {};
     }
     if (!airframe.type) {

@@ -1,20 +1,16 @@
-const express = require('express');
-const logger = require('../../lib/logger')().scope('request');
-const errorHandler = require('../../middleware/error-handler');
-const { AuthError, BroadcastError } = require('../../lib/errors');
-const { checkToken, close } = require('../../lib/utils');
-const { nanoid } = require('nanoid');
+const express = require("express");
+const logger = require("../../lib/logger")().scope("request");
+const errorHandler = require("../../middleware/error-handler");
+const { AuthError, BroadcastError } = require("../../lib/errors");
+const { checkToken, close } = require("../../lib/utils");
+const { nanoid } = require("nanoid");
 
-const {
-  BOARD,
-  BROADCAST_CLIENT_COUNT
-} = require('../../lib/redis-keys');
+const { BOARD, BROADCAST_CLIENT_COUNT } = require("../../lib/redis-keys");
 
 const AUTH_TIMEOUT = 5000;
 
 module.exports = (airports, broadcastKey, store, redis) => {
-  const router = new express.Router()
-    .get('/', getAirports(airports));
+  const router = new express.Router().get("/", getAirports(airports));
 
   airports.forEach((airport) => {
     router
@@ -30,9 +26,8 @@ module.exports = (airports, broadcastKey, store, redis) => {
  *
  * @param airports {string[]} - list of airport icaos
  */
-function getAirports (airports) {
-  return (req, res) =>
-    res.status(200).json({ airports });
+function getAirports(airports) {
+  return (req, res) => res.status(200).json({ airports });
 }
 
 /**
@@ -43,7 +38,7 @@ function getAirports (airports) {
  * @param redis
  */
 
-function getBoard (airport, store, redis) {
+function getBoard(airport, store, redis) {
   return (req, res, next) =>
     fetchBoard(airport, store, redis)
       .then(res.status(200).json.bind(res))
@@ -59,15 +54,15 @@ function getBoard (airport, store, redis) {
  *
  * TODO: forceFallbackFA for manual GETs
  */
-async function fetchBoard (airport, store, redis) {
+async function fetchBoard(airport, store, redis) {
   const board = await redis.getAsJson(BOARD(airport));
   return {
     ...board,
     stats: {
       now: Date.now(),
       totalAircraftCount: await store.getTotalAircraftCount(),
-      validAircraftCount: await store.getValidAircraftCount()
-    }
+      validAircraftCount: await store.getValidAircraftCount(),
+    },
   };
 }
 
@@ -80,22 +75,22 @@ async function fetchBoard (airport, store, redis) {
  * @param store - aircraft store
  * @param redis
  */
-function broadcast (airport, broadcastKey, store, redis) {
+function broadcast(airport, broadcastKey, store, redis) {
   return (ws, { originalUrl }, next) => {
     ws.locals = {
       originalUrl,
       airport,
-      socketLogger: logger.scope('ws').child({ requestId: nanoid() }),
-      socketStart: Date.now()
+      socketLogger: logger.scope("ws").child({ requestId: nanoid() }),
+      socketStart: Date.now(),
     };
     const authTimeout = setTimeout(() => {
       // client only has AUTH_TIMEOUT ms to send a payload
-      return next(new AuthError('request timed out', 408));
+      return next(new AuthError("request timed out", 408));
     }, AUTH_TIMEOUT);
 
     let broadcast, initialized;
 
-    ws.on('message', data => {
+    ws.on("message", (data) => {
       try {
         // ignore multiple requests for broadcast
         if (initialized) return;
@@ -106,34 +101,34 @@ function broadcast (airport, broadcastKey, store, redis) {
         checkToken(broadcastKey, rawPayload);
         // initialize broadcast
         redis.incr(BROADCAST_CLIENT_COUNT); // fire and forget
-        ws.locals.socketLogger.info('authenticated broadcast client', {
-          airport: ws.locals.airport
+        ws.locals.socketLogger.info("authenticated broadcast client", {
+          airport: ws.locals.airport,
         });
 
         broadcast = setInterval(sendBoard(ws, next, store, redis), 1000);
 
         ws.locals.broadcastStart = Date.now();
-        ws.locals.socketLogger.info('initialized broadcast', {
+        ws.locals.socketLogger.info("initialized broadcast", {
           broadcastStart: ws.locals.broadcastStart,
           url: originalUrl,
-          airport
+          airport,
         });
         initialized = true;
       } catch (e) {
         return next(e);
       }
     });
-    ws.on('close', _ => {
+    ws.on("close", (_) => {
       if (broadcast) {
         clearInterval(broadcast);
       }
       close(ws);
       redis.decr(BROADCAST_CLIENT_COUNT); // fire and forget
-      ws.locals.socketLogger.info('terminated broadcast', {
+      ws.locals.socketLogger.info("terminated broadcast", {
         socketTime: Date.now() - ws.locals.start,
         broadcastTime: Date.now() - ws.locals.broadcastStart,
         url: ws.locals.originalUrl,
-        airport: ws.locals.airport
+        airport: ws.locals.airport,
       });
     });
   };
@@ -147,7 +142,7 @@ function broadcast (airport, broadcastKey, store, redis) {
  * @param store - aircraft store
  * @param redis
  */
-function sendBoard (ws, next, store, redis) {
+function sendBoard(ws, next, store, redis) {
   return async () => {
     try {
       if (ws.readyState === 1) {

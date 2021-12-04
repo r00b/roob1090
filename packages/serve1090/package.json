@@ -28,7 +28,7 @@
     "express-ws": "^5.0.2",
     "got": "^11.8.3",
     "ioredis": "^4.28.1",
-    "joi": "^17.4.2",
+    "joi": "^17.5.0",
     "lodash": "^4.17.21",
     "mongodb": "^4.1.4",
     "mongodb-memory-server": "^8.0.3",
@@ -40,7 +40,7 @@
   },
   "devDependencies": {
     "husky": "^4.3.8",
-    "ioredis-mock": "^5.8.0",
+    "ioredis-mock": "^5.8.1",
     "jest": "^27.3.1",
     "lint-staged": "^12.1.2",
     "nock": "^13.2.1",

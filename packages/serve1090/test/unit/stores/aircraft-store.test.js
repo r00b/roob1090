@@ -1,10 +1,8 @@
-const {
-  millisToSeconds
-} = require('../../../src/lib/utils');
+const { millisToSeconds } = require('../../../src/lib/utils');
 const {
   ALL_AIRCRAFT_STORE,
   VALID_AIRCRAFT_STORE,
-  INVALID_AIRCRAFT_STORE
+  INVALID_AIRCRAFT_STORE,
 } = require('../../../src/lib/redis-keys');
 
 const mockRedisService = require('../../support/mock-redis-service');
@@ -14,16 +12,18 @@ const mocks = {
   hgetAllAsJsonValues: jest.fn(),
   hgetAllAsJson: jest.fn(),
   hlen: jest.fn(),
-  exec: jest.fn()
+  exec: jest.fn(),
 };
 
 jest.mock('../../../src/services/redis-service', () => mockRedisService(mocks));
-jest.mock('../../../src/lib/logger', () => () => require('../../support/mock-logger'));
+jest.mock(
+  '../../../src/lib/logger',
+  () => () => require('../../support/mock-logger')
+);
 
 const store = require('../../../src/stores/aircraft-store');
 
 describe('aircraft-store', () => {
-
   const aircraftMap = {
     '3ef': {
       hex: '3ef',
@@ -32,7 +32,7 @@ describe('aircraft-store', () => {
       lon: 5.0,
       alt_baro: 1000,
       track: 180,
-      seen: 1
+      seen: 1,
     },
     '4ef': {
       hex: '4ef',
@@ -41,12 +41,12 @@ describe('aircraft-store', () => {
       lon: 4.0,
       alt_baro: 1500,
       track: 270,
-      seen: 1
+      seen: 1,
     },
     '5ef': {
       hex: '5ef',
-      alt_baro: 5000
-    }
+      alt_baro: 5000,
+    },
   };
   const aircraftValues = Object.values(aircraftMap);
 
@@ -71,7 +71,7 @@ describe('aircraft-store', () => {
   test('adds valid aircraft to the valid and all aircraft stores', async () => {
     const data = {
       now: Date.now(),
-      aircraft: aircraftValues
+      aircraft: aircraftValues,
     };
 
     await store.addAircraft(data);
@@ -88,7 +88,7 @@ describe('aircraft-store', () => {
   test('adds invalid aircraft to the invalid and all aircraft stores', async () => {
     const data = {
       now: Date.now(),
-      aircraft: aircraftValues
+      aircraft: aircraftValues,
     };
 
     await store.addAircraft(data);
@@ -103,7 +103,7 @@ describe('aircraft-store', () => {
   test('camelCases keys on all aircraft', async () => {
     const data = {
       now: Date.now(),
-      aircraft: aircraftValues
+      aircraft: aircraftValues,
     };
 
     await store.addAircraft(data);
@@ -122,7 +122,7 @@ describe('aircraft-store', () => {
   test('rejects stale data', async () => {
     const staleData = {
       now: millisToSeconds(Date.now() - store.MAX_DATA_AGE_MILLIS - 1),
-      aircraft: aircraftValues
+      aircraft: aircraftValues,
     };
 
     await store.addAircraft(staleData);
@@ -148,7 +148,9 @@ describe('aircraft-store', () => {
     expect(result.now).toBeTruthy();
 
     expect(mocks.hgetAllAsJsonValues.mock.calls.length).toBe(1);
-    expect(mocks.hgetAllAsJsonValues.mock.calls[0][0]).toBe(VALID_AIRCRAFT_STORE);
+    expect(mocks.hgetAllAsJsonValues.mock.calls[0][0]).toBe(
+      VALID_AIRCRAFT_STORE
+    );
   });
 
   test('gets the valid aircraft store as a map', async () => {
@@ -168,7 +170,9 @@ describe('aircraft-store', () => {
     expect(result.now).toBeTruthy();
 
     expect(mocks.hgetAllAsJsonValues.mock.calls.length).toBe(1);
-    expect(mocks.hgetAllAsJsonValues.mock.calls[0][0]).toBe(INVALID_AIRCRAFT_STORE);
+    expect(mocks.hgetAllAsJsonValues.mock.calls[0][0]).toBe(
+      INVALID_AIRCRAFT_STORE
+    );
   });
 
   test('gets aircraft by hex', async () => {

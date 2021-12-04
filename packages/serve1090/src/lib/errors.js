@@ -1,62 +1,62 @@
 class AuthError extends Error {
-  constructor (message, code) {
+  constructor(message, code) {
     super(message);
     this._code = code;
   }
 
-  get code () {
+  get code() {
     return this._code;
   }
 
-  get wsCode () {
+  get wsCode() {
     return 1008;
   }
 }
 
 class PayloadError extends Error {
-  get code () {
+  get code() {
     return 400;
   }
 
-  get wsCode () {
+  get wsCode() {
     return 1007;
   }
 }
 
 class BroadcastError extends Error {
-  get code () {
+  get code() {
     return 500;
   }
 
-  get wsCode () {
+  get wsCode() {
     return 1011;
   }
 }
 
 class DatabaseError extends Error {
-  constructor (message, detail) {
+  constructor(message, detail) {
     super();
     this._message = message;
     this._detail = detail;
   }
 
-  get message () {
+  get message() {
     return `database error: ${this._message}`;
   }
 
-  get detail () {
+  get detail() {
     return this._detail;
   }
 }
 
 class RedisError extends DatabaseError {
-  get message () {
+  get message() {
     return `redis error: ${this._message}`;
   }
 }
 
 class MongoError extends DatabaseError {
-  get message () {
+  get message() {
     return `mongo error: ${this._message}`;
   }
 }
@@ -66,5 +66,5 @@ module.exports = {
   PayloadError,
   BroadcastError,
   RedisError,
-  MongoError
+  MongoError,
 };

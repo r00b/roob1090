@@ -1,8 +1,5 @@
 const mockLogger = require('../../support/mock-logger');
-const {
-  mockAirport,
-  mockAircraft
-} = require('../../support/mock-data');
+const { mockAirport, mockAircraft } = require('../../support/mock-data');
 const { ACTIVE_RUNWAY } = require('../../../src/lib/redis-keys');
 const lib = require('../../../src/lib/partition-airport');
 
@@ -10,17 +7,17 @@ describe('partition-airport', () => {
   let airport, aircraft, partitionAirport;
 
   const mockStore = {
-    getValidAircraft: jest.fn()
+    getValidAircraft: jest.fn(),
   };
   const mockRedis = {
     pipeline: jest.fn(),
     saddEx: jest.fn(),
     exec: jest.fn(),
     ttl: jest.fn(),
-    setex: jest.fn()
+    setex: jest.fn(),
   };
   const mockMongo = {
-    getAirport: jest.fn()
+    getAirport: jest.fn(),
   };
 
   beforeEach(() => {
@@ -30,17 +27,11 @@ describe('partition-airport', () => {
     airport = mockAirport();
     aircraft = mockAircraft();
 
-    mockStore
-      .getValidAircraft
-      .mockReturnValue({
-        aircraft: Object.values(aircraft)
-      });
-    mockRedis
-      .pipeline
-      .mockReturnValue(mockRedis);
-    mockMongo
-      .getAirport
-      .mockReturnValue(airport);
+    mockStore.getValidAircraft.mockReturnValue({
+      aircraft: Object.values(aircraft),
+    });
+    mockRedis.pipeline.mockReturnValue(mockRedis);
+    mockMongo.getAirport.mockReturnValue(airport);
   });
 
   afterEach(() => {
@@ -57,9 +48,9 @@ describe('partition-airport', () => {
       aircraft: {
         airspace1: [ac1, ac2, ac3],
         airspace2: [ac6, ac7],
-        runway1: [ac4, ac5]
+        runway1: [ac4, ac5],
       },
-      activeRunways: []
+      activeRunways: [],
     });
     expect(mockRedis.pipeline.mock.calls.length).toBe(1);
     expect(mockRedis.saddEx.mock.calls.length).toBe(3);
@@ -70,9 +61,7 @@ describe('partition-airport', () => {
   test('computes single active runway with sample on runway', async () => {
     const { ac4 } = aircraft;
     ac4.track = 233;
-    mockRedis
-      .ttl
-      .mockReturnValueOnce(-2);
+    mockRedis.ttl.mockReturnValueOnce(-2);
 
     const result = await partitionAirport(airport.ident);
 
@@ -80,8 +69,8 @@ describe('partition-airport', () => {
       {
         runway: 'runway1',
         sample: ac4,
-        surface: '24'
-      }
+        surface: '24',
+      },
     ]);
     expect(mockRedis.ttl.mock.calls.length).toBe(1);
     expect(mockRedis.setex.mock.calls.length).toBe(1);
@@ -94,12 +83,10 @@ describe('partition-airport', () => {
     ac1.track = 0;
     ac2.track = 55;
     ac6.track = 55;
-    mockStore
-      .getValidAircraft
-      .mockReturnValueOnce({ aircraft: [ac1, ac2, ac6] });
-    mockRedis
-      .ttl
-      .mockReturnValueOnce(-2);
+    mockStore.getValidAircraft.mockReturnValueOnce({
+      aircraft: [ac1, ac2, ac6],
+    });
+    mockRedis.ttl.mockReturnValueOnce(-2);
 
     const result = await partitionAirport(airport.ident);
 
@@ -107,8 +94,8 @@ describe('partition-airport', () => {
       {
         runway: 'runway1',
         sample: ac2,
-        surface: '06'
-      }
+        surface: '06',
+      },
     ]);
     expect(mockRedis.ttl.mock.calls.length).toBe(1);
     expect(mockRedis.setex.mock.calls.length).toBe(1);
@@ -128,8 +115,8 @@ describe('partition-airport', () => {
       {
         runway: 'runway1',
         sample: ac4,
-        surface: '24'
-      }
+        surface: '24',
+      },
     ]);
 
     ac4.track = 185;
@@ -138,8 +125,8 @@ describe('partition-airport', () => {
       {
         runway: 'runway1',
         sample: ac4,
-        surface: '24'
-      }
+        surface: '24',
+      },
     ]);
 
     ac4.track = 186;
@@ -148,15 +135,14 @@ describe('partition-airport', () => {
       {
         runway: 'runway1',
         sample: ac4,
-        surface: '06'
-      }
+        surface: '06',
+      },
     ]);
   });
 
   test('does not write active runway to redis before RUNWAY_RECHECK', async () => {
     aircraft.ac4.track = 233;
-    mockRedis
-      .ttl
+    mockRedis.ttl
       // want RUNWAY_TTL - ttl to be less than RUNWAY_RECHECK
       // 28800 - 899 = 27901; 28800 - 27901 = 899 which is less than RUNWAY_RECHECK
       .mockReturnValueOnce(28800 - 899);
@@ -172,14 +158,10 @@ describe('partition-airport', () => {
     ac4.track = 233;
     ac10.track = 185;
 
-    mockRedis
-      .ttl
-      .mockReturnValue(-2);
+    mockRedis.ttl.mockReturnValue(-2);
 
     airport = mockAirport(true);
-    mockMongo
-      .getAirport
-      .mockReturnValue(airport);
+    mockMongo.getAirport.mockReturnValue(airport);
 
     const result = await partitionAirport(airport.ident);
 
@@ -188,13 +170,13 @@ describe('partition-airport', () => {
       {
         runway: 'runway1',
         sample: ac4,
-        surface: '24'
+        surface: '24',
       },
       {
         runway: 'runway2',
         sample: ac10,
-        surface: '19'
-      }
+        surface: '19',
+      },
     ]);
     expect(mockRedis.ttl.mock.calls.length).toBe(2);
     expect(mockRedis.setex.mock.calls.length).toBe(2);
@@ -205,15 +187,13 @@ describe('partition-airport', () => {
   });
 
   test('handles no aircraft', async () => {
-    mockStore
-      .getValidAircraft
-      .mockReturnValueOnce({ aircraft: [] });
+    mockStore.getValidAircraft.mockReturnValueOnce({ aircraft: [] });
 
     const result = await partitionAirport(airport.ident);
 
     expect(result).toEqual({
       aircraft: {},
-      activeRunways: []
+      activeRunways: [],
     });
     expect(mockRedis.pipeline.mock.calls.length).toBe(1);
     expect(mockRedis.saddEx.mock.calls.length).toBe(0);
@@ -221,11 +201,9 @@ describe('partition-airport', () => {
   });
 
   test('handles store error', async () => {
-    mockStore
-      .getValidAircraft
-      .mockImplementationOnce(() => {
-        throw new Error('this should have been caught');
-      });
+    mockStore.getValidAircraft.mockImplementationOnce(() => {
+      throw new Error('this should have been caught');
+    });
 
     const result = await partitionAirport(airport.ident);
 
@@ -233,31 +211,25 @@ describe('partition-airport', () => {
   });
 
   test('handles missing airport', async () => {
-    mockMongo
-      .getAirport
-      .mockReturnValueOnce(null);
+    mockMongo.getAirport.mockReturnValueOnce(null);
 
     const result = await partitionAirport(airport.ident);
     expect(result).toBeFalsy();
   });
 
   test('handles mongo error', async () => {
-    mockMongo
-      .getAirport
-      .mockImplementationOnce(() => {
-        throw new Error('this should have been caught');
-      });
+    mockMongo.getAirport.mockImplementationOnce(() => {
+      throw new Error('this should have been caught');
+    });
 
     const result = await partitionAirport(airport.ident);
     expect(result).toBeFalsy();
   });
 
   test('handles redis write error', async () => {
-    mockRedis
-      .saddEx
-      .mockImplementationOnce(() => {
-        throw new Error('this should have been caught');
-      });
+    mockRedis.saddEx.mockImplementationOnce(() => {
+      throw new Error('this should have been caught');
+    });
 
     const result = await partitionAirport(airport.ident);
     expect(result).toBeTruthy();

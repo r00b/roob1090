@@ -7,7 +7,7 @@ const path = require('path');
  *
  * @param mongo
  */
-async function init (mongo) {
+async function init(mongo) {
   const airportJobs = await generateAirportJobs(mongo);
   const airspaceJobs = await generateAirspaceJobs(mongo);
   const jobs = [...airportJobs, ...airspaceJobs];
@@ -15,7 +15,7 @@ async function init (mongo) {
   const scheduler = new Bree({
     logger,
     root: path.join(__dirname, 'workers'),
-    jobs
+    jobs,
   });
 
   scheduler.start();
@@ -24,29 +24,29 @@ async function init (mongo) {
   logger.info('started jobs', { count: jobs.length, jobs: workerNames });
 }
 
-async function generateAirportJobs (mongo) {
+async function generateAirportJobs(mongo) {
   const icaos = await mongo.getAllActiveAirportIdents();
   return icaos.flatMap(airport => [
     {
       name: 'partition-airport-worker',
       interval: '3s',
-      airport
+      airport,
     },
     {
       name: 'airport-board-worker',
       interval: '3s',
-      airport
+      airport,
     },
     {
       name: 'enrichments-worker',
       timeout: '5s', // wait for partitions to be created
       interval: '5s',
-      airport
-    }
+      airport,
+    },
   ]);
 }
 
-function generateAirspaceJobs (mongo) {
+function generateAirspaceJobs(mongo) {
   return [];
 }
 

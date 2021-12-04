@@ -11,7 +11,7 @@ const {
   checkToken,
   close,
   withinBoundaryAndCeiling,
-  aligned
+  aligned,
 } = require('../../../src/lib/utils');
 const nock = require('nock');
 const { AuthError } = require('../../../src/lib/errors');
@@ -53,7 +53,9 @@ describe('utils', () => {
   });
 
   test('secondsToTimeString', () => {
-    expect(secondsToTimeString(1293847)).toBe('14 days, 23 hours, 24 mins, 7 secs');
+    expect(secondsToTimeString(1293847)).toBe(
+      '14 days, 23 hours, 24 mins, 7 secs'
+    );
     expect(secondsToTimeString(60)).toBe('0 days, 0 hours, 1 mins, 0 secs');
     expect(secondsToTimeString(0)).toBe('0 days, 0 hours, 0 mins, 0 secs');
     expect(() => secondsToTimeString(-1)).toThrowError();
@@ -62,7 +64,7 @@ describe('utils', () => {
   test('compareDistance', () => {
     const ac1 = {
       lon: 0,
-      lat: 0
+      lat: 0,
     };
 
     expect(compareDistance(ac1, ac1, [25, 25])).toBe(0);
@@ -70,7 +72,7 @@ describe('utils', () => {
 
     const ac2 = {
       lon: 15,
-      lat: 15
+      lat: 15,
     };
 
     expect(compareDistance(ac1, ac2, [25, 25])).toBeGreaterThan(0);
@@ -87,9 +89,7 @@ describe('utils', () => {
   test('get', async () => {
     const expected = { foo: 'bar' };
     const mockApi = nock(/.*foo.com/);
-    mockApi
-      .get('/')
-      .reply(200, expected);
+    mockApi.get('/').reply(200, expected);
 
     const result = await get('https://foo.com');
     expect(result.statusCode).toBe(200);
@@ -112,7 +112,7 @@ describe('utils', () => {
   test('checkPayloadToken', () => {
     const key = 'the key';
     const payload = {
-      token: key
+      token: key,
     };
 
     expect(checkToken(key, payload)).toBeUndefined();
@@ -130,7 +130,7 @@ describe('utils', () => {
   test('close', async () => {
     const terminate = jest.fn();
     const ws = {
-      close: jest.fn()
+      close: jest.fn(),
     };
 
     close(ws, 1011, 'reason');
@@ -156,13 +156,13 @@ describe('utils', () => {
       [5, 0],
       [5, 5],
       [0, 5],
-      [0, 0]
+      [0, 0],
     ];
     let ceiling = 500;
     let aircraft = {
       lon: 2,
       lat: 2,
-      altBaro: 499
+      altBaro: 499,
     };
 
     expect(withinBoundaryAndCeiling(boundary, ceiling)(aircraft)).toBeTruthy();
@@ -176,7 +176,7 @@ describe('utils', () => {
     aircraft = {
       lon: 20,
       lat: 20,
-      altBaro: 499
+      altBaro: 499,
     };
     expect(withinBoundaryAndCeiling(boundary, ceiling)(aircraft)).toBeFalsy();
   });

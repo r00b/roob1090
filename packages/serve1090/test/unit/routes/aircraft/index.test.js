@@ -7,7 +7,10 @@ const httpRequestLogger = require('../../../../src/middleware/http-request-logge
 const aircraftRouter = require('../../../../src/routes/aircraft/index');
 const { ENRICHMENTS } = require('../../../../src/lib/redis-keys');
 
-jest.mock('../../../../src/lib/logger', () => () => require('../../../support/mock-logger'));
+jest.mock(
+  '../../../../src/lib/logger',
+  () => () => require('../../../support/mock-logger')
+);
 
 const WS_WAIT = 100;
 
@@ -26,12 +29,12 @@ describe('aircraft router', () => {
       getValidAircraft: jest.fn(),
       getInvalidAircraft: jest.fn(),
       getTotalAircraftCount: jest.fn(),
-      getValidAircraftCount: jest.fn()
+      getValidAircraftCount: jest.fn(),
     };
     redis = {
       incr: jest.fn(),
       decr: jest.fn(),
-      hgetAllAsJson: jest.fn()
+      hgetAllAsJson: jest.fn(),
     };
 
     app.use(aircraftRouter(pumpKey, store, redis));
@@ -46,13 +49,12 @@ describe('aircraft router', () => {
         token: pumpKey,
         device_id: 'deviceId',
         messages: 20,
-        now: Date.now()
+        now: Date.now(),
       };
       server = app.listen();
-      store.addAircraft
-        .mockReturnValue({
-          catch: jest.fn()
-        });
+      store.addAircraft.mockReturnValue({
+        catch: jest.fn(),
+      });
     });
 
     afterEach(async () => {
@@ -113,8 +115,13 @@ describe('aircraft router', () => {
       await requestWs(wss)
         .ws('/pump')
         .sendText(JSON.stringify(payload))
-        .expectText('{"message":"malformed payload rejected","detail":"\'aircraft\' is required"}')
-        .expectClosed(1007, 'malformed payload rejected: \'aircraft\' is required')
+        .expectText(
+          '{"message":"malformed payload rejected","detail":"\'aircraft\' is required"}'
+        )
+        .expectClosed(
+          1007,
+          "malformed payload rejected: 'aircraft' is required"
+        )
         .wait(WS_WAIT);
 
       expect(store.addAircraft.mock.calls.length).toBe(0);
@@ -127,8 +134,13 @@ describe('aircraft router', () => {
       await requestWs(wss)
         .ws('/pump')
         .sendText('this will blow up JSON.parse')
-        .expectText('{"message":"internal server error","detail":"Unexpected token h in JSON at position 1"}')
-        .expectClosed(1011, 'internal server error: Unexpected token h in JSON at position 1')
+        .expectText(
+          '{"message":"internal server error","detail":"Unexpected token h in JSON at position 1"}'
+        )
+        .expectClosed(
+          1011,
+          'internal server error: Unexpected token h in JSON at position 1'
+        )
         .wait(WS_WAIT);
 
       expect(store.addAircraft.mock.calls.length).toBe(0);
@@ -140,10 +152,9 @@ describe('aircraft router', () => {
 
   describe('/all', () => {
     test('gets the entire aircraft store', async () => {
-      store.getAllAircraft
-        .mockResolvedValue({
-          aircraft: 'aircraft'
-        });
+      store.getAllAircraft.mockResolvedValue({
+        aircraft: 'aircraft',
+      });
 
       const res = await request(app)
         .get('/all')
@@ -151,15 +162,14 @@ describe('aircraft router', () => {
         .expect('Content-Type', /json/)
         .expect(200);
       expect(res.body).toEqual({
-        aircraft: 'aircraft'
+        aircraft: 'aircraft',
       });
     });
 
     test('handles errors', async () => {
-      store.getAllAircraft
-        .mockImplementation(() => {
-          throw new Error('oh noes');
-        });
+      store.getAllAircraft.mockImplementation(() => {
+        throw new Error('oh noes');
+      });
 
       const res = await request(app)
         .get('/all')
@@ -169,17 +179,16 @@ describe('aircraft router', () => {
 
       expect(res.body).toEqual({
         detail: 'oh noes',
-        message: 'internal server error'
+        message: 'internal server error',
       });
     });
   });
 
   describe('/valid', () => {
     test('gets the valid aircraft store', async () => {
-      store.getValidAircraft
-        .mockResolvedValue({
-          aircraft: 'aircraft'
-        });
+      store.getValidAircraft.mockResolvedValue({
+        aircraft: 'aircraft',
+      });
 
       const res = await request(app)
         .get('/valid')
@@ -187,15 +196,14 @@ describe('aircraft router', () => {
         .expect('Content-Type', /json/)
         .expect(200);
       expect(res.body).toEqual({
-        aircraft: 'aircraft'
+        aircraft: 'aircraft',
       });
     });
 
     test('handles errors', async () => {
-      store.getValidAircraft
-        .mockImplementation(() => {
-          throw new Error('oh noes');
-        });
+      store.getValidAircraft.mockImplementation(() => {
+        throw new Error('oh noes');
+      });
 
       const res = await request(app)
         .get('/valid')
@@ -205,17 +213,16 @@ describe('aircraft router', () => {
 
       expect(res.body).toEqual({
         detail: 'oh noes',
-        message: 'internal server error'
+        message: 'internal server error',
       });
     });
   });
 
   describe('/invalid', () => {
     test('gets the invalid aircraft store', async () => {
-      store.getInvalidAircraft
-        .mockResolvedValue({
-          aircraft: 'aircraft'
-        });
+      store.getInvalidAircraft.mockResolvedValue({
+        aircraft: 'aircraft',
+      });
 
       const res = await request(app)
         .get('/invalid')
@@ -223,15 +230,14 @@ describe('aircraft router', () => {
         .expect('Content-Type', /json/)
         .expect(200);
       expect(res.body).toEqual({
-        aircraft: 'aircraft'
+        aircraft: 'aircraft',
       });
     });
 
     test('handles errors', async () => {
-      store.getInvalidAircraft
-        .mockImplementation(() => {
-          throw new Error('oh noes');
-        });
+      store.getInvalidAircraft.mockImplementation(() => {
+        throw new Error('oh noes');
+      });
 
       const res = await request(app)
         .get('/invalid')
@@ -241,17 +247,16 @@ describe('aircraft router', () => {
 
       expect(res.body).toEqual({
         detail: 'oh noes',
-        message: 'internal server error'
+        message: 'internal server error',
       });
     });
   });
 
   describe('/enrichments', () => {
     test('gets enrichments', async () => {
-      redis.hgetAllAsJson
-        .mockResolvedValue({
-          enrichments: 'enrichments'
-        });
+      redis.hgetAllAsJson.mockResolvedValue({
+        enrichments: 'enrichments',
+      });
 
       const res = await request(app)
         .get('/enrichments')
@@ -259,16 +264,15 @@ describe('aircraft router', () => {
         .expect('Content-Type', /json/)
         .expect(200);
       expect(res.body).toEqual({
-        enrichments: 'enrichments'
+        enrichments: 'enrichments',
       });
       expect(redis.hgetAllAsJson.mock.calls[0][0]).toBe(ENRICHMENTS);
     });
 
     test('handles errors', async () => {
-      redis.hgetAllAsJson
-        .mockImplementation(() => {
-          throw new Error('oh noes');
-        });
+      redis.hgetAllAsJson.mockImplementation(() => {
+        throw new Error('oh noes');
+      });
 
       const res = await request(app)
         .get('/enrichments')
@@ -278,15 +282,14 @@ describe('aircraft router', () => {
 
       expect(res.body).toEqual({
         detail: 'oh noes',
-        message: 'internal server error'
+        message: 'internal server error',
       });
     });
   });
 
   describe('/totalCount', () => {
     test('gets the total count of all aircraft in the store', async () => {
-      store.getTotalAircraftCount
-        .mockResolvedValue(58);
+      store.getTotalAircraftCount.mockResolvedValue(58);
 
       const res = await request(app)
         .get('/totalCount')
@@ -297,10 +300,9 @@ describe('aircraft router', () => {
     });
 
     test('handles errors', async () => {
-      store.getTotalAircraftCount
-        .mockImplementation(() => {
-          throw new Error('oh noes');
-        });
+      store.getTotalAircraftCount.mockImplementation(() => {
+        throw new Error('oh noes');
+      });
 
       const res = await request(app)
         .get('/totalCount')
@@ -310,15 +312,14 @@ describe('aircraft router', () => {
 
       expect(res.body).toEqual({
         detail: 'oh noes',
-        message: 'internal server error'
+        message: 'internal server error',
       });
     });
   });
 
   describe('/validCount', () => {
     test('gets the total count of valid aircraft in the store', async () => {
-      store.getValidAircraftCount
-        .mockResolvedValue(85);
+      store.getValidAircraftCount.mockResolvedValue(85);
 
       const res = await request(app)
         .get('/validCount')
@@ -329,10 +330,9 @@ describe('aircraft router', () => {
     });
 
     test('handles errors', async () => {
-      store.getValidAircraftCount
-        .mockImplementation(() => {
-          throw new Error('oh noes');
-        });
+      store.getValidAircraftCount.mockImplementation(() => {
+        throw new Error('oh noes');
+      });
 
       const res = await request(app)
         .get('/validCount')
@@ -342,7 +342,7 @@ describe('aircraft router', () => {
 
       expect(res.body).toEqual({
         detail: 'oh noes',
-        message: 'internal server error'
+        message: 'internal server error',
       });
     });
   });

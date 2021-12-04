@@ -7,11 +7,11 @@
 ### API
 
 | Verb            | URL                                      | Function                                                                                                                                                              | Notes                                                                                                                                                                                                                                               |
-|-----------------|------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| --------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `GET`           | `/`                                      | Get the root of the API, returning documentation and route info                                                                                                       |                                                                                                                                                                                                                                                     |
 | `GET`&rarr;`WS` | `/aircraft/pump/.websocket`              | Make an HTTP/1.1 upgrade request to open a WebSocket connection for sending dump1090 JSON data                                                                        | Each message sent through the Websocket pipe must be a stringified JSON hash containing a property `token` whose value is equal to `PUMP_SECRET`                                                                                                    |
 | `GET`           | `/aircraft/all`                          | Get all flights currently in range of all connected receivers, each of which may or may not be valid                                                                  |                                                                                                                                                                                                                                                     |
-| `GET`           | `/aircraft/valid`                        | Get all validated* flights currently in range                                                                                                                         |                                                                                                                                                                                                                                                     |
+| `GET`           | `/aircraft/valid`                        | Get all validated\* flights currently in range                                                                                                                        |                                                                                                                                                                                                                                                     |
 | `GET`           | `/aircraft/invalid`                      | Get all flights currently in range that failed validation                                                                                                             |                                                                                                                                                                                                                                                     |
 | `GET`           | `/aircraft/totalCount`                   | Get count of all flights currently in range                                                                                                                           |                                                                                                                                                                                                                                                     |
 | `GET`           | `/aircraft/validCount`                   | Get count of all valid flights currently in range                                                                                                                     |                                                                                                                                                                                                                                                     |
@@ -19,16 +19,16 @@
 | `GET`           | `/airports/boards/[$airport]`            | Get the current board for `$airport`; i.e. `/airports/kdca`                                                                                                           |                                                                                                                                                                                                                                                     |
 | `GET`&rarr;`WS` | `/airports/boards/[$airport]/.websocket` | Make an HTTP/1.1 upgrade request to open a WebSocket connection that will broadcast the board for `$airport` once per second; i.e. `/airports/boards/kdca/.websocket` | Upon opening the WebSocket pipe, the server will listen for 5 seconds for a message containing a stringified JSON hash with a property `token` whose value is equal to `BROADCAST_SECRET`; after this secret is validated, the broadcast will start |
 
-*a validated aircraft conforms to the schema defined by `AIRCRAFT_SCHEMA` in [schemas.js](./src/stores/schemas.js)
+- a validated aircraft conforms to the schema defined by `AIRCRAFT_SCHEMA` in [schemas.js](./src/stores/schemas.js)
 
 ### Development
 
 #### Prerequisites
 
 1. From the repo root, run `chmod +x scripts/setup.sh && ./scripts/setup.sh` and follow prompts
-2. Optionally, add OpenSky and FlightAware FlightXML2 username/password pairs to `.env` 
+2. Optionally, add OpenSky and FlightAware FlightXML2 username/password pairs to `.env`
 
-Then, if running via Docker only: 
+Then, if running via Docker only:
 
 1. [Docker CLI](https://docs.docker.com/get-docker/)
 
@@ -64,4 +64,4 @@ mongo-express -a --url mongodb://$(grep MONGO_USERNAME .env | cut -d '=' -f2):$(
 
 #### Adding new airspaces
 
-Polygons can be generated via [this tool](https://www.keene.edu/campus/maps/tool/). 
+Polygons can be generated via [this tool](https://www.keene.edu/campus/maps/tool/).

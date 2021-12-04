@@ -1,18 +1,11 @@
 const _ = require('lodash');
 const pMap = require('p-map');
-const {
-  hex,
-  withinBoundaryAndCeiling,
-  aligned
-} = require('./utils');
+const { hex, withinBoundaryAndCeiling, aligned } = require('./utils');
 
-const {
-  REGION_AIRCRAFT,
-  ACTIVE_RUNWAY
-} = require('../lib/redis-keys');
+const { REGION_AIRCRAFT, ACTIVE_RUNWAY } = require('../lib/redis-keys');
 
 const REGION_TTL = 2;
-const RUNWAY_TTL = 28800;   // 8 hours
+const RUNWAY_TTL = 28800; // 8 hours
 const RUNWAY_RECHECK = 900; // 15 minutes
 
 module.exports = (store, redis, mongo, logger) =>
@@ -28,8 +21,8 @@ module.exports = (store, redis, mongo, logger) =>
  * @param logger
  * @returns {(ident: string) => Promise<partition>}
  */
-function partitionAirport (store, redis, mongo, logger) {
-  return async (ident) => {
+function partitionAirport(store, redis, mongo, logger) {
+  return async ident => {
     try {
       const airport = await mongo.getAirport(ident);
       if (!airport) {
@@ -49,12 +42,15 @@ function partitionAirport (store, redis, mongo, logger) {
 
       const acc = {
         aircraft: {
-          ...aircraftAloft
+          ...aircraftAloft,
         },
-        activeRunways: []
+        activeRunways: [],
       };
 
-      const partition = airport.runways.reduce(runwayReducer(allAircraft, _.flatten(_.values(aircraftAloft))), acc);
+      const partition = airport.runways.reduce(
+        runwayReducer(allAircraft, _.flatten(_.values(aircraftAloft))),
+        acc
+      );
       await writePartition(partition, redis, logger);
 
       return partition;
@@ -71,7 +67,7 @@ function partitionAirport (store, redis, mongo, logger) {
  * @param region {object} - contains both a boundary and ceiling prop
  * @returns {aircraft[]}
  */
-function aircraftInRegion (aircraft, region) {
+function aircraftInRegion(aircraft, region) {
   if (!aircraft.length) {
     return [];
   }
@@ -87,21 +83,23 @@ function aircraftInRegion (aircraft, region) {
  * @param aircraftAloft {aircraft[]} - aircraft currently in the an airspace region but not on a runway
  * @returns (acc, runway) => partition
  */
-function runwayReducer (aircraft, aircraftAloft) {
+function runwayReducer(aircraft, aircraftAloft) {
   /**
    * @param acc {partition} - { aircraft: {}, activeRunways: [] }
    * @param runway {region} - runway region
    */
   return (acc, runway) => {
-
     const computeActiveRunway = samples => {
       for (const sample of samples) {
-        const activeSurface = runway.surfaces.reduce(pickBestSurface(sample), null);
+        const activeSurface = runway.surfaces.reduce(
+          pickBestSurface(sample),
+          null
+        );
         if (activeSurface) {
           acc.activeRunways.push({
             runway: runway.key,
             surface: activeSurface.name,
-            sample
+            sample,
           });
           // no need to check the rest of the samples
           return;
@@ -138,7 +136,7 @@ function runwayReducer (aircraft, aircraftAloft) {
  *
  * @param sample {aircraft} - sample aircraft, with true track over ground
  */
-function pickBestSurface (sample) {
+function pickBestSurface(sample) {
   const { track } = sample;
 
   /**
@@ -168,13 +166,17 @@ function pickBestSurface (sample) {
  * @param redis
  * @param logger
  */
-async function writePartition (partition, redis, logger) {
+async function writePartition(partition, redis, logger) {
   try {
     const pipeline = redis.pipeline();
 
     // first, write each region's aircraft
     Object.entries(partition.aircraft).forEach(([regionKey, aircraft]) => {
-      pipeline.saddEx(REGION_AIRCRAFT(regionKey), REGION_TTL, ...aircraft.map(hex));
+      pipeline.saddEx(
+        REGION_AIRCRAFT(regionKey),
+        REGION_TTL,
+        ...aircraft.map(hex)
+      );
     });
 
     // then, write the active runways
@@ -186,7 +188,7 @@ async function writePartition (partition, redis, logger) {
         logger.info('set active runway', {
           runway: runway,
           activeSurface: surface,
-          sample: (`${_.trim(sample.flight)} / ${sample.hex}`)
+          sample: `${_.trim(sample.flight)} / ${sample.hex}`,
         });
       }
     });

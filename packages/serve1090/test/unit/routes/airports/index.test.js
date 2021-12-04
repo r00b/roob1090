@@ -8,7 +8,10 @@ const httpRequestLogger = require('../../../../src/middleware/http-request-logge
 const airportRouter = require('../../../../src/routes/airports/index');
 const { BOARD } = require('../../../../src/lib/redis-keys');
 
-jest.mock('../../../../src/lib/logger', () => () => require('../../../support/mock-logger'));
+jest.mock(
+  '../../../../src/lib/logger',
+  () => () => require('../../../support/mock-logger')
+);
 
 const WS_WAIT = 100;
 
@@ -24,12 +27,12 @@ describe('airports router', () => {
 
     store = {
       getTotalAircraftCount: jest.fn(),
-      getValidAircraftCount: jest.fn()
+      getValidAircraftCount: jest.fn(),
     };
     redis = {
       getAsJson: jest.fn(),
       incr: jest.fn(),
-      decr: jest.fn()
+      decr: jest.fn(),
     };
 
     app.use(airportRouter(airports, broadcastKey, store, redis));
@@ -50,15 +53,12 @@ describe('airports router', () => {
     describe('http', () => {
       test('gets an airport board', async () => {
         const board = {
-          foo: 'bar'
+          foo: 'bar',
         };
 
-        redis.getAsJson
-          .mockResolvedValue(board);
-        store.getTotalAircraftCount
-          .mockResolvedValue(2);
-        store.getValidAircraftCount
-          .mockResolvedValue(3);
+        redis.getAsJson.mockResolvedValue(board);
+        store.getTotalAircraftCount.mockResolvedValue(2);
+        store.getValidAircraftCount.mockResolvedValue(3);
 
         const res = await request(app)
           .get('/boards/kdca')
@@ -67,18 +67,19 @@ describe('airports router', () => {
           .expect(200);
 
         expect(_.isMatch(res.body, board)).toBeTruthy();
-        expect(_.isMatch(res.body.stats, {
-          totalAircraftCount: 2,
-          validAircraftCount: 3
-        })).toBeTruthy();
+        expect(
+          _.isMatch(res.body.stats, {
+            totalAircraftCount: 2,
+            validAircraftCount: 3,
+          })
+        ).toBeTruthy();
         expect(redis.getAsJson.mock.calls[0][0]).toBe(BOARD('kdca'));
       });
 
       test('handles http errors', async () => {
-        redis.getAsJson
-          .mockImplementation(() => {
-            throw new Error('oh noes');
-          });
+        redis.getAsJson.mockImplementation(() => {
+          throw new Error('oh noes');
+        });
 
         const res = await request(app)
           .get('/boards/kdca')
@@ -88,7 +89,7 @@ describe('airports router', () => {
 
         expect(res.body).toEqual({
           detail: 'oh noes',
-          message: 'internal server error'
+          message: 'internal server error',
         });
       });
     });
@@ -98,7 +99,7 @@ describe('airports router', () => {
 
       beforeEach(() => {
         payload = {
-          token: broadcastKey
+          token: broadcastKey,
         };
         server = app.listen();
       });
@@ -110,10 +111,9 @@ describe('airports router', () => {
 
       test('repeatedly broadcasts airport board', async () => {
         const board = {
-          foo: 'bar'
+          foo: 'bar',
         };
-        redis.getAsJson
-          .mockResolvedValue(board);
+        redis.getAsJson.mockResolvedValue(board);
 
         const broadcastRegExp = new RegExp(/{"foo":"bar","stats":{"now":\d+}}/);
 
@@ -155,10 +155,9 @@ describe('airports router', () => {
       });
 
       test('handles internal errors', async () => {
-        redis.getAsJson
-          .mockImplementation(() => {
-            throw new Error('oh noes');
-          });
+        redis.getAsJson.mockImplementation(() => {
+          throw new Error('oh noes');
+        });
 
         await requestWs(wss)
           .ws('/boards/kdca')

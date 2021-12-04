@@ -1,7 +1,7 @@
 const { Signale } = require('signale');
 
 class Signal extends Signale {
-  constructor (options = {}) {
+  constructor(options = {}) {
     super(options);
     this._options = options;
   }
@@ -11,19 +11,19 @@ class Signal extends Signale {
    *
    * @param name {string} - name of logger scope
    */
-  scope (name) {
+  scope(name) {
     const excluded = this._options.excluded || [];
     if (excluded.includes(name)) {
       return new Signal({
         ...this._options,
         scope: name,
-        disabled: true
+        disabled: true,
       });
     } else {
       return new Signal({
         ...this._options,
         scope: name,
-        disabled: false
+        disabled: false,
       });
     }
   }
@@ -31,12 +31,12 @@ class Signal extends Signale {
   /**
    * Intercept Signale's _logger fn to capture child logs
    */
-  _logger (type, ...messageObj) {
+  _logger(type, ...messageObj) {
     if (this._options.meta) {
       if (messageObj[1]) {
         messageObj[1] = {
           ...messageObj[1],
-          ...this._options.meta
+          ...this._options.meta,
         };
       } else {
         messageObj.push(this._options.meta);
@@ -52,10 +52,10 @@ class Signal extends Signale {
    *
    * @param meta {object}
    */
-  child (meta) {
+  child(meta) {
     return new Signal({
       ...this._options,
-      meta
+      meta,
     });
   }
 }

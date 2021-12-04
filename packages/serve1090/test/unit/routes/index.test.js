@@ -3,7 +3,10 @@ const request = require('supertest');
 const httpRequestLogger = require('../../../src/middleware/http-request-logger');
 const rootRouter = require('../../../src/routes/index');
 
-jest.mock('../../../src/lib/logger', () => () => require('../../support/mock-logger'));
+jest.mock(
+  '../../../src/lib/logger',
+  () => () => require('../../support/mock-logger')
+);
 
 describe('root router', () => {
   let app, store, redis, mongo;
@@ -14,28 +17,23 @@ describe('root router', () => {
 
     store = {
       getTotalAircraftCount: jest.fn(),
-      getValidAircraftCount: jest.fn()
+      getValidAircraftCount: jest.fn(),
     };
     redis = {
-      get: jest.fn()
+      get: jest.fn(),
     };
     mongo = {
-      getAllActiveAirportIdents: jest.fn()
+      getAllActiveAirportIdents: jest.fn(),
     };
 
     app.use(rootRouter(store, redis, mongo));
   });
 
   test('returns the root of the api', async () => {
-    store.getTotalAircraftCount
-      .mockResolvedValue(5);
-    store.getValidAircraftCount
-      .mockResolvedValue(10);
-    redis.get
-      .mockReturnValueOnce(1)
-      .mockReturnValueOnce(2);
-    mongo.getAllActiveAirportIdents
-      .mockResolvedValueOnce(['kvkx']);
+    store.getTotalAircraftCount.mockResolvedValue(5);
+    store.getValidAircraftCount.mockResolvedValue(10);
+    redis.get.mockReturnValueOnce(1).mockReturnValueOnce(2);
+    mongo.getAllActiveAirportIdents.mockResolvedValueOnce(['kvkx']);
 
     const res = await request(app)
       .get('/')
@@ -58,10 +56,9 @@ describe('root router', () => {
   });
 
   test('handles store error', async () => {
-    store.getTotalAircraftCount
-      .mockImplementation(() => {
-        throw new Error('oh noes');
-      });
+    store.getTotalAircraftCount.mockImplementation(() => {
+      throw new Error('oh noes');
+    });
 
     const res = await request(app)
       .get('/')
@@ -71,15 +68,14 @@ describe('root router', () => {
 
     expect(res.body).toEqual({
       detail: 'oh noes',
-      message: 'internal server error'
+      message: 'internal server error',
     });
   });
 
   test('handles redis error', async () => {
-    redis.get
-      .mockImplementation(() => {
-        throw new Error('oh noes');
-      });
+    redis.get.mockImplementation(() => {
+      throw new Error('oh noes');
+    });
 
     const res = await request(app)
       .get('/')
@@ -91,10 +87,9 @@ describe('root router', () => {
   });
 
   test('handles mongo error', async () => {
-    mongo.getAllActiveAirportIdents
-      .mockImplementation(() => {
-        throw new Error('oh noes');
-      });
+    mongo.getAllActiveAirportIdents.mockImplementation(() => {
+      throw new Error('oh noes');
+    });
 
     const res = await request(app)
       .get('/')

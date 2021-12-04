@@ -12,7 +12,7 @@ const { AuthError } = require('./errors');
  * @param port {any}
  * @returns {number} - valid port to start server on
  */
-function normalizePort (port) {
+function normalizePort(port) {
   const fallback = 3000;
   try {
     const normalizedPort = parseInt(port);
@@ -30,7 +30,7 @@ function normalizePort (port) {
  * @param seconds {number}
  * @returns {number}
  */
-function secondsToMillis (seconds) {
+function secondsToMillis(seconds) {
   return seconds * 1000;
 }
 
@@ -38,7 +38,7 @@ function secondsToMillis (seconds) {
  * @param millis {number}
  * @returns {number}
  */
-function millisToSeconds (millis) {
+function millisToSeconds(millis) {
   return millis / 1000;
 }
 
@@ -48,7 +48,7 @@ function millisToSeconds (millis) {
  * @param {aircraft} aircraft
  * @returns {string} hex
  */
-function hex (aircraft) {
+function hex(aircraft) {
   return _.get(aircraft, 'hex', undefined);
 }
 
@@ -58,7 +58,7 @@ function hex (aircraft) {
  * @param {region} region
  * @returns {string} key
  */
-function key (region) {
+function key(region) {
   return _.get(region, 'key', undefined);
 }
 
@@ -69,7 +69,7 @@ function key (region) {
  * @param {number} s - seconds
  * @returns {string} time string
  */
-function secondsToTimeString (s) {
+function secondsToTimeString(s) {
   if (s < 0) {
     throw new Error('cannot convert negative seconds to time string');
   }
@@ -92,7 +92,7 @@ function secondsToTimeString (s) {
  * @param {number[]} locus - locus to compare a and b to
  * @returns {number} < 0 if a is closer than b, 0 if a is same distance as b, > 0 if a is farther than b
  */
-function compareDistance (a, b, locus) {
+function compareDistance(a, b, locus) {
   const aDistance = computeDistance([a.lon, a.lat], locus);
   const bDistance = computeDistance([b.lon, b.lat], locus);
   return aDistance - bDistance; // sort to ascending distance
@@ -105,7 +105,7 @@ function compareDistance (a, b, locus) {
  * @param {number[]} b - second lon/lat pair
  * @returns {number} distance between a and b in kilometers
  */
-function computeDistance (a, b) {
+function computeDistance(a, b) {
   const res = distance(point(a), point(b));
   if (_.isNaN(res)) {
     return undefined;
@@ -122,9 +122,9 @@ function computeDistance (a, b) {
  * @param {string?} password
  * @returns {Promise}
  */
-function get (url, username, password) {
+function get(url, username, password) {
   const options = {
-    responseType: 'json'
+    responseType: 'json',
   };
   if (username) options.username = username;
   if (password) options.password = password;
@@ -136,7 +136,7 @@ function get (url, username, password) {
  *
  * @param {number} code - exit code
  */
-function exit (code) {
+function exit(code) {
   // flush console
   process.stdout.write('', () => {
     process.exit(code);
@@ -150,7 +150,7 @@ function exit (code) {
  * @param {string} key - string that the payload's token should match
  * @param {object} payload - parsed payload object to check for valid token
  */
-function checkToken (key, payload) {
+function checkToken(key, payload) {
   const token = _.get(payload, 'token', null);
   if (!token) {
     throw new AuthError('missing token', 401);
@@ -168,7 +168,7 @@ function checkToken (key, payload) {
  * @param {string?} reason - CloseEvent reason
  * @param {number?} terminateAfter - how long to wait before forcing the WebSocket closed
  */
-function close (ws, code, reason, terminateAfter = 1000) {
+function close(ws, code, reason, terminateAfter = 1000) {
   ws.close(code || 1000, reason);
   if (ws.terminate) {
     setTimeout(() => {
@@ -185,7 +185,7 @@ function close (ws, code, reason, terminateAfter = 1000) {
  * @param ceiling {number} - maximum allowable altBaro for an aircraft to be
  *                           considered within a region
  */
-function withinBoundaryAndCeiling (boundary, ceiling) {
+function withinBoundaryAndCeiling(boundary, ceiling) {
   const boundaryPolygon = polygon([boundary]);
   return aircraft => {
     const loc = point([aircraft.lon, aircraft.lat]);
@@ -202,8 +202,8 @@ const CENTERLINE_OFFSET = 30;
  * @param y {number} i.e. runway centerline
  * @returns {boolean} true if x is within CENTERLINE_OFFSET of y inclusive, false otherwise
  */
-function aligned (x, y) {
-  const angleDiff = (x - y + 180 + 360) % 360 - 180;
+function aligned(x, y) {
+  const angleDiff = ((x - y + 180 + 360) % 360) - 180;
   return angleDiff <= CENTERLINE_OFFSET && angleDiff >= -CENTERLINE_OFFSET;
 }
 
@@ -221,5 +221,5 @@ module.exports = {
   checkToken,
   close,
   withinBoundaryAndCeiling,
-  aligned
+  aligned,
 };

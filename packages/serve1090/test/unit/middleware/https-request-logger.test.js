@@ -1,6 +1,9 @@
 const requestLogger = require('../../../src/middleware/http-request-logger');
 
-jest.mock('../../../src/lib/logger', () => () => require('../../support/mock-logger'));
+jest.mock(
+  '../../../src/lib/logger',
+  () => () => require('../../support/mock-logger')
+);
 
 describe('http-request-logger', () => {
   let req, res, next;
@@ -8,7 +11,7 @@ describe('http-request-logger', () => {
   beforeEach(() => {
     req = {};
     res = {
-      once: jest.fn()
+      once: jest.fn(),
     };
     next = jest.fn();
   });

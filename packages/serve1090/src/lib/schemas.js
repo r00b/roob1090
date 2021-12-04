@@ -70,7 +70,7 @@ const aircraft = Joi.object({
   // recent verage RSSI (signal power) (dbFS) (always negative)
   rssi: Joi.number().optional(),
   // number of Mode S messages received from aircraft
-  messages: Joi.number().optional()
+  messages: Joi.number().optional(),
 
   // // aircraft emitter category
   // category: Joi.string(),
@@ -143,7 +143,7 @@ const airframe = Joi.object({
   // country of registration
   country: Joi.stringOrNull(),
   // date updated (millis)
-  lastUpdated: Joi.dateOrNull()
+  lastUpdated: Joi.dateOrNull(),
 
   // selCal: Joi.string(),
   // // manufacturer ICAO (i.e. BOEING)
@@ -195,7 +195,7 @@ const pumpBody = Joi.object({
   device_id: Joi.string().required(),
   messages: Joi.number().required(),
   // current time in seconds since epoch
-  now: Joi.number().required()
+  now: Joi.number().required(),
 });
 
 const exportSchema = function (schema) {
@@ -205,14 +205,14 @@ const exportSchema = function (schema) {
       const { value, ...other } = schema.validate(input);
       return {
         ...other,
-        value: camelcaseKeys(value)
+        value: camelcaseKeys(value),
       };
-    }
+    },
   };
 };
 
 module.exports = {
   aircraft: exportSchema(aircraft),
   airframe: exportSchema(airframe),
-  pumpBody
+  pumpBody,
 };

@@ -10,12 +10,7 @@ const airportBoard = require('../../lib/airport-board');
 
 (async () => {
   try {
-    const {
-      mongoHost,
-      mongoPort,
-      mongoUser,
-      mongoPass
-    } = config;
+    const { mongoHost, mongoPort, mongoUser, mongoPass } = config;
 
     const redis = new RedisService();
     const mongo = await new MongoService({

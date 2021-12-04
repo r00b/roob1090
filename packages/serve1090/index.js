@@ -23,7 +23,7 @@ app(config).then(server => {
   process.on('SIGINT', shutdown(server));
 });
 
-function shutdown () {
+function shutdown() {
   return () => {
     logger.info('received shutdown signal');
     // kill all connections

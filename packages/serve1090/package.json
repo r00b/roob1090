@@ -13,7 +13,8 @@
     "test": "jest",
     "t": "npm run test",
     "l": "docker logs --follow express",
-    "cl": "docker-compose up -d --build && npm run l"
+    "cl": "docker-compose up -d --build && npm run l",
+    "prettier": "npx prettier --write ."
   },
   "dependencies": {
     "@turf/boolean-point-in-polygon": "^6.5.0",
@@ -27,7 +28,7 @@
     "express-ws": "^5.0.2",
     "got": "^11.8.3",
     "ioredis": "^4.28.1",
-    "joi": "^17.4.2",
+    "joi": "^17.5.0",
     "lodash": "^4.17.21",
     "mongodb": "^4.1.4",
     "mongodb-memory-server": "^8.0.3",
@@ -38,13 +39,26 @@
     "safe-compare": "^1.1.4"
   },
   "devDependencies": {
-    "ioredis-mock": "^5.8.0",
+    "husky": "^4.3.8",
+    "ioredis-mock": "^5.8.1",
     "jest": "^27.4.3",
+    "lint-staged": "^12.1.2",
     "nock": "^13.2.1",
     "nodemon": "^2.0.15",
+    "prettier": "2.5.0",
     "signale": "^1.4.0",
     "supertest": "^6.1.6",
     "superwstest": "^1.8.0"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*": [
+      "npm run prettier"
+    ]
   },
   "volta": {
     "node": "16.13.0",

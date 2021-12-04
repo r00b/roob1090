@@ -10,19 +10,14 @@ const partitionAircraft = require('../../lib/partition-airport');
 
 (async () => {
   try {
-    const {
-      mongoHost,
-      mongoPort,
-      mongoUser,
-      mongoPass
-    } = config;
+    const { mongoHost, mongoPort, mongoUser, mongoPass } = config;
 
     const redis = new RedisService();
     const mongo = await new MongoService({
       host: mongoHost,
       port: mongoPort,
       username: mongoUser,
-      password: mongoPass
+      password: mongoPass,
     }).connect();
 
     const partitionAirport = partitionAircraft(store, redis, mongo, logger);

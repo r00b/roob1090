@@ -5,11 +5,11 @@ module.exports = (req, res, next) => {
   const start = Date.now();
 
   res.locals = {
-    requestLogger: logger.child({ requestId: nanoid() })
+    requestLogger: logger.child({ requestId: nanoid() }),
   };
   res.locals.requestLogger.info('request started', {
     url: req.originalUrl,
-    method: req.method
+    method: req.method,
   });
 
   res.once('finish', () => {

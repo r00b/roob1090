@@ -11,7 +11,7 @@ const airportsRouter = require('./routes/airports/index');
 
 const { normalizePort } = require('./lib/utils');
 
-async function init (config) {
+async function init(config) {
   const {
     port,
     pumpKey,
@@ -19,7 +19,7 @@ async function init (config) {
     mongoHost,
     mongoPort,
     mongoUser,
-    mongoPass
+    mongoPass,
   } = config;
 
   const normalizedPort = normalizePort(port);
@@ -39,7 +39,7 @@ async function init (config) {
       port: mongoPort,
       username: mongoUser,
       password: mongoPass,
-      verbose: true
+      verbose: true,
     }).connect();
 
     const store = require('../src/stores/aircraft-store');
@@ -57,7 +57,10 @@ async function init (config) {
     logger.info('started serve1090', { port: normalizedPort });
     return server;
   } catch (err) {
-    logger.error('failed to start serve1090', { port: normalizedPort, error: err });
+    logger.error('failed to start serve1090', {
+      port: normalizedPort,
+      error: err,
+    });
     process.exit(1);
   }
 }

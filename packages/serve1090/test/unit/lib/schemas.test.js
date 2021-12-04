@@ -1,8 +1,4 @@
-const {
-  aircraft,
-  airframe,
-  pumpBody
-} = require('../../../src/lib/schemas');
+const { aircraft, airframe, pumpBody } = require('../../../src/lib/schemas');
 
 describe('schemas', () => {
   describe('aircraft', () => {
@@ -15,7 +11,7 @@ describe('schemas', () => {
       baroRate: 20,
       track: 180,
       seen: 1,
-      error: false
+      error: false,
     };
 
     test('camelcases keys', () => {
@@ -27,7 +23,7 @@ describe('schemas', () => {
         alt_baro: 100,
         baro_rate: 20,
         track: 180,
-        seen: 1
+        seen: 1,
       };
 
       const { value, error } = aircraft.validate(input);
@@ -49,7 +45,7 @@ describe('schemas', () => {
         track: 180,
         seen: 1,
         foo: 'bar',
-        bar: 'baz'
+        bar: 'baz',
       };
 
       const { value, error } = aircraft.validate(input);
@@ -82,13 +78,9 @@ describe('schemas', () => {
         sil_type: 'foo',
         gva: 1,
         sda: 1,
-        mlat: [
-          'foo'
-        ],
-        tisb: [
-          'foo'
-        ],
-        type: 'foo'
+        mlat: ['foo'],
+        tisb: ['foo'],
+        type: 'foo',
       };
 
       const { value, error } = aircraft.validate(input);
@@ -109,7 +101,7 @@ describe('schemas', () => {
         baro_rate: 20,
         track: 180,
         seen: 1,
-        nav_qnh: 1010.6
+        nav_qnh: 1010.6,
       };
 
       const { value, error } = aircraft.validate(input);
@@ -117,7 +109,7 @@ describe('schemas', () => {
 
       expect(value).toEqual({
         ...baseValidated,
-        altimeter: 29.84
+        altimeter: 29.84,
       });
       expect(value.error).toBe(false);
       expect(error).toBeUndefined();
@@ -134,7 +126,7 @@ describe('schemas', () => {
         alt_baro: 100,
         baro_rate: 20,
         track: 180,
-        seen: 1
+        seen: 1,
       };
 
       const { value, error } = aircraft.validate(input);
@@ -154,7 +146,7 @@ describe('schemas', () => {
         baro_rate: 20,
         track: 180,
         seen: 1,
-        updated: 1
+        updated: 1,
       };
 
       const { error } = aircraft.validate(input);
@@ -182,13 +174,13 @@ describe('schemas', () => {
       engines: null,
       country: null,
       hex: 'a9bb8b',
-      lastUpdated: null
+      lastUpdated: null,
     };
 
     test('capitalizes registration', () => {
       const input = {
         registration: 'n6619O',
-        hex: 'a9bb8b'
+        hex: 'a9bb8b',
       };
 
       const { value, error } = airframe.validate(input);
@@ -200,13 +192,13 @@ describe('schemas', () => {
       const input = {
         icao24: '3ef',
         typecode: 'B788',
-        timestamp: 1578942000000
+        timestamp: 1578942000000,
       };
       const expected = {
         ...baseValidated,
         hex: input.icao24,
         type: input.typecode,
-        lastUpdated: new Date(input.timestamp)
+        lastUpdated: new Date(input.timestamp),
       };
 
       const { value, error } = airframe.validate(input);
@@ -246,7 +238,7 @@ describe('schemas', () => {
         lastSeen: 'foo',
         firstSeen: 'foo',
         hex: 'a9bb8b',
-        timestamp: ''
+        timestamp: '',
       };
 
       const { value, error } = airframe.validate(input);
@@ -259,13 +251,13 @@ describe('schemas', () => {
         ...baseValidated,
         regUntil: new Date('2023-01-01'),
         built: new Date('1996-01-01'),
-        lastUpdated: new Date('2020-06-01T19:00:00.000Z')
+        lastUpdated: new Date('2020-06-01T19:00:00.000Z'),
       };
       const input = {
         hex: 'a9bb8b',
         regUntil: '2023-01-01',
         built: '1996-01-01',
-        timestamp: 1591038000000
+        timestamp: 1591038000000,
       };
 
       const { value, error } = airframe.validate(input);
@@ -277,12 +269,12 @@ describe('schemas', () => {
       const input = {
         icao24: '3ef',
         foo: 'bar',
-        bar: 'baz'
+        bar: 'baz',
       };
 
       const expected = {
         ...baseValidated,
-        hex: input.icao24
+        hex: input.icao24,
       };
 
       const { value, error } = airframe.validate(input);
@@ -298,7 +290,7 @@ describe('schemas', () => {
         token: '3ef',
         device_id: '4ef',
         messages: 2,
-        now: Date.now()
+        now: Date.now(),
       };
 
       let res = pumpBody.validate(input);

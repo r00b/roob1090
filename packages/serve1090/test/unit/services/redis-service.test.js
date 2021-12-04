@@ -1,11 +1,13 @@
 const RedisService = require('../../../src/services/redis-service');
 const { RedisError } = require('../../../src/lib/errors');
 
-jest.mock('../../../src/lib/logger', () => () => require('../../support/mock-logger'));
+jest.mock(
+  '../../../src/lib/logger',
+  () => () => require('../../support/mock-logger')
+);
 jest.mock('ioredis', () => require('ioredis-mock/jest'));
 
 describe('redis-service', () => {
-
   let service, redis, expiremember, call, expires;
 
   beforeEach(() => {
@@ -38,7 +40,11 @@ describe('redis-service', () => {
 
   const verifyExpirememberCalled = (callIdx, key, member, ex) => {
     expect(call.mock.calls[callIdx][0]).toBe('expiremember');
-    expect(expiremember.mock.calls[callIdx].slice(0, 3)).toEqual([key, member, ex]);
+    expect(expiremember.mock.calls[callIdx].slice(0, 3)).toEqual([
+      key,
+      member,
+      ex,
+    ]);
   };
 
   test('instantiates', () => {
@@ -61,7 +67,11 @@ describe('redis-service', () => {
 
     const exec = await pipeline.exec(callback);
 
-    expect(exec).toEqual([[null, 'OK'], [null, 'OK'], [null, 'OK']]);
+    expect(exec).toEqual([
+      [null, 'OK'],
+      [null, 'OK'],
+      [null, 'OK'],
+    ]);
     expect(callback.mock.calls.length).toBe(1);
 
     expect(await service.get('a')).toBe('foo');
@@ -94,19 +104,19 @@ describe('redis-service', () => {
 
   test('hsetJson', async () => {
     expect(await service.hsetJson('a', 'foo', 'bar')).toBe(1);
-    expect(await redis.hget('a', 'foo')).toBe('\"bar\"');
+    expect(await redis.hget('a', 'foo')).toBe('"bar"');
 
     // pipelining
     const pipeline = service.pipeline();
     pipeline.hsetJson('a', 'bar', 'baz');
     await pipeline.exec();
-    expect(await redis.hget('a', 'bar')).toBe('\"baz\"');
+    expect(await redis.hget('a', 'bar')).toBe('"baz"');
   });
 
   test('hsetJsonEx', async () => {
     expect(await service.hsetJsonEx('a', 'foo', 'bar', 15)).toEqual([1, 1]);
     verifyExpirememberCalled(0, 'a', 'foo', 15);
-    expect(await redis.hget('a', 'foo')).toBe('\"bar\"');
+    expect(await redis.hget('a', 'foo')).toBe('"bar"');
     expect(expires).toEqual(['foo']);
 
     // pipelining
@@ -116,7 +126,7 @@ describe('redis-service', () => {
     await pipeline.exec();
 
     verifyExpirememberCalled(1, 'a', 'bar', 20);
-    expect(await redis.hget('a', 'bar')).toBe('\"baz\"');
+    expect(await redis.hget('a', 'bar')).toBe('"baz"');
     expect(expires).toEqual(['bar']);
   });
 
@@ -247,13 +257,16 @@ describe('redis-service', () => {
     pipeline.get('bar');
 
     const result = await pipeline.exec();
-    expect(result).toEqual([[null, '15'], [null, '16']]);
+    expect(result).toEqual([
+      [null, '15'],
+      [null, '16'],
+    ]);
   });
 
   test('getAsJson', async () => {
     const value = {
       foo: 'bar',
-      bar: 'baz'
+      bar: 'baz',
     };
     await redis.set('a', JSON.stringify(value));
     expect(await service.getAsJson('a')).toEqual(value);
@@ -277,7 +290,7 @@ describe('redis-service', () => {
   test('hgetAsJson', async () => {
     const value = {
       foo: 'bar',
-      bar: 'baz'
+      bar: 'baz',
     };
     await redis.hset('a', 'foo', JSON.stringify(value));
 
@@ -285,7 +298,9 @@ describe('redis-service', () => {
     expect(await service.getAsJson('unset')).toBeNull();
 
     await redis.hset('a', 'foo', 'this is not stringified JSON');
-    await expect(service.hgetAsJson('a', 'foo')).rejects.toThrowError(RedisError);
+    await expect(service.hgetAsJson('a', 'foo')).rejects.toThrowError(
+      RedisError
+    );
   });
 
   test('hgetall in pipeline', async () => {
@@ -302,14 +317,14 @@ describe('redis-service', () => {
   test('hgetAllAsJson', async () => {
     const json = {
       foo: 'bar',
-      bar: 'baz'
+      bar: 'baz',
     };
     await redis.hset('foo', 'json', JSON.stringify(json));
     await redis.hset('foo', 'string', 'value');
 
     expect(await service.hgetAllAsJson('foo')).toEqual({
       json,
-      string: 'value'
+      string: 'value',
     });
 
     expect(await service.hgetAllAsJson('unset')).toEqual({});
@@ -318,15 +333,12 @@ describe('redis-service', () => {
   test('hgetAllAsJsonValues', async () => {
     const json = {
       foo: 'bar',
-      bar: 'baz'
+      bar: 'baz',
     };
     await redis.hset('a', 'json', JSON.stringify(json));
     await redis.hset('a', 'string', 'value');
 
-    expect(await service.hgetAllAsJsonValues('a')).toEqual([
-      json,
-      'value'
-    ]);
+    expect(await service.hgetAllAsJsonValues('a')).toEqual([json, 'value']);
 
     expect(await service.hgetAllAsJsonValues('unset')).toEqual([]);
   });
@@ -345,7 +357,10 @@ describe('redis-service', () => {
     pipeline.hexists('a', 'unset');
     const result = await pipeline.exec();
 
-    expect(result).toEqual([[null, 1], [null, 0]]);
+    expect(result).toEqual([
+      [null, 1],
+      [null, 0],
+    ]);
   });
 
   test('hlen', async () => {
@@ -373,7 +388,7 @@ describe('redis-service', () => {
     expect(await redis.ttl('b')).toBe(150);
     expect(await redis.ttl('c')).toBe(-1);
     expect(await redis.ttl('d')).toBe(-2);
-  })
+  });
 
   test('smembers', async () => {
     await redis.sadd('a', 'foo');
@@ -404,7 +419,10 @@ describe('redis-service', () => {
     pipeline.sismember('a', 'baz');
     const result = await pipeline.exec();
 
-    expect(result).toEqual([[null, 1], [null, 0]]);
+    expect(result).toEqual([
+      [null, 1],
+      [null, 0],
+    ]);
   });
 
   test('handles op errors', async () => {
@@ -415,8 +433,8 @@ describe('redis-service', () => {
       errHandler({
         message: 'message',
         command: {
-          op: 'set'
-        }
+          op: 'set',
+        },
       });
     });
 
@@ -425,7 +443,7 @@ describe('redis-service', () => {
     expect(mockLogger.error.mock.calls.length).toBe(1);
     expect(mockLogger.error.mock.calls[0][1]).toEqual({
       detail: 'message',
-      op: 'set'
+      op: 'set',
     });
   });
 });

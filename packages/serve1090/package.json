@@ -51,11 +51,6 @@
     "supertest": "^6.1.6",
     "superwstest": "^1.8.0"
   },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
-  },
   "lint-staged": {
     "*": [
       "npm run prettier"

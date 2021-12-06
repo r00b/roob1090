@@ -1,4 +1,4 @@
-FROM node:16.13.0-alpine3.11
+FROM node:16.13.1-alpine3.11
 
 ENV APP_DIR /app/serve1090
 

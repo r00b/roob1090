@@ -9,7 +9,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
-- upgrade node to v16.13.0
+- upgrade node to v16.13.1
 - bump deps
 - overhaul logger
 

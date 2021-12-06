@@ -19,4 +19,5 @@ module.exports = {
   faApi: env.FA_API || 'https://flightxml.flightaware.com/json/FlightXML2',
   faUsername: env.FA_USERNAME,
   faPassword: env.FLIGHTXML_2_KEY,
+  // add any new props to logger ALLOWED_CONFIG_PROPS list as needed
 };

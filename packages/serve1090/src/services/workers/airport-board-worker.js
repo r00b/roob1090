@@ -1,5 +1,5 @@
 const config = require('../../../src/config');
-const logger = require('../../lib/logger')().scope('airport-board-worker');
+const logger = require('../../lib/logger')('airport-board-worker');
 const { exit } = require('../../lib/utils');
 const airport = require('worker_threads').workerData.job.airport;
 
@@ -20,12 +20,12 @@ const airportBoard = require('../../lib/airport-board');
       password: mongoPass,
     }).connect();
 
-    const computeAirportBoard = airportBoard(store, redis, mongo, logger);
+    const computeAirportBoard = airportBoard(store, redis, mongo);
     await computeAirportBoard(airport);
 
     exit(0);
   } catch (e) {
-    logger.error(`unhandled airport-board-worker error: ${e.message}`, e);
+    logger.error(e, 'unhandled airport-board-worker error');
     exit(1);
   }
 })();

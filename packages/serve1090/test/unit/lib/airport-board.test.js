@@ -1,5 +1,4 @@
 const _ = require('lodash');
-const mockLogger = require('../../support/mock-logger');
 const { mockAirport, mockAircraft } = require('../../support/mock-data');
 const {
   BOARD,
@@ -9,6 +8,11 @@ const {
   ENRICHMENTS,
 } = require('../../../src/lib/redis-keys');
 const airportBoard = require('../../../src/lib/airport-board');
+
+jest.mock(
+  '../../../src/lib/logger',
+  () => () => require('../../support/mock-logger')
+);
 
 describe('airport-board', () => {
   let computeAirportBoard, airport, aircraft;
@@ -70,12 +74,7 @@ describe('airport-board', () => {
   }
 
   beforeEach(() => {
-    computeAirportBoard = airportBoard(
-      mockStore,
-      mockRedis,
-      mockMongo,
-      mockLogger
-    );
+    computeAirportBoard = airportBoard(mockStore, mockRedis, mockMongo);
     airport = mockAirport();
     aircraft = mockAircraft();
 

@@ -1,5 +1,5 @@
 const express = require('express');
-const logger = require('../../lib/logger')().scope('request');
+const logger = require('../../lib/logger');
 const { nanoid } = require('nanoid');
 const errorHandler = require('../../middleware/error-handler');
 const { pumpBody } = require('../../lib/schemas');
@@ -31,7 +31,7 @@ function pump(pumpKey, store, redis) {
     redis.incr(DATA_SOURCE_COUNT); // fire and forget
     ws.locals = {
       originalUrl,
-      socketLogger: logger.scope('ws').child({ requestId: nanoid() }),
+      log: logger('ws').child({ requestId: nanoid() }),
       start: Date.now(),
     };
     ws.on('message', data => {
@@ -53,15 +53,21 @@ function pump(pumpKey, store, redis) {
     ws.on('close', _ => {
       close(ws);
       redis.decr(DATA_SOURCE_COUNT); // fire and forget
-      ws.locals.socketLogger.info('terminated pump', {
-        elapsedTime: Date.now() - ws.locals.start,
-        url: ws.locals.originalUrl,
-      });
+      ws.locals.log.info(
+        {
+          elapsedTime: Date.now() - ws.locals.start,
+          url: ws.locals.originalUrl,
+        },
+        'terminated pump'
+      );
     });
-    ws.locals.socketLogger.info('init pump', {
-      start: ws.locals.start,
-      url: originalUrl,
-    });
+    ws.locals.log.info(
+      {
+        start: ws.locals.start,
+        url: originalUrl,
+      },
+      'init pump'
+    );
   };
 }
 

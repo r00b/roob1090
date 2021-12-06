@@ -1,5 +1,5 @@
 const _ = require('lodash');
-const logger = require('../../lib/logger')().scope('enrichments-worker');
+const logger = require('../../lib/logger')('enrichments-worker');
 const config = require('../../config');
 const { exit } = require('../../lib/utils');
 const airportKey = require('worker_threads').workerData.job.airport;
@@ -9,28 +9,26 @@ const RedisService = require('../redis-service');
 const redis = new RedisService();
 const { BOARD, ENRICHMENTS } = require('../../lib/redis-keys');
 
-const { fetchRoute, fetchAirframe } = enrichments(config, redis, logger);
+const { fetchRoute, fetchAirframe } = enrichments(config, redis);
 
 (async () => {
   try {
-    const start = Date.now();
     const board = await redis.getAsJson(BOARD(airportKey));
 
     if (board) {
       await computeAndStoreEnrichments(board);
     } else {
-      logger.warn('unable to find board with which to compute enrichments', {
-        airport: airportKey,
-      });
+      logger.warn(
+        {
+          airport: airportKey,
+        },
+        'unable to find board with which to compute enrichments'
+      );
     }
 
-    logger.info('enrichments worker completed', {
-      airport: airportKey,
-      duration: Date.now() - start,
-    });
     exit(0);
   } catch (e) {
-    logger.error(`unhandled enrichments-worker error: ${e.message}`, e);
+    logger.error(e, 'unhandled enrichments-worker error');
     exit(1);
   }
 })();

@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const logger = require('../lib/logger')('partition-airport');
 const pMap = require('p-map');
 const { hex, withinBoundaryAndCeiling, aligned } = require('./utils');
 
@@ -9,7 +10,7 @@ const RUNWAY_TTL = 28800; // 8 hours
 const RUNWAY_RECHECK = 900; // 15 minutes
 
 module.exports = (store, redis, mongo, logger) =>
-  partitionAirport(store, redis, mongo, logger.scope('partition-aircraft'));
+  partitionAirport(store, redis, mongo);
 
 /**
  * Return a function that will fetch all aircraft currently in the store along with a specified
@@ -18,15 +19,14 @@ module.exports = (store, redis, mongo, logger) =>
  * @param store
  * @param redis
  * @param mongo
- * @param logger
  * @returns {(ident: string) => Promise<partition>}
  */
-function partitionAirport(store, redis, mongo, logger) {
+function partitionAirport(store, redis, mongo) {
   return async ident => {
     try {
       const airport = await mongo.getAirport(ident);
       if (!airport) {
-        logger.error('failed to fetch airport json', { airport: ident });
+        logger.error({ airport: ident }, 'failed to fetch airport json');
         return;
       }
 
@@ -51,11 +51,11 @@ function partitionAirport(store, redis, mongo, logger) {
         runwayReducer(allAircraft, _.flatten(_.values(aircraftAloft))),
         acc
       );
-      await writePartition(partition, redis, logger);
+      await writePartition(partition, redis);
 
       return partition;
     } catch (e) {
-      logger.error('failed to partition airport', { error: e });
+      logger.error(e, 'failed to partition airport');
     }
   };
 }
@@ -164,9 +164,8 @@ function pickBestSurface(sample) {
 /**
  * @param partition {object} - computed by partitionAirport
  * @param redis
- * @param logger
  */
-async function writePartition(partition, redis, logger) {
+async function writePartition(partition, redis) {
   try {
     const pipeline = redis.pipeline();
 
@@ -185,16 +184,19 @@ async function writePartition(partition, redis, logger) {
       // only rewrite the runway every RUNWAY_RECHECK seconds to save
       if (RUNWAY_TTL - ttl > RUNWAY_RECHECK) {
         pipeline.setex(ACTIVE_RUNWAY(runway), RUNWAY_TTL, surface);
-        logger.info('set active runway', {
-          runway: runway,
-          activeSurface: surface,
-          sample: `${_.trim(sample.flight)} / ${sample.hex}`,
-        });
+        logger.info(
+          {
+            runway: runway,
+            activeSurface: surface,
+            sample: `${_.trim(sample.flight)} / ${sample.hex}`,
+          },
+          'set active runway'
+        );
       }
     });
 
     await pipeline.exec();
   } catch (e) {
-    logger.error('failed to write airport partition to redis', { error: e });
+    logger.error(e, 'failed to write airport partition to redis');
   }
 }

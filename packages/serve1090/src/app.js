@@ -1,6 +1,8 @@
 const app = require('express')();
-const logger = require('./lib/logger')().scope('app');
+const logger = require('./lib/logger')();
+const pinoHttp = require('pino-http');
 const cors = require('cors');
+const { nanoid } = require('nanoid');
 
 const RedisService = require('./services/redis-service');
 const MongoService = require('./services/mongo-service');
@@ -27,7 +29,16 @@ async function init(config) {
     const server = app.listen(normalizedPort);
     require('express-ws')(app, server);
     app.use(cors());
-    app.use(require('./middleware/http-request-logger'));
+    app.use(
+      pinoHttp({
+        logger: logger.child({ name: 'http' }),
+        genReqId: req => {
+          req.id = nanoid();
+          return req.id;
+        },
+      })
+    );
+    // app.use(require('./middleware/http-request-logger')); // todo http logger
 
     // ensure no artifacts remain from previous runs
     const redis = new RedisService(true);
@@ -54,13 +65,10 @@ async function init(config) {
     const airports = await mongo.getAllActiveAirportIdents();
     app.use('/airports', airportsRouter(airports, broadcastKey, store, redis));
 
-    logger.info('started serve1090', { port: normalizedPort });
+    logger.info({ port: normalizedPort }, 'started serve1090');
     return server;
-  } catch (err) {
-    logger.error('failed to start serve1090', {
-      port: normalizedPort,
-      error: err,
-    });
+  } catch (e) {
+    logger.error(e, 'failed to start serve1090');
     process.exit(1);
   }
 }

@@ -16,7 +16,7 @@ module.exports = (store, redis, mongo) => {
  * GET root of the API
  */
 const getRoot = (store, redis, mongo) => (req, res, next) =>
-  body(store, redis, mongo, res.locals.requestLogger)
+  body(store, redis, mongo, req.log)
     .then(res.status(200).json.bind(res))
     .catch(next);
 
@@ -68,7 +68,7 @@ async function getAirports(mongo, logger) {
       return acc;
     }, {});
   } catch (e) {
-    logger.warn('failed to get supported airports for root route', e);
+    logger.warn(e, 'failed to get supported airports for root route');
     return 'error';
   }
 }
@@ -84,7 +84,7 @@ async function getCount(key, redis, logger) {
     const count = parseInt(await redis.get(key));
     return isNaN(count) ? 0 : count;
   } catch (e) {
-    logger.warn('failed to get value for root api stats', e);
+    logger.warn(e, 'failed to get value for root api stats');
     return 'error';
   }
 }

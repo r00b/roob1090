@@ -6,7 +6,7 @@ const {
   redisPass: password,
 } = require('../config');
 const { RedisError } = require('../lib/errors');
-const logger = require('../lib/logger')().scope('redis');
+const logger = require('../lib/logger')('redis');
 const pMap = require('p-map');
 
 class RedisService {
@@ -20,15 +20,13 @@ class RedisService {
     });
     this.redis.on('ready', () => {
       if (verbose) {
-        logger.info('redis connection established', { host, port });
+        logger.info({ host, port }, 'redis connection established');
       }
     });
-    this.redis.on('error', err =>
-      logger.fatal('redis client error', { detail: err.message, host, port })
-    );
+    this.redis.on('error', err => logger.fatal(err, 'redis client error'));
     this.redis.on('end', () => {
       if (verbose) {
-        logger.info('redis connection ended', { host, port });
+        logger.info({ host, port }, 'redis connection ended');
       }
     });
   }
@@ -329,7 +327,7 @@ class RedisService {
    */
   _errHandler(e, result) {
     if (e) {
-      logger.error('redis op error', { detail: e.message, ...e.command });
+      logger.error(e, 'redis op error');
     }
   }
 }

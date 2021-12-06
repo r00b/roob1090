@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const logger = require('../lib/logger')('enrichments');
 const got = require('got');
 const { airframe: airframeSchema } = require('./schemas');
 
@@ -11,16 +12,15 @@ const {
   BROADCAST_CLIENT_COUNT,
 } = require('../lib/redis-keys');
 
-module.exports = (config, redis, logger) => {
-  const apis = generateApis(config, logger);
-  const scopedLogger = logger.scope('enrichments');
+module.exports = (config, redis) => {
+  const apis = generateApis(config);
   return {
-    fetchRoute: fetchRoute(redis, apis, scopedLogger),
-    fetchAirframe: fetchAirframe(redis, apis, scopedLogger),
+    fetchRoute: fetchRoute(redis, apis),
+    fetchAirframe: fetchAirframe(redis, apis),
   };
 };
 
-const generateApis = function (config, logger) {
+const generateApis = function (config) {
   const {
     openSkyApi,
     openSkyUsername,
@@ -68,11 +68,7 @@ const generateApis = function (config, logger) {
  * Return a function that tests a flight's route, checking redis for a cached route,
  * followed by the OpenSky API and finally the FlightAware API
  */
-const fetchRoute = function (
-  redis,
-  { openSkyRoutes, flightAwareRoutes },
-  logger
-) {
+const fetchRoute = function (redis, { openSkyRoutes, flightAwareRoutes }) {
   /**
    * @param {Object} aircraft - aircraft ADSB hash
    * @param {string} airport - airport key for checking route cache
@@ -89,8 +85,7 @@ const fetchRoute = function (
           aircraft,
           airportKey,
           openSkyRoutes,
-          redis,
-          logger
+          redis
         );
       }
       // next, fallback to FlightAware if there is a current broadcast client OR if forceFallbackToFA = true
@@ -98,20 +93,16 @@ const fetchRoute = function (
         flightAwareRoutes &&
         ((!result && (await hasBroadcastClients(redis))) || forceFallbackToFA);
       if (shouldQueryFA) {
-        result = await fetchFlightAwareRoute(
-          aircraft,
-          flightAwareRoutes,
-          logger
-        );
+        result = await fetchFlightAwareRoute(aircraft, flightAwareRoutes);
       }
       // finally, cache the result
       if (result) {
         redis.hsetJsonEx(ROUTES, flight, result, ROUTE_TTL); // fire and forget
         return result;
       }
-      logger.warn(`failed to resolve route for ${flight}`);
+      logger.warn(`unable to resolve route for ${flight}`);
     } catch (e) {
-      logger.warn(`error resolving route for ${flight}`, e);
+      logger.warn(e, 'error resolving route for ${flight}');
       return {};
     }
   };
@@ -125,15 +116,13 @@ const fetchRoute = function (
  * @param airport {string}
  * @param openSkyRoutes {Object} - OpenSky routes API
  * @param redis
- * @param logger
  * @returns {Promise<{origin, destination}|undefined>}
  */
 const fetchOpenSkyRoute = async function (
   { flight, hex },
   airport,
   openSkyRoutes,
-  redis,
-  logger
+  redis
 ) {
   const airportKey = airport.toUpperCase();
   try {
@@ -156,7 +145,7 @@ const fetchOpenSkyRoute = async function (
     if (_.get(e, 'message', '').includes('404')) {
       return;
     }
-    logger.warn(`error resolving route data from OpenSky for ${flight}`, e);
+    logger.warn(e, `error resolving route data from OpenSky for ${flight}`);
   }
 };
 
@@ -258,14 +247,9 @@ const hasBroadcastClients = async function (redis) {
  *
  * @param flight {string}
  * @param flightAwareRoutes {object} - FlightAware InFlightInfo API
- * @param logger
  * @returns {Promise<{origin, destination}>|undefined}
  */
-const fetchFlightAwareRoute = async function (
-  { flight },
-  flightAwareRoutes,
-  logger
-) {
+const fetchFlightAwareRoute = async function ({ flight }, flightAwareRoutes) {
   try {
     const {
       body: { InFlightInfoResult: result },
@@ -278,7 +262,7 @@ const fetchFlightAwareRoute = async function (
       };
     }
   } catch (e) {
-    logger.warn(`error resolving route data from FlightAware for ${flight}`, e);
+    logger.warn(e, `error resolving route data from FlightAware for ${flight}`);
   }
 };
 
@@ -288,7 +272,7 @@ const fetchFlightAwareRoute = async function (
  *
  * TODO: persist airframes in database
  */
-const fetchAirframe = function (redis, { openSkyAirframes }, logger) {
+const fetchAirframe = function (redis, { openSkyAirframes }) {
   /**
    * @param {object} aircraft - aircraft hash
    */
@@ -301,11 +285,7 @@ const fetchAirframe = function (redis, { openSkyAirframes }, logger) {
         return cachedAirframe;
       }
       // next, attempt to fetch airframe from OpenSky
-      const fetchedAirframe = await fetchOpenSkyAirframe(
-        hex,
-        openSkyAirframes,
-        logger
-      );
+      const fetchedAirframe = await fetchOpenSkyAirframe(hex, openSkyAirframes);
       if (fetchedAirframe) {
         // cache airframe for later queries
         redis.hsetJson(AIRFRAMES, hex, fetchedAirframe); // fire and forget
@@ -313,7 +293,7 @@ const fetchAirframe = function (redis, { openSkyAirframes }, logger) {
       }
       logger.warn(`failed to resolve airframe for ${aircraft.hex}`);
     } catch (e) {
-      logger.warn(`error resolving airframe data for ${hex}`, e);
+      logger.warn(e, `error resolving airframe data for ${hex}`);
       return {};
     }
   };
@@ -324,17 +304,16 @@ const fetchAirframe = function (redis, { openSkyAirframes }, logger) {
  *
  * @param hex {string}
  * @param openSkyAirframes {object} - OpenSky aircraft metadata API
- * @param logger
  * @returns {Promise<{}>|undefined}
  */
-const fetchOpenSkyAirframe = async function (hex, openSkyAirframes, logger) {
+const fetchOpenSkyAirframe = async function (hex, openSkyAirframes) {
   try {
     const { body } = await openSkyAirframes.get(hex);
     const { value: airframe, error } = airframeSchema.validate(body);
     if (error) {
       logger.warn(
-        `error validating airframe data from OpenSky for ${hex}`,
-        error
+        error,
+        `error validating airframe data from OpenSky for ${hex}`
       );
       return {};
     }
@@ -344,6 +323,6 @@ const fetchOpenSkyAirframe = async function (hex, openSkyAirframes, logger) {
     }
     return airframe;
   } catch (e) {
-    logger.warn(`error resolving airframe data from OpenSky for ${hex}`, e);
+    logger.warn(e, `error resolving airframe data from OpenSky for ${hex}`);
   }
 };

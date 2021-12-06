@@ -1,4 +1,3 @@
-const mockLogger = require('../../support/mock-logger');
 const nock = require('nock');
 const {
   ARRIVALS,
@@ -6,6 +5,11 @@ const {
   BROADCAST_CLIENT_COUNT,
   AIRFRAMES,
 } = require('../../../src/lib/redis-keys');
+
+jest.mock(
+  '../../../src/lib/logger',
+  () => () => require('../../support/mock-logger')
+);
 
 const enrichments = require('../../../src/lib/enrichments');
 
@@ -39,11 +43,7 @@ describe('enrichments', () => {
     get: jest.fn(),
   };
 
-  const { fetchRoute, fetchAirframe } = enrichments(
-    config,
-    mockRedis,
-    mockLogger
-  );
+  const { fetchRoute, fetchAirframe } = enrichments(config, mockRedis);
 
   afterEach(() => {
     // should always make a cache check
@@ -54,7 +54,7 @@ describe('enrichments', () => {
 
   describe('fetch route', () => {
     test('does not resolve a route when no apis provided', async () => {
-      const { fetchRoute } = enrichments({}, mockRedis, mockLogger);
+      const { fetchRoute } = enrichments({}, mockRedis);
       const result = await fetchRoute(aircraft, 'kdca');
       expect(result).toBeUndefined();
     });
@@ -108,7 +108,7 @@ describe('enrichments', () => {
       };
       mockRedis.hgetAsJson.mockReturnValueOnce(route);
 
-      const { fetchRoute } = enrichments({}, mockRedis, mockLogger);
+      const { fetchRoute } = enrichments({}, mockRedis);
 
       const result = await fetchRoute(aircraft, 'kdca');
 
@@ -345,8 +345,7 @@ describe('enrichments', () => {
           openSkyUsername: config.openSkyUsername,
           openSkyPassword: config.openSkyPassword,
         },
-        mockRedis,
-        mockLogger
+        mockRedis
       );
       mockRedis.get.mockReturnValueOnce(1);
 

@@ -1,5 +1,7 @@
 const app = require('express')();
 const logger = require('./lib/logger')();
+const pinoHttp = require('pino-http');
+const cors = require('cors');
 const { nanoid } = require('nanoid');
 
 const RedisService = require('./services/redis-service');
@@ -26,9 +28,9 @@ async function init(config) {
   try {
     const server = app.listen(normalizedPort);
     require('express-ws')(app, server);
-    app.use(require('cors')());
+    app.use(cors());
     app.use(
-      require('pino-http')({
+      pinoHttp({
         logger: logger.child({ name: 'http' }),
         genReqId: req => {
           req.id = nanoid();
@@ -65,8 +67,8 @@ async function init(config) {
 
     logger.info({ port: normalizedPort }, 'started serve1090');
     return server;
-  } catch (err) {
-    logger.error(err, 'failed to start serve1090');
+  } catch (e) {
+    logger.error(e, 'failed to start serve1090');
     process.exit(1);
   }
 }

@@ -1,4 +1,4 @@
-const logger = require('../lib/logger')().scope('worker-service');
+const logger = require('../lib/logger')('worker-service');
 const Bree = require('bree');
 const path = require('path');
 
@@ -21,7 +21,7 @@ async function init(mongo) {
   scheduler.start();
 
   const workerNames = [...new Set(jobs.map(j => j.name))];
-  logger.info('started jobs', { count: jobs.length, jobs: workerNames });
+  logger.info({ count: jobs.length, jobs: workerNames }, 'started jobs');
 }
 
 async function generateAirportJobs(mongo) {

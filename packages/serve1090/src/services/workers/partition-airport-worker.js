@@ -1,5 +1,5 @@
 const config = require('../../../src/config');
-const logger = require('../../lib/logger')().scope('active-runway-worker');
+const logger = require('../../lib/logger')('partition-airport-worker');
 const { exit } = require('../../lib/utils');
 const airport = require('worker_threads').workerData.job.airport;
 
@@ -20,12 +20,12 @@ const partitionAircraft = require('../../lib/partition-airport');
       password: mongoPass,
     }).connect();
 
-    const partitionAirport = partitionAircraft(store, redis, mongo, logger);
+    const partitionAirport = partitionAircraft(store, redis, mongo);
     await partitionAirport(airport);
 
     exit(0);
   } catch (e) {
-    logger.error(`unhandled partition-aircraft-worker error: ${e.message}`, e);
+    logger.error(e, 'unhandled partition-aircraft-worker error');
     exit(1);
   }
 })();

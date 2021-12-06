@@ -6,7 +6,7 @@ module.exports = (err, req, res, next) => {
     const { status, wsStatus, message, detail } = parseError(err);
     // send over both ws and HTTP
     if (req.ws) {
-      req.ws.locals.socketLogger.error(message, { detail });
+      req.ws.locals.log.error(err, message);
       // send regardless of readyState
       req.ws.send(
         JSON.stringify({
@@ -16,17 +16,15 @@ module.exports = (err, req, res, next) => {
       );
       close(req.ws, wsStatus || 1011, `${message}: ${detail}`);
     } else {
-      res.locals.requestLogger.error(message, { detail });
+      req.log.error(err, message);
     }
     return res.status(status).json({
       message,
       detail,
     });
   } catch (e) {
-    const logger = req.ws
-      ? req.ws.local.socketLogger
-      : res.locals.requestLogger;
-    logger.error('unhandled router error', e);
+    const logger = req.ws ? req.ws.local.log : req.log;
+    logger.error(e, 'unhandled router error');
   }
 };
 

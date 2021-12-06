@@ -441,9 +441,11 @@ describe('redis-service', () => {
     await service.set('a', 'foo');
 
     expect(mockLogger.error.mock.calls.length).toBe(1);
-    expect(mockLogger.error.mock.calls[0][1]).toEqual({
-      detail: 'message',
-      op: 'set',
+    expect(mockLogger.error.mock.calls[0][0]).toEqual({
+      command: {
+        op: 'set',
+      },
+      message: 'message',
     });
   });
 });

@@ -1,6 +1,6 @@
 const express = require('express');
+const pinoHttp = require('pino-http');
 const request = require('supertest');
-const httpRequestLogger = require('../../../src/middleware/http-request-logger');
 const rootRouter = require('../../../src/routes/index');
 
 jest.mock(
@@ -13,7 +13,7 @@ describe('root router', () => {
 
   beforeEach(() => {
     app = express();
-    app.use(httpRequestLogger);
+    app.use(pinoHttp({ enabled: false }));
 
     store = {
       getTotalAircraftCount: jest.fn(),

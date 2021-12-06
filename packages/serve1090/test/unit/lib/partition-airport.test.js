@@ -1,7 +1,11 @@
-const mockLogger = require('../../support/mock-logger');
 const { mockAirport, mockAircraft } = require('../../support/mock-data');
 const { ACTIVE_RUNWAY } = require('../../../src/lib/redis-keys');
 const lib = require('../../../src/lib/partition-airport');
+
+jest.mock(
+  '../../../src/lib/logger',
+  () => () => require('../../support/mock-logger')
+);
 
 describe('partition-airport', () => {
   let airport, aircraft, partitionAirport;
@@ -21,7 +25,7 @@ describe('partition-airport', () => {
   };
 
   beforeEach(() => {
-    partitionAirport = lib(mockStore, mockRedis, mockMongo, mockLogger);
+    partitionAirport = lib(mockStore, mockRedis, mockMongo);
 
     // see mock-data for visual description of airport and aircraft locations
     airport = mockAirport();

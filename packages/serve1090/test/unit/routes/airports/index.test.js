@@ -1,10 +1,10 @@
 const _ = require('lodash');
 const { delay } = require('../../../support/helpers');
 const express = require('express');
+const pinoHttp = require('pino-http');
 const ws = require('express-ws');
 const request = require('supertest');
 const requestWs = require('superwstest').default;
-const httpRequestLogger = require('../../../../src/middleware/http-request-logger');
 const airportRouter = require('../../../../src/routes/airports/index');
 const { BOARD } = require('../../../../src/lib/redis-keys');
 
@@ -23,7 +23,7 @@ describe('airports router', () => {
   beforeEach(() => {
     app = express();
     wss = ws(app).getWss();
-    app.use(httpRequestLogger);
+    app.use(pinoHttp({ enabled: false }));
 
     store = {
       getTotalAircraftCount: jest.fn(),

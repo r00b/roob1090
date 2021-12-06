@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const logger = require('../lib/logger')('airport-board');
 const { compareDistance, hex, key } = require('./utils');
 const pMap = require('p-map');
 
@@ -14,8 +15,8 @@ const {
 const BOARD_TTL = 15;
 const STATUS_TTL = 60;
 
-module.exports = (store, redis, mongo, logger) =>
-  computeAirportBoard(store, redis, mongo, logger.scope('airport-board'));
+module.exports = (store, redis, mongo) =>
+  computeAirportBoard(store, redis, mongo);
 
 /**
  * Return an async function that fetches the airport, all valid aircraft, and subsequently
@@ -24,25 +25,24 @@ module.exports = (store, redis, mongo, logger) =>
  * @param store
  * @param redis
  * @param mongo
- * @param logger
  * @returns {(ident) => Promise<{}>}
  */
-function computeAirportBoard(store, redis, mongo, logger) {
+function computeAirportBoard(store, redis, mongo) {
   return async ident => {
     try {
       const airport = await mongo.getAirport(ident);
       if (!airport) {
-        logger.error('failed to fetch airport json', { airport: ident });
+        logger.error({ airport: ident }, 'failed to fetch airport json');
         return;
       }
       const { aircraft } = await store.getValidAircraftMap();
 
       const aircraftBoard = await buildBoard(airport, aircraft, redis);
-      await writeBoard(aircraftBoard, redis, logger);
+      await writeBoard(aircraftBoard, redis);
 
       return aircraftBoard;
     } catch (e) {
-      logger.error('failed to compute airport board', { error: e });
+      logger.error({ error: e }, 'failed to compute airport board');
     }
   };
 }
@@ -233,10 +233,9 @@ function sortBoard(airportBoard, airport) {
  *
  * @param board {object}
  * @param redis
- * @param logger
  * @returns {Promise<void>}
  */
-async function writeBoard(board, redis, logger) {
+async function writeBoard(board, redis) {
   try {
     const pipeline = redis.pipeline();
     const { ident } = board;
@@ -258,7 +257,7 @@ async function writeBoard(board, redis, logger) {
     pipeline.setex(BOARD(ident), BOARD_TTL, JSON.stringify(board));
     await pipeline.exec();
   } catch (e) {
-    logger.error('failed to write board partition to redis', { error: e });
+    logger.error(e, 'failed to write board partition to redis');
   }
 }
 

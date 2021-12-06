@@ -1,9 +1,9 @@
 const { delay } = require('../../../support/helpers');
 const express = require('express');
+const pinoHttp = require('pino-http');
 const ws = require('express-ws');
 const request = require('supertest');
 const requestWs = require('superwstest').default;
-const httpRequestLogger = require('../../../../src/middleware/http-request-logger');
 const aircraftRouter = require('../../../../src/routes/aircraft/index');
 const { ENRICHMENTS } = require('../../../../src/lib/redis-keys');
 
@@ -21,7 +21,7 @@ describe('aircraft router', () => {
   beforeEach(() => {
     app = express();
     wss = ws(app).getWss();
-    app.use(httpRequestLogger);
+    app.use(pinoHttp({ enabled: false }));
 
     store = {
       addAircraft: jest.fn(),

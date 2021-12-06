@@ -10,14 +10,13 @@ describe('error-handler', () => {
   let req, res, next;
 
   beforeEach(() => {
-    req = {};
+    req = {
+      log: mockLogger,
+    };
     res = {
       status: jest.fn().mockReturnValue({
         json: jest.fn().mockImplementation(json => json),
       }),
-      locals: {
-        requestLogger: mockLogger,
-      },
     };
     next = jest.fn();
   });
@@ -52,7 +51,7 @@ describe('error-handler', () => {
     beforeEach(() => {
       req.ws = {
         locals: {
-          socketLogger: mockLogger,
+          log: mockLogger,
         },
         send: jest.fn(),
         close: jest.fn(),

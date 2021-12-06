@@ -1,5 +1,5 @@
 const express = require('express');
-const logger = require('../../lib/logger')().scope('request');
+const logger = require('../../lib/logger');
 const errorHandler = require('../../middleware/error-handler');
 const { AuthError, BroadcastError } = require('../../lib/errors');
 const { checkToken, close } = require('../../lib/utils');
@@ -80,7 +80,7 @@ function broadcast(airport, broadcastKey, store, redis) {
     ws.locals = {
       originalUrl,
       airport,
-      socketLogger: logger.scope('ws').child({ requestId: nanoid() }),
+      log: logger('ws').child({ requestId: nanoid() }),
       socketStart: Date.now(),
     };
     const authTimeout = setTimeout(() => {
@@ -101,18 +101,24 @@ function broadcast(airport, broadcastKey, store, redis) {
         checkToken(broadcastKey, rawPayload);
         // initialize broadcast
         redis.incr(BROADCAST_CLIENT_COUNT); // fire and forget
-        ws.locals.socketLogger.info('authenticated broadcast client', {
-          airport: ws.locals.airport,
-        });
+        ws.locals.log.info(
+          {
+            airport: ws.locals.airport,
+          },
+          'authenticated broadcast client'
+        );
 
         broadcast = setInterval(sendBoard(ws, next, store, redis), 1000);
 
         ws.locals.broadcastStart = Date.now();
-        ws.locals.socketLogger.info('initialized broadcast', {
-          broadcastStart: ws.locals.broadcastStart,
-          url: originalUrl,
-          airport,
-        });
+        ws.locals.log.info(
+          {
+            broadcastStart: ws.locals.broadcastStart,
+            url: originalUrl,
+            airport,
+          },
+          'initialized broadcast'
+        );
         initialized = true;
       } catch (e) {
         return next(e);
@@ -124,12 +130,15 @@ function broadcast(airport, broadcastKey, store, redis) {
       }
       close(ws);
       redis.decr(BROADCAST_CLIENT_COUNT); // fire and forget
-      ws.locals.socketLogger.info('terminated broadcast', {
-        socketTime: Date.now() - ws.locals.start,
-        broadcastTime: Date.now() - ws.locals.broadcastStart,
-        url: ws.locals.originalUrl,
-        airport: ws.locals.airport,
-      });
+      ws.locals.log.info(
+        {
+          socketTime: Date.now() - ws.locals.start,
+          broadcastTime: Date.now() - ws.locals.broadcastStart,
+          url: ws.locals.originalUrl,
+          airport: ws.locals.airport,
+        },
+        'terminated broadcast'
+      );
     });
   };
 }

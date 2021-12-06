@@ -1,52 +1,32 @@
 const _ = require('lodash');
-const { nodeEnv, verbose, ...env } = require('../config');
+const env = require('../config');
+const pino = require('pino');
 
-const DEV_EXCLUDED = ['request', 'ws', 'aircraft store', 'worker-service'];
+const ALLOWED_CONFIG_PROPS = [
+  'nodeEnv',
+  'port',
+  'redisHost',
+  'redisPort',
+  'redisUser',
+  'mongoHost',
+  'mongoPort',
+  'mongoUser',
+  'openSkyApi',
+  'faApi',
+];
 
-const production = nodeEnv === 'production';
+const DEV_EXCLUDED = ['worker-service'];
 
-function pino(secrets) {
-  const pino = require('pino')({
-    redact: Object.keys(secrets)
-      .map(k => [k, `*.${k}`])
-      .flat(),
-    hooks: {
-      // so that log fns work the same as signale
-      logMethod(inputArgs, method) {
-        return method.call(this, {
-          msg: inputArgs[0],
-          meta: inputArgs[1],
-        });
-      },
-    },
+function pathReducer(acc, secret) {
+  acc.push(secret, `*.${secret}`);
+  return acc;
+}
+
+module.exports = name => {
+  const secrets = _.difference(Object.keys(env), ALLOWED_CONFIG_PROPS);
+  return pino({
+    name,
+    enabled: !DEV_EXCLUDED.includes(name),
+    redact: secrets.reduce(pathReducer, []),
   });
-  pino.scope = () => pino;
-  return pino;
-}
-
-function signale(secrets) {
-  const Signal = require('./signal');
-  const options = {
-    disabled: false,
-    interactive: false,
-    logLevel: 'info',
-    scope: 'global',
-    secrets: Object.values(secrets),
-    types: {},
-    excluded: DEV_EXCLUDED,
-  };
-  return new Signal(options);
-}
-
-module.exports = () => {
-  const secrets = _.pick(env, [
-    'pumpKey',
-    'broadcastKey',
-    'redisPass',
-    'openSkyUsername',
-    'openSkyPassword',
-    'faUsername',
-    'faPassword',
-  ]);
-  return (production ? pino : signale)(secrets);
 };

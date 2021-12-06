@@ -1,4 +1,4 @@
-const logger = require('../lib/logger')().scope('aircraft store');
+const logger = require('../lib/logger')('store');
 const { aircraft: aircraftSchema } = require('../lib/schemas');
 const { secondsToMillis, millisToSeconds } = require('../lib/utils');
 
@@ -25,18 +25,24 @@ async function addAircraft(data) {
   const now = Date.now();
   const age = now - clientNowMillis;
   if (age > MAX_DATA_AGE_MILLIS) {
-    logger.warn('rejected stale dump data', {
-      clientTimestamp: new Date(clientNowMillis).toISOString(),
-      age: millisToSeconds(age).toFixed(2),
-    });
+    logger.warn(
+      {
+        clientTimestamp: new Date(clientNowMillis).toISOString(),
+        age: millisToSeconds(age).toFixed(2),
+      },
+      'rejected stale dump data'
+    );
   } else {
     // map each aircraft hex to the aircraft
     const newAircraft = createAircraftStore(data.aircraft);
     await validateAndWrite(newAircraft);
-    logger.info('accepted dump data', {
-      messages: data.messages,
-      clientTimestamp: new Date(clientNowMillis).toISOString(),
-    });
+    // logger.info(
+    //   {
+    //     messages: data.messages,
+    //     clientTimestamp: new Date(clientNowMillis).toISOString(),
+    //   },
+    //   'accepted dump data'
+    // );
   }
 }
 

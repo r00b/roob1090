@@ -30,7 +30,7 @@
     "ioredis": "^4.28.2",
     "joi": "^17.5.0",
     "lodash": "^4.17.21",
-    "mongodb": "^4.2.1",
+    "mongodb": "^4.9.0",
     "mongodb-memory-server": "^8.0.4",
     "nanoid": "^3.1.30",
     "p-map": "^4.0.0",

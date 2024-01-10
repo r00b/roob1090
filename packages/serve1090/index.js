@@ -2,11 +2,11 @@ require('dotenv').config();
 const app = require('./src/app');
 const _ = require('lodash');
 const config = require('./src/config');
-const logger = require('./src/lib/logger')().scope('app');
+const logger = require('./src/lib/logger')();
 
 let connections = [];
 
-logger.info('starting serve1090', config);
+logger.info(config, 'starting serve1090');
 
 app(config).then(server => {
   // maintain array of current ws connections and purge them when they are closed
@@ -23,7 +23,7 @@ app(config).then(server => {
   process.on('SIGINT', shutdown(server));
 });
 
-function shutdown () {
+function shutdown() {
   return () => {
     logger.info('received shutdown signal');
     // kill all connections

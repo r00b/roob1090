@@ -1,17 +1,21 @@
 const express = require('express');
-const logger = require('../../lib/logger')().scope('request');
-const { PUMP_SCHEMA } = require('./schemas');
-const { PumpError } = require('../../lib/errors');
-const { checkToken, errorHandler, close } = require('../middleware');
+const logger = require('../../lib/logger');
 const { nanoid } = require('nanoid');
+const errorHandler = require('../../middleware/error-handler');
+const { pumpBody } = require('../../lib/schemas');
+const { checkToken, close } = require('../../lib/utils');
+const { PayloadError } = require('../../lib/errors');
+const { ENRICHMENTS, DATA_SOURCE_COUNT } = require('../../lib/redis-keys');
 
-module.exports = (pumpKey, store) => {
+module.exports = (pumpKey, store, redis) => {
   return new express.Router()
-    .ws('/pump', pump(pumpKey, store))
-    .get('/all', getAll(store))
-    .get('/valid', getValid(store))
-    .get('/invalid', getInvalid(store))
-    .get('/numInRange', getNumInRange(store))
+    .ws('/pump', pump(pumpKey, store, redis))
+    .get('/all', getAllAircraft(store))
+    .get('/valid', getValidAircraft(store))
+    .get('/invalid', getInvalidAircraft(store))
+    .get('/enrichments', getEnrichments(redis))
+    .get('/totalCount', getTotalAircraftCount(store))
+    .get('/validCount', getValidAircraftCount(store))
     .use(errorHandler);
 };
 
@@ -20,13 +24,15 @@ module.exports = (pumpKey, store) => {
  *
  * @param {string} pumpKey - key that token in each payload must match to be accepted
  * @param store - aircraft store
+ * @param redis
  */
-function pump (pumpKey, store) {
+function pump(pumpKey, store, redis) {
   return (ws, { originalUrl }, next) => {
+    redis.incr(DATA_SOURCE_COUNT); // fire and forget
     ws.locals = {
       originalUrl,
-      socketLogger: logger.scope('ws').child({ requestId: nanoid() }),
-      start: Date.now()
+      log: logger('ws').child({ requestId: nanoid() }),
+      start: Date.now(),
     };
     ws.on('message', data => {
       try {
@@ -35,59 +41,89 @@ function pump (pumpKey, store) {
         // check for a valid token; throws AuthError
         checkToken(pumpKey, rawPayload);
         // validate payload to ensure it has required props
-        const { value: payload, error } = PUMP_SCHEMA.validate(rawPayload);
+        const { value: payload, error } = pumpBody.validate(rawPayload);
         if (error) {
-          throw new PumpError(error.message.replace(/"/g, '\''));
+          return next(new PayloadError(error.message.replace(/"/g, "'")));
         }
         store.addAircraft(payload).catch(next);
       } catch (e) {
-        next(e);
+        return next(e);
       }
     });
-    ws.on('close', async _ => {
+    ws.on('close', _ => {
       close(ws);
-      ws.locals.socketLogger.info('terminate pump', {
-        elapsedTime: Date.now() - ws.locals.start,
-        url: ws.locals.originalUrl,
-        airspace: ws.locals.airspace
-      });
+      redis.decr(DATA_SOURCE_COUNT); // fire and forget
+      ws.locals.log.info(
+        {
+          elapsedTime: Date.now() - ws.locals.start,
+          url: ws.locals.originalUrl,
+        },
+        'terminated pump'
+      );
     });
-    ws.locals.socketLogger.info('init pump', { start: ws.locals.start, url: originalUrl });
+    ws.locals.log.info(
+      {
+        start: ws.locals.start,
+        url: originalUrl,
+      },
+      'init pump'
+    );
   };
 }
 
 /**
  * GET entire raw store of aircraft
  */
-function getAll (store) {
-  return (req, res, next) => {
-    return store.getAllAircraft().then(result => res.status(200).json(result)).catch(next);
-  };
+function getAllAircraft(store) {
+  return (req, res, next) =>
+    store.getAllAircraft().then(res.status(200).json.bind(res)).catch(next);
 }
 
 /**
  * GET valid aircraft
  */
-function getValid (store) {
-  return (req, res, next) => {
-    return store.getValidAircraft().then(result => res.status(200).json(result)).catch(next);
-  };
+function getValidAircraft(store) {
+  return (req, res, next) =>
+    store.getValidAircraft().then(res.status(200).json.bind(res)).catch(next);
 }
 
 /**
  * GET aircraft that failed validation
  */
-function getInvalid (store) {
-  return (req, res, next) => {
-    return store.getInvalidAircraft().then(result => res.status(200).json(result)).catch(next);
-  };
+function getInvalidAircraft(store) {
+  return (req, res, next) =>
+    store.getInvalidAircraft().then(res.status(200).json.bind(res)).catch(next);
 }
 
 /**
- * GET number of validated aircraft in the store
+ * GET enrichments store
  */
-function getNumInRange (store) {
-  return (req, res, next) => {
-    return store.getNumValidAircraft().then(result => res.status(200).json({ count: result })).catch(next);
-  };
+function getEnrichments(redis) {
+  return (req, res, next) =>
+    redis
+      .hgetAllAsJson(ENRICHMENTS)
+      .then(res.status(200).json.bind(res))
+      .catch(next);
+}
+
+/**
+ * GET count of all aircraft in the store
+ */
+function getTotalAircraftCount(store) {
+  return (req, res, next) =>
+    store
+      .getTotalAircraftCount()
+      .then(res.status(200).json.bind(res))
+      .catch(next);
+}
+
+/**
+ * GET count of validated aircraft in the store
+ */
+function getValidAircraftCount(store) {
+  return (req, res, next) =>
+    store
+      .getValidAircraftCount()
+      .then(res.status(200).json.bind(res))
+      .catch(next);
 }

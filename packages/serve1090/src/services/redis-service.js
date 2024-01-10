@@ -1,21 +1,34 @@
 const Redis = require('ioredis');
-const config = require('../config');
+const {
+  redisHost: host,
+  redisPort: port,
+  redisUser: username,
+  redisPass: password,
+} = require('../config');
 const { RedisError } = require('../lib/errors');
-const logger = require('../lib/logger')().scope('redis');
-const _ = require('lodash');
+const logger = require('../lib/logger')('redis');
+const pMap = require('p-map');
 
 class RedisService {
-  constructor () {
-    const host = config.dbHost;
-    const port = config.dbPort;
+  constructor(verbose = false) {
     this.redis = new Redis({
       host,
       port,
-      password: config.dbPassword,
-      retryStrategy: (_) => 5000
+      username,
+      password,
+      retryStrategy: _ => 5000,
     });
-    this.redis.on('error', (err) => logger.fatal('redis client error', { detail: err.message, host, port }));
-    this.redis.on('end', () => logger.info('redis connection ended', { host, port }));
+    this.redis.on('ready', () => {
+      if (verbose) {
+        logger.info({ host, port }, 'redis connection established');
+      }
+    });
+    this.redis.on('error', err => logger.fatal(err, 'redis client error'));
+    this.redis.on('end', () => {
+      if (verbose) {
+        logger.info({ host, port }, 'redis connection ended');
+      }
+    });
   }
 
   // WRITE OPERATIONS
@@ -26,23 +39,23 @@ class RedisService {
    *
    * @param {string} key - key of variable
    * @param {string} value - value of variable
-   * @returns {Promise|Pipeline}
+   * @returns {Promise}
    */
-  async set (key, value) {
-    return this.send('set', key, value);
+  async set(key, value) {
+    return this.redis.set(key, value, this._errHandler);
   }
 
   /**
-   * Set a value with an expiry time;
+   * Set a value with a TTL;
    * https://redis.io/commands/setex
    *
    * @param {string} key - key of variable
-   * @param {string|integer} ex - number of seconds until key-value pair is deleted
+   * @param {string|number} ex - number of seconds until key-value pair is deleted
    * @param {string} value - value of variable
-   * @returns {Promise|Pipeline}
+   * @returns {Promise}
    */
-  async setex (key, ex, value) {
-    return this.send('setex', key, ex, value);
+  async setex(key, ex, value) {
+    return this.redis.setex(key, ex, value, this._errHandler);
   }
 
   /**
@@ -51,11 +64,10 @@ class RedisService {
    * @param {string} key - key of hash
    * @param {string} field - field in hash
    * @param {object} value - value to set
-   * @returns {Promise|Pipeline}
+   * @returns {Promise}
    */
-  async hsetJson (key, field, value) {
-    const stringVal = JSON.stringify(value);
-    return this.send('hset', key, field, stringVal);
+  async hsetJson(key, field, value) {
+    return this.redis.hset(key, field, JSON.stringify(value), this._errHandler);
   }
 
   /**
@@ -64,66 +76,78 @@ class RedisService {
    * @param {string} key - key of hash
    * @param {string} field - field in hash
    * @param {object} value - value to set
-   * @param {string|integer} ex - number of seconds until key-value pair is deleted
-   * @returns {Promise|Pipeline}
+   * @param {string|number} ex - number of seconds until key-value pair is deleted
+   * @returns {[Promise, Promise]}
    */
-  async hsetJsonEx (key, field, value, ex) {
-    const set = this.hsetJson(key, field, value);
-    const expire = this.send('call', 'expiremember', key, field, ex);
-    return Promise.all([set, expire]);
+  async hsetJsonEx(key, field, value, ex) {
+    const set = await this.hsetJson(key, field, value);
+    const expire = await this.redis.call(
+      'expiremember',
+      key,
+      field,
+      ex,
+      this._errHandler
+    );
+    return [set, expire];
   }
 
   /**
-   * Add a value to a set with an expiration time
+   * Add a value to a set with a TTL
    *
-   * @param {string} set - key of set
-   * @param {string|integer} ex - number of seconds until value is deleted
-   * @param {string[]} values - values to add to set
-   * @returns Promise
+   * @param {string} key - key of set
+   * @param {string|number} ex - number of seconds until value is deleted
+   * @param  values - values to add to set
+   * @returns {[Promise, Promise]}
    */
-  async saddEx (set, ex, ...values) {
-    if (values.length) {
-      const add = this.send('sadd', set, ...values);
-      const expires = values.map(v => this.send('call', 'expiremember', set, v, ex));
-      return Promise.all([add, ...expires]);
-    }
+  async saddEx(key, ex, ...values) {
+    const adds = await this.redis.sadd(key, ...values, this._errHandler);
+    const expires = await pMap(values, value =>
+      this.redis.call('expiremember', key, value, ex, this._errHandler)
+    );
+    return [adds, expires.length];
   }
 
   /**
-   * Add a value to a sorted set with an expiration time
+   * Increment the value stored at key;
+   * https://redis.io/commands/incr
    *
-   * @param {string} set - key of set
-   * @param {string|integer} ex - number of seconds until value is deleted
-   * @param {string[]} values - values to add to set
-   * @returns Promise
+   * @param {string} key - key of value
+   * @returns {Promise}
    */
-  async zaddEx (set, ex, ...values) {
-    if (values.length) {
-      const pairs = _.chunk(values, 2);
-      const zadds = pairs.map(pair => this.send('zadd', set, pair[0], pair[1]));
-      const expires = pairs.map(pair => this.send('call', 'expiremember', set, pair[1], ex));
-      return Promise.all([...zadds, ...expires]);
-    }
+  async incr(key) {
+    return this.redis.incr(key, this._errHandler);
+  }
+
+  /**
+   * Decrement the value stored at key;
+   * https://redis.io/commands/decr
+   *
+   * @param {string} key - key of value
+   * @returns {Promise}
+   */
+  async decr(key) {
+    return this.redis.decr(key, this._errHandler);
   }
 
   /**
    * Delete a value;
-   * see https://redis.io/commands/del
+   * https://redis.io/commands/del
    *
    * @param {string[]} keys - key(s) of value to delete
+   * @returns {Promise}
    */
-  async del (...keys) {
-    return this.send('del', ...keys);
+  async del(...keys) {
+    return this.redis.del(...keys, this._errHandler);
   }
 
   /**
    * Delete all values;
-   * see https://redis.io/commands/flushall
+   * https://redis.io/commands/flushall
    *
-   * @returns {Promise|Pipeline}
+   * @returns {Promise}
    */
-  async flushall () {
-    return this.send('flushall');
+  async flushall() {
+    return this.redis.flushall(this._errHandler);
   }
 
   // READ OPERATIONS
@@ -133,185 +157,289 @@ class RedisService {
    * https://redis.io/commands/set
    *
    * @param {string} key - key of value to get
-   * @returns Promise
+   * @returns {Promise}
    */
-  get (key) {
-    return this.send('get', key);
+  get(key) {
+    return this.redis.get(key, this._errHandler);
   }
 
   /**
    * Get a value and parse it into JSON
    *
-   * @param {string} key - key of value to get
-   * @returns Promise
+   * @param {string} key - key of hash to get
+   * @returns {Promise}
    */
-  async getAsJson (key) {
-    const res = await this.get(key);
-    try {
-      return JSON.parse(res);
-    } catch (e) {
-      throw new RedisError('unable to parse result into JSON', { key, value: String(res) });
-    }
+  async getAsJson(key) {
+    const res = await this.redis.get(key, this._errHandler);
+    if (res) {
+      try {
+        return JSON.parse(res);
+      } catch (e) {
+        throw new RedisError('unable to parse result into JSON', {
+          key,
+          value: String(res),
+        });
+      }
+    } else return res;
   }
 
   /**
-   * Get a value in a hash and parse the result into JSON; ignores any active pipelines
+   * Get a value in a hash and parse the result into JSON
    *
    * @param {string} key - key of hash
    * @param {string} field - field of value in hash to get
-   * @returns Promise
+   * @returns {Promise}
    */
-  async hgetJson (key, field) {
-    const res = await this.redis.hget(key, field);
-    try {
-      return JSON.parse(res);
-    } catch (e) {
-      throw new RedisError('unable to parse result into JSON', { key, field, value: String(res) });
-    }
-  }
-
-  /**
-   * Get a hash as a JSON object; ignores any active pipelines
-   *
-   * @param {string} hash - key of hash
-   * @returns Promise
-   */
-  async hgetAllAsJson (hash) {
-    const hashWithStringValues = await this.redis.get(hash);
-    return Object.entries(hashWithStringValues).reduce((acc, [key, value]) => {
+  async hgetAsJson(key, field) {
+    const res = await this.redis.hget(key, field, this._errHandler);
+    if (res) {
       try {
-        acc[key] = JSON.parse(value);
+        return JSON.parse(res);
       } catch (e) {
-        throw new RedisError('unable to parse result into JSON', { hash, value: value });
+        throw new RedisError('unable to parse result into JSON', {
+          key,
+          field,
+          value: String(res),
+        });
       }
-    }, {});
+    } else return res;
   }
 
   /**
-   * Get array of values of a hash as JSON objects; ignores any active pipelines
-   *
-   * @param {string} hash - key of hash
-   * @returns Promise
-   */
-  async hgetAllAsJsonValues (hash) {
-    const hashWithStringValues = await this.redis.hgetall(hash);
-    return Object.values(hashWithStringValues).reduce((acc, value) => {
-      try {
-        acc.push(JSON.parse(value));
-      } catch (e) {
-        throw new RedisError('unable to parse result into JSON', { hash, value: value });
-      }
-      return acc;
-    }, []);
-  }
-
-  /**
-   * Get all members of set;
-   * https://redis.io/commands/smembers
-   *
-   * @param {string} set - key of set
-   * @returns {Promise|Pipeline}
-   */
-  smembers (set) {
-    return this.send('smembers', set);
-  }
-
-  /**
-   * Determine if key is a member of set;
-   * https://redis.io/commands/sismember
-   *
-   * @param {string} set - key of set
-   * @param {string} key - key of member to check
-   * @returns {Promise|Pipeline}
-   */
-  sismember (set, key) {
-    return this.send('sismember', set, key);
-  }
-
-  /**
-   * Get all members of a sorted set via ZRANGE;
-   * https://redis.io/commands/zrange
-   *
-   * @param {string} set - key of set
-   * @returns {Promise|Pipeline}
-   */
-  zmembers (set) {
-    return this.send('zrange', set, 0, -1);
-  }
-
-  /**
-   * Determine if field is an existing field in the given hash
-   *
-   * @param {string} hash - key of hash
-   * @param {string} field - field in hash
-   * @returns {Promise|Pipeline}
-   */
-  hexists (hash, field) {
-    return this.send('hexists', hash, field);
-  }
-
-  /**
-   * Get the number of fields in the hash stored at key; ignores any active pipelines;
-   * see https://redis.io/commands/hlen
+   * Get an entire hash as a JSON object with values parsed into JSON when able
    *
    * @param {string} key - key of hash
-   * @returns {Promise|Pipeline}
+   * @returns {Promise}
    */
-  hlen (key) {
-    return this.redis.hlen(key);
+  async hgetAllAsJson(key) {
+    const hashWithStringValues = await this.redis.hgetall(
+      key,
+      this._errHandler
+    );
+    if (hashWithStringValues) {
+      return Object.entries(hashWithStringValues).reduce((acc, [k, v]) => {
+        try {
+          acc[k] = JSON.parse(v);
+        } catch (e) {
+          acc[k] = v;
+        }
+        return acc;
+      }, {});
+    } else return hashWithStringValues;
+  }
+
+  /**
+   * Get an entire hash as an array of values parsed into JSON when able
+   *
+   * @param {string} key - key of hash
+   * @returns {Promise}
+   */
+  async hgetAllAsJsonValues(key) {
+    const hashWithStringValues = await this.redis.hgetall(
+      key,
+      this._errHandler
+    );
+    if (hashWithStringValues) {
+      return Object.values(hashWithStringValues).reduce((acc, value) => {
+        try {
+          acc.push(JSON.parse(value));
+        } catch (e) {
+          acc.push(value);
+        }
+        return acc;
+      }, []);
+    } else return hashWithStringValues;
+  }
+
+  /**
+   * Determine if a given field is an existing set field in the
+   * hash stored at a given key
+   *
+   * @param {string} key - key of hash
+   * @param {string} field - field in hash
+   * @returns {Promise}
+   */
+  hexists(key, field) {
+    return this.redis.hexists(key, field, this._errHandler);
+  }
+
+  /**
+   * Get the number of fields in the hash stored at key;
+   * https://redis.io/commands/hlen
+   *
+   * @param {string} key - key of hash
+   * @returns {Promise}
+   */
+  hlen(key) {
+    return this.redis.hlen(key, this._errHandler);
+  }
+
+  /**
+   * Get the TTL of a key;
+   * https://redis.io/commands/TTL
+   *
+   * @param  {string} key - key of value
+   * @returns {Promise}
+   */
+  ttl(key) {
+    // todo test
+    return this.redis.ttl(key, this._errHandler);
+  }
+
+  /**
+   * Get all members of a set;
+   * https://redis.io/commands/smembers
+   *
+   * @param {string} key - key of set
+   * @returns {Promise}
+   */
+  smembers(key) {
+    return this.redis.smembers(key, this._errHandler);
+  }
+
+  /**
+   * Determine if value is a member of set;
+   * https://redis.io/commands/sismember
+   *
+   * @param {string} key - key of set
+   * @param {string} value - value of member to check
+   * @returns {Promise}
+   */
+  sismember(key, value) {
+    return this.redis.sismember(key, value, this._errHandler);
   }
 
   // OTHER OPERATIONS
 
   /**
-   * Create a Redis pipeline; see https://redis.io/topics/pipelining
+   * Create a Redis pipeline; https://redis.io/topics/pipelining
    * and https://github.com/luin/ioredis#Pipelining
    */
-  pipeline () {
-    this._pipeline = this.redis.pipeline();
-    return this;
-  }
-
-  /**
-   * Execute a Redis pipeline
-   *
-   * @returns Promise
-   */
-  async exec (callback) {
-    if (this._pipeline) {
-      const res = await this._pipeline.exec(callback);
-      delete this._pipeline;
-      return res;
-    } else {
-      throw new RedisError('called exec on nonexistent pipeline');
-    }
-  }
-
-  /**
-   * Execute a Redis command, either on a pipeline or the Redis client itself
-   *
-   * @param {string} fn - name of the redis fn
-   * @param {string[]} args - array of args
-   * @returns {Promise|Pipeline}
-   */
-  async send (fn, ...args) {
-    if (this._pipeline) {
-      return this._pipeline[fn](...args, this.errHandler);
-    } else {
-      return this.redis[fn](...args, this.errHandler);
-    }
+  pipeline() {
+    return new Pipeline(this.redis.pipeline());
   }
 
   /**
    * Log errors triggered by Redis operations
    *
-   * @param {ReplyError} err - error object from redis
+   * @param {ReplyError} e - error object from redis
    * @param result - result of redis command
    */
-  errHandler (err, result) {
-    if (err) {
-      logger.error('redis op error', { detail: err.message, ...err.command });
+  _errHandler(e, result) {
+    if (e) {
+      logger.error(e, 'redis op error');
     }
+  }
+}
+
+/**
+ * This class defines a pipeline object that re-defines each of the RedisService functions as synchronous
+ * requests to a redis pipeline. For documentation on each function, see their respective asynchronous
+ * counterparts in RedisService. Each function returns this class.  See https://redis.io/topics/pipelining
+ * and https://github.com/luin/ioredis#Pipelining
+ */
+class Pipeline {
+  constructor(pipeline) {
+    this._pipeline = pipeline;
+  }
+
+  set(key, value) {
+    this._pipeline.set(key, value);
+    return this;
+  }
+
+  setex(key, ex, value) {
+    this._pipeline.setex(key, ex, value);
+    return this;
+  }
+
+  hsetJson(key, field, value) {
+    this._pipeline.hset(key, field, JSON.stringify(value));
+    return this;
+  }
+
+  hsetJsonEx(key, field, value, ex) {
+    this.hsetJson(key, field, value);
+    this._pipeline.call('expiremember', key, field, ex);
+    return this;
+  }
+
+  saddEx(key, ex, ...values) {
+    this._pipeline.sadd(key, ...values);
+    values.forEach(value =>
+      this._pipeline.call('expiremember', key, value, ex)
+    );
+    return this;
+  }
+
+  incr(key) {
+    this._pipeline.incr(key);
+    return this;
+  }
+
+  decr(key) {
+    this._pipeline.decr(key);
+    return this;
+  }
+
+  del(...keys) {
+    this._pipeline.del(...keys);
+    return this;
+  }
+
+  flushall() {
+    this._pipeline.flushall();
+    return this;
+  }
+
+  get(key) {
+    this._pipeline.get(key);
+    return this;
+  }
+
+  hget(key, field) {
+    this._pipeline.hget(key, field);
+    return this;
+  }
+
+  hgetall(key) {
+    this._pipeline.hgetall(key);
+    return this;
+  }
+
+  hexists(key, field) {
+    this._pipeline.hexists(key, field);
+    return this;
+  }
+
+  hlen(key) {
+    this._pipeline.hlen(key);
+    return this;
+  }
+
+  ttl(key) {
+    this._pipeline.ttl(key);
+    return this;
+  }
+
+  smembers(key) {
+    this._pipeline.smembers(key);
+    return this;
+  }
+
+  sismember(key, value) {
+    this._pipeline.sismember(key, value);
+    return this;
+  }
+
+  /**
+   * Execute the pipeline of accumulated commands
+   *
+   * @param callback {function?} - with erasure (err, results) => {}
+   * @returns {array} results of each executed command
+   */
+  exec(callback) {
+    return this._pipeline.exec(callback);
   }
 }
 

@@ -4,8 +4,9 @@
 bind 0.0.0.0
 port 6379
 
-# set password
-requirepass REPLACE_WITH_KEYDB_PASSWORD
+# set user
+user serve1090 on allcommands allkeys >REPLACE_WITH_KEYDB_PASSWORD
+user default off
 
 # KeyDB configuration file example.
 #

@@ -4,7 +4,7 @@
 
 `roob1090` (an amalgamation of `roob`, my username, and `1090`, the frequency over which aircraft broadcast ADS-B signals) is a stack for harvesting and aggregating ADS-B data.
 
-**A live demo of the entire `roob1090` stack in action can be seen on my [personal website](https://www.robsteilberg.io/).**
+**A live demo of the entire `roob1090` stack in action can be seen on my [personal website](https://www.robsteilberg.io/).** You can also directly hit the API at [aircraft.robsteilberg.io](https://aircraft.robsteilberg.io); see [aircraft.robsteilberg.io/airports/boards/kdca](https://aircraft.robsteilberg.io/airports/boards/kdca) to see the current board of aircraft movements for KDCA, or [aircraft.robsteilberg.io/aircraft/valid](https://aircraft.robsteilberg.io/aircraft/valid) to see all valid aircraft currently being tracked.
  
 `roob1090` contains three packages and one submodule:
 

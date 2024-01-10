@@ -1,44 +1,70 @@
 class AuthError extends Error {
-  constructor (message, code) {
-    super();
-    this._message = message;
+  constructor(message, code) {
+    super(message);
     this._code = code;
   }
 
-  get message () {
-    return `authentication error: ${this._message}`;
+  get code() {
+    return this._code;
   }
 
-  get code () {
-    return this._code;
+  get wsCode() {
+    return 1008;
   }
 }
 
-class PumpError extends Error {
+class PayloadError extends Error {
+  get code() {
+    return 400;
+  }
+
+  get wsCode() {
+    return 1007;
+  }
 }
 
 class BroadcastError extends Error {
+  get code() {
+    return 500;
+  }
+
+  get wsCode() {
+    return 1011;
+  }
 }
 
-class RedisError extends Error {
-  constructor (message, details) {
+class DatabaseError extends Error {
+  constructor(message, detail) {
     super();
     this._message = message;
-    this._details = details;
+    this._detail = detail;
   }
 
-  get message () {
-    return `RedisError: ${this._message}`;
+  get message() {
+    return `database error: ${this._message}`;
   }
 
-  get details () {
-    return this._details;
+  get detail() {
+    return this._detail;
+  }
+}
+
+class RedisError extends DatabaseError {
+  get message() {
+    return `redis error: ${this._message}`;
+  }
+}
+
+class MongoError extends DatabaseError {
+  get message() {
+    return `mongo error: ${this._message}`;
   }
 }
 
 module.exports = {
   AuthError,
-  PumpError,
+  PayloadError,
   BroadcastError,
-  RedisError
+  RedisError,
+  MongoError,
 };

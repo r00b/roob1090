@@ -1,5 +1,6 @@
 {
   "ident": "kaus",
+  "faa": "aus",
   "name": "Austin-Bergstrom International Airport",
   "active": true,
   "lonlat": [-97.6698761, 30.1945272],

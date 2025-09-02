@@ -13,7 +13,7 @@ const ENRICHMENTS = 'enrichments';
 const ROUTES = 'routes';
 const AIRFRAMES = 'airframes';
 
-const BROADCAST_CLIENT_COUNT = 'broadcastClientCount';
+const BROADCAST_CLIENT_COUNT = 'broadcastClientCount'; // todo kill
 const DATA_SOURCE_COUNT = 'dataSourceCount';
 
 module.exports = {

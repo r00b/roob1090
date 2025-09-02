@@ -269,7 +269,7 @@ function boardTemplate(values = {}) {
     departing: values.departing || null,
     departed: values.departed || null,
     onRunway: values.onRunway || null,
-    activeRunways: values.activeRunways || null,
+    activeRunways: values.activeRunways || [],
   };
   if (values.note) {
     result.note = values.note;

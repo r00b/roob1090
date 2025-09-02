@@ -9,7 +9,6 @@ const {
   DEPARTURES,
   ROUTES,
   AIRFRAMES,
-  BROADCAST_CLIENT_COUNT,
 } = require('../lib/redis-keys');
 
 module.exports = (config, redis) => {
@@ -25,9 +24,9 @@ const generateApis = function (config) {
     openSkyApi,
     openSkyUsername,
     openSkyPassword,
-    faApi,
-    faUsername,
-    faPassword,
+    foreFlightApi,
+    ffApiToken,
+    ffDeviceId,
   } = config;
   const apis = {};
 
@@ -50,15 +49,17 @@ const generateApis = function (config) {
     logger.warn('unable to find OpenSky API credentials');
   }
 
-  if (faApi && faUsername && faPassword) {
-    apis.flightAwareRoutes = got.extend({
-      prefixUrl: `${config.faApi}/InFlightInfo`,
-      username: config.faUsername,
-      password: config.faPassword,
+  if (foreFlightApi && ffApiToken && ffDeviceId) {
+    apis.foreFlightRoutes = got.extend({
+      prefixUrl: `${config.foreFlightApi}/file/v1/flightwatch/flights`,
+      headers: {
+        'x-foreflight-api-token': ffApiToken,
+        'x-foreflight-device-id': ffDeviceId,
+      },
       responseType: 'json',
     });
   } else {
-    logger.warn('unable to find FlightAware API credentials');
+    logger.warn('unable to find ForeFlight credentials');
   }
 
   return apis;
@@ -68,7 +69,10 @@ const generateApis = function (config) {
  * Return a function that tests a flight's route, checking redis for a cached route,
  * followed by the OpenSky API and finally the FlightAware API
  */
-const fetchRoute = function (redis, { openSkyRoutes, flightAwareRoutes }) {
+const fetchRoute = function (
+  redis,
+  { openSkyRoutes, flightAwareRoutes, foreFlightRoutes }
+) {
   /**
    * @param {Object} aircraft - aircraft ADSB hash
    * @param {string} airport - airport key for checking route cache
@@ -88,24 +92,41 @@ const fetchRoute = function (redis, { openSkyRoutes, flightAwareRoutes }) {
           redis
         );
       }
-      // next, fallback to FlightAware if there is a current broadcast client OR if forceFallbackToFA = true
-      const shouldQueryFA =
-        flightAwareRoutes &&
-        ((!result && (await hasBroadcastClients(redis))) || forceFallbackToFA);
-      if (shouldQueryFA) {
-        result = await fetchFlightAwareRoute(aircraft, flightAwareRoutes);
+      // next, check ForeFlight
+      if (!result && foreFlightRoutes) {
+        result = await fetchForeFlightRoute(aircraft, foreFlightRoutes);
       }
       // finally, cache the result
       if (result) {
         redis.hsetJsonEx(ROUTES, flight, result, ROUTE_TTL); // fire and forget
         return result;
       }
-      logger.warn(`unable to resolve route for ${flight}`);
+      logger.warn(`unable to find route for ${flight}`);
     } catch (e) {
-      logger.warn(e, 'error resolving route for ${flight}');
+      logger.warn(e, `error resolving route for ${flight}`);
       return {};
     }
   };
+};
+
+const fetchForeFlightRoute = async function ({ flight }, foreFlightRoutes) {
+  try {
+    const {
+      body: {
+        responseObject: { flights },
+      },
+    } = await foreFlightRoutes.get(flight);
+    if (flights.length > 0) {
+      const [{ origin, destination }] = flights;
+      // const { origin, destination } = flights[0];
+      return {
+        origin,
+        destination,
+      };
+    }
+  } catch (e) {
+    logger.error(e, `error fetching route for ${flight}`);
+  }
 };
 
 /**
@@ -235,38 +256,6 @@ const canDeriveDepartureLeg = function (route, airport) {
 };
 
 /**
- * Determine if there are currently any clients receiving data from the server
- */
-const hasBroadcastClients = async function (redis) {
-  const numClients = await redis.get(BROADCAST_CLIENT_COUNT);
-  return numClients > 0;
-};
-
-/**
- * Fetch a route from FlightAware
- *
- * @param flight {string}
- * @param flightAwareRoutes {object} - FlightAware InFlightInfo API
- * @returns {Promise<{origin, destination}>|undefined}
- */
-const fetchFlightAwareRoute = async function ({ flight }, flightAwareRoutes) {
-  try {
-    const {
-      body: { InFlightInfoResult: result },
-    } = await flightAwareRoutes(`?ident=${flight}`);
-    if (result.timeout === 'ok') {
-      // FA can return stale data, indicated by timeout = 'timed_out'
-      return {
-        origin: result.origin,
-        destination: result.destination,
-      };
-    }
-  } catch (e) {
-    logger.warn(e, `error resolving route data from FlightAware for ${flight}`);
-  }
-};
-
-/**
  * Return a function that fetches data about an airframe specified by its ICAO
  * hexadecimal code
  *
@@ -291,7 +280,7 @@ const fetchAirframe = function (redis, { openSkyAirframes }) {
         redis.hsetJson(AIRFRAMES, hex, fetchedAirframe); // fire and forget
         return fetchedAirframe;
       }
-      logger.warn(`failed to resolve airframe for ${aircraft.hex}`);
+      logger.warn(`failed to find airframe for ${aircraft.hex}`);
     } catch (e) {
       logger.warn(e, `error resolving airframe data for ${hex}`);
       return {};

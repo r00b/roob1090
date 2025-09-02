@@ -1,6 +1,7 @@
 const _ = require('lodash');
 const logger = require('../lib/logger')('partition-airport');
 const pMap = require('p-map');
+const got = require('got');
 const { hex, withinBoundaryAndCeiling, aligned } = require('./utils');
 
 const { REGION_AIRCRAFT, ACTIVE_RUNWAY } = require('../lib/redis-keys');
@@ -9,19 +10,20 @@ const REGION_TTL = 2;
 const RUNWAY_TTL = 28800; // 8 hours
 const RUNWAY_RECHECK = 900; // 15 minutes
 
-module.exports = (store, redis, mongo, logger) =>
-  partitionAirport(store, redis, mongo);
+module.exports = (config, store, redis, mongo) =>
+  partitionAirport(config, store, redis, mongo);
 
 /**
  * Return a function that will fetch all aircraft currently in the store along with a specified
  * airport and then partition the aircraft into the airport's runways and airspace regions
  *
+ * @param config
  * @param store
  * @param redis
  * @param mongo
  * @returns {(ident: string) => Promise<partition>}
  */
-function partitionAirport(store, redis, mongo) {
+function partitionAirport(config, store, redis, mongo) {
   return async ident => {
     try {
       const airport = await mongo.getAirport(ident);
@@ -40,17 +42,37 @@ function partitionAirport(store, redis, mongo) {
         return acc;
       }, {});
 
-      const acc = {
+      const { foreFlightApi, ffApiToken, ffDeviceId } = config;
+      let foreFlightAtis,
+        actives = [];
+      if (foreFlightApi && ffApiToken && ffDeviceId) {
+        foreFlightAtis = got.extend({
+          prefixUrl: `${config.foreFlightApi}/file/atis`,
+          headers: {
+            'x-foreflight-api-token': ffApiToken,
+            'x-foreflight-device-id': ffDeviceId,
+          },
+          responseType: 'json',
+        });
+      } else {
+        logger.warn('unable to find ForeFlight credentials');
+      }
+      if (foreFlightAtis) {
+        actives = await fetchActiveRunways(airport, foreFlightAtis);
+        logger.info('did it');
+      }
+
+      const partition = {
         aircraft: {
           ...aircraftAloft,
         },
-        activeRunways: [],
+        activeRunways: actives,
       };
 
-      const partition = airport.runways.reduce(
-        runwayReducer(allAircraft, _.flatten(_.values(aircraftAloft))),
-        acc
-      );
+      // const partition = airport.runways.reduce(
+      //   runwayReducer(allAircraft, _.flatten(_.values(aircraftAloft))),
+      //   acc
+      // );
       await writePartition(partition, redis);
 
       return partition;
@@ -59,6 +81,30 @@ function partitionAirport(store, redis, mongo) {
     }
   };
 }
+
+const fetchActiveRunways = async function (airport, foreFlightAtis) {
+  try {
+    const { body } = await foreFlightAtis.get(airport.faa);
+    if (body.length > 0) {
+      const { body: atis } = body[0];
+
+      const actives = airport.runways.reduce((acc, runway) => {
+        for (const surface of runway.surfaces) {
+          if (atis.includes(surface.name)) {
+            acc.push({
+              runway: runway.key,
+              surface: surface.name,
+            });
+          }
+        }
+        return acc;
+      }, []);
+      return actives;
+    }
+  } catch (e) {
+    logger.error(e, `error fetching ATIS for ${airport.faa}`);
+  }
+};
 
 /**
  * Filter out aircraft currently located in a given airspace region

@@ -19,5 +19,10 @@ module.exports = {
   faApi: env.FA_API || 'https://flightxml.flightaware.com/json/FlightXML2',
   faUsername: env.FA_USERNAME,
   faPassword: env.FLIGHTXML_2_KEY,
+
+  foreFlightApi: env.FOREFLIGHT_API,
+  ffApiToken: env.FOREFLIGHT_API_TOKEN,
+  ffDeviceId: env.FOREFLIGHT_DEVICE_ID,
+
   // add any new props to logger ALLOWED_CONFIG_PROPS list as needed
 };

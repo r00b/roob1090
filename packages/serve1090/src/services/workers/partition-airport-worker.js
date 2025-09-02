@@ -20,7 +20,7 @@ const partitionAircraft = require('../../lib/partition-airport');
       password: mongoPass,
     }).connect();
 
-    const partitionAirport = partitionAircraft(store, redis, mongo);
+    const partitionAirport = partitionAircraft(config, store, redis, mongo);
     await partitionAirport(airport);
 
     exit(0);
